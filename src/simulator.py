@@ -20,3 +20,14 @@ class RaceSimulator:
         self.logger = setup_logger(_CLASSNAME)
 
         self.logger.info("初期化しています...")
+        
+    def run(self, target_date=None, course_filter=None, race_num_filter=None):
+        """
+        メインの実行メソッド
+        """
+        self.logger.info("実行開始します...")
+
+        # 1. 実行するレースリストの作成
+        # 2. 個別レースの処理（準備 -> 実行 -> 結果）
+        # 3. データの保存等
+        pass
