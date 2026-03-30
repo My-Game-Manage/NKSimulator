@@ -1,4 +1,4 @@
-name: Fetch Horse Racing Data of Shutuba
+name: Simulation Racing
 
 on:
   workflow_dispatch:
