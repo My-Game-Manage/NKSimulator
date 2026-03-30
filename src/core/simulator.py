@@ -16,10 +16,27 @@ class RaceSimulator:
 
         self.logger.info("初期化中...")
 
+        self._racing_contexts = []
+
     def run(self, target_date=None, course_filter=None, race_num_filter=None):
         """
         メインの実行メソッド
         """
         self.logger.info("実行中...")
-        pass
+
+        for ctx in self._racing_contexts:
+            self._running_simulator(ctx)
+
+        self._save_logs()
         
+    def _running_simulator(self, race_context):
+        """
+        1回のレースのシミュレーションを行う
+        """
+        pass
+
+    def _save_logs(self):
+        """
+        ログ情報の保存
+        """
+        pass
