@@ -3,7 +3,7 @@ import argparse
 import sys
 from src.utils.date_utils import get_today_jst, normalize_date_format
 from src.constants.master_data import JYO_NAME_MAP
-from src.simulator import RaceSimulator
+from src.core.simulator import RaceSimulator
 
 def parse_list_arg(arg):
     """カンマ区切りの文字列をリストに変換する汎用関数"""
