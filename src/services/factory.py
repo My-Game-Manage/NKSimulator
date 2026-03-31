@@ -4,10 +4,11 @@ factory.py の概要
 1. ContextFactory　- RaceContextインスタンスの作成
 """
 import pandas as pd
+from pathlib import Path
 
+from utils.logger import setup_logger
 from constants.schema import RaceCol
 from models.context import RaceContext
-
 from models.horse import Horse
 from models.params import StaticParams
 
@@ -51,29 +52,49 @@ class ContextFactory:
 
 
 class HorseFactory:
-    def __init__(self, history_df: pd.DataFrame, jockey_analyzer=None):
+    def __init__(self):
+        _CLASSNAME = "HorseFactory"
+        # クラス名を名前としてロガーを作成
+        self.logger = setup_logger(_CLASSNAME)
+
+        self.logger.info("初期化中...")
+        
+        self.history_df = None
+        self._current_path = None
+
+    def set_history_source(self, csv_path: str):
         """
-        history_df: 過去のレース結果 (uploaded:horse_history_20260329.csv 相当)
-        jockey_analyzer: 騎手の能力を計算するサービス（任意）
+        必要なタイミングで履歴CSVのパスを指定し、メモリにロードする
         """
-        self.history_df = history_df
-        self.jockey_analyzer = jockey_analyzer
+        path = Path(csv_path)
+        if not path.exists():
+            raise FileNotFoundError(f"History file not found: {csv_path}")
+        
+        # すでに同じファイルがロードされている場合はスキップ（効率化）
+        if self._current_path == str(path):
+            return
+
+        self.logger.info(f"Loading history data from: {path.name}...")
+        self.history_df = pd.read_csv(path)
+        self._current_path = str(path)
 
     def create_horse(self, entry_row: pd.Series) -> Horse:
         """
-        出走表の1行(entry_row)から、能力値を計算してHorseインスタンスを生成する
+        現在の履歴データを使用してHorseインスタンスを生成
         """
-        horse_id = entry_row['horse_id']
-        horse_name = entry_row['horse_name']
+        if self.history_df is None:
+            raise ValueError("History data is not loaded. Call set_history_source() first.")
+
+        horse_id = entry_row[RaceCol.HORSE_ID]
+        name = entry_row[RaceCol.HORSE_NAME]
         
-        # 1. 過去データの抽出
+        # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
         
-        # 2. 能力値(StaticParams)の計算
+        # 能力計算
         params = self._calculate_params(past_performances, entry_row)
         
-        # 3. インスタンス生成
-        return Horse(horse_id=horse_id, name=horse_name, params=params)
+        return Horse(horse_id=horse_id, name=name, params=params)
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
