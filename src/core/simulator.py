@@ -64,7 +64,7 @@ class RaceSimulator:
             # シミュレーション実行へ...
             self._run_simulation(context, horses, saver)
 
-        self._save_logs()
+        self._save_logs(target_date)
         
     def _run_simulation(self, context: RaceContext, horses: list, saver: ResultSaver):
         """
@@ -80,11 +80,13 @@ class RaceSimulator:
         for h in horses:
             self.logger.info(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
 
-    def _save_logs(self):
+    def _save_logs(self, date: str):
         """
         ログ情報の保存
         """
-        pass
+        # 全レース終了後にまとめて保存
+        save_file = f"simulation_{date}.csv"
+        final_df = saver.save_to_csv(save_file)
 
     def _entry_horse(self, factory: HorseFactory, row):
         """
