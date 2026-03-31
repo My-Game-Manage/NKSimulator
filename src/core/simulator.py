@@ -72,7 +72,7 @@ class RaceSimulator:
         """
         pass
 
-    def _entry_horses(self, factory, row):
+    def _entry_horse(self, factory: HorseFactory, row):
         """
         馬インスタンスを作成
         """
