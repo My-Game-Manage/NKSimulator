@@ -11,7 +11,7 @@ class SimConfig:
     # --- HorseFactory用係数 ---
     # 過去の上がり平均(600/avg_3f)に対する最高速度の倍率
     # 1.05から0.98に調整予定
-    MAX_VELOCITY_COEFF = 1.0
+    MAX_VELOCITY_COEFF = 0.98
     DEFAULT_MAX_VELOCITY = 15.5
 
     # --- RaceEngine用物理パラメータ ---
