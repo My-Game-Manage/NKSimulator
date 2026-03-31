@@ -43,7 +43,7 @@ class ResultSaver:
         蓄積されたデータをCSVとして保存
         """
         if not self.results:
-            print("保存するデータがありません。")
+            self.logger.info("保存するデータがありません。")
             return
 
         df = pd.DataFrame(self.results)
