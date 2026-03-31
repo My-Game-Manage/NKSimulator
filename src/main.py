@@ -5,6 +5,10 @@ from src.utils.date_utils import get_today_jst, normalize_date_format
 from src.constants.master_data import JYO_NAME_MAP
 from src.core.simulator import RaceSimulator
 
+def convert_to_ints(data_list):
+    """リスト内の要素をすべてint型に変換する関数"""
+    return [int(x) for x in data_list]
+    
 def parse_list_arg(arg):
     """カンマ区切りの文字列をリストに変換する汎用関数"""
     if not arg:
@@ -70,6 +74,9 @@ def main():
     # 会場指定（名前またはコード）をすべてコードに変換
     #target_course_codes = convert_to_course_codes(args.course)
     target_course_codes = args.course
+
+    # レース番号をint型に修正
+    target_race_nums = convert_to_ints(args.race_num)
     
     # シミュレーターの実行
     try:
@@ -77,7 +84,7 @@ def main():
         sim.run(
             target_date=target_date,
             course_filter=target_course_codes,
-            race_num_filter=args.race_num,
+            race_num_filter=target_race_nums,
         )
     except KeyboardInterrupt:
         print("\nユーザーにより中断されました。")
