@@ -23,9 +23,11 @@ class HorseState:
     last_3f_time: float = 0.0  # 算出された上がり3Fタイム
   
 class Horse:
-    def __init__(self, horse_id: str, name: str, params: StaticParams):
+    def __init__(self, horse_id: str, name: str, gate_num: int, horse_num: int, params: StaticParams):
         self.horse_id = horse_id
         self.name = name
+        self.gate_num = gate_num
+        self.horse_num = horse_num
         self.params = params
         
         # 状態の初期化（レース開始時にリセット可能にする）
