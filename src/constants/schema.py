@@ -11,6 +11,11 @@ class NetkeibaPageType:
     JOCKEY = 'jockey'
     ODDS = 'odds'
 
+class RaceStatus:
+    CANCEL = "取"    # 出走取消
+    ABANDON = "中"  # 競走中止
+    EXCLUDE = "除"  # 除外
+    
 class RaceCol:
     # --- 英語名定義 (プログラムで使用) ---
     HORSE_ID = "horse_id"
