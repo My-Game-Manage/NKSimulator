@@ -11,7 +11,7 @@ from constants.schema import RaceCol
 from models.context import RaceContext
 from services.provider import RaceDataProvider
 from services.factory import ContextFactory, HorseFactory
-from engine import RaceEngine
+from core.engine import RaceEngine
 
 class RaceSimulator:
     def __init__(self):
