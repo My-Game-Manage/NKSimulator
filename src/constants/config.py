@@ -16,14 +16,20 @@ class SimConfig:
 
     # --- RaceEngine用物理パラメータ ---
     DEFAULT_ACCEL = 0.8
-    SURFACE_FRICTION_BASE = 0.05
     CORNER_PENALTY_BASE = 0.1
-
+    # 道中の速度係数（0.9 -> 1.02 に引き上げ：道中を現実のペースに合わせる）
+    CRUISING_SPEED_COEFF = 1.02
+    
     # --- 戦略・スパート関連 ---
-    SPURT_DISTANCE = 600.0  # 残り何mでスパートするか
-    SPURT_SPEED_BOOST = 1.5  # スパート時の速度上乗せ(m/s)
+    # スパート時のブースト（1.5 -> 0.2 に大幅抑制：上がりを40秒に近づける）
+    SPURT_SPEED_BOOST = 0.2
     CRUISING_SPEED_COEFF = 0.95  # 道中の速度抑制（巡航速度）
     
     # --- スタミナ関連 ---
-    STAMINA_LOSS_COEFF = 0.008  # 消費係数
+    # スタミナ消費（0.008 -> 0.012 に引き上げ：終盤に足を鈍らせる）
+    STAMINA_LOSS_COEFF = 0.012
     EXHAUST_SPEED_COEFF = 0.8  # スタミナ切れ時の速度倍率
+
+    # --- その他 ---
+    SPURT_DISTANCE = 600.0    # 残り何mでスパートするか
+    SURFACE_FRICTION_BASE = 0.05
