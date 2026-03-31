@@ -13,42 +13,54 @@ from models.horse import Horse
 from models.params import StaticParams
 
 class ContextFactory:
-    # 会場ごとの定数を定義
+    # 会場ごとの物理定数マスタ
     COURSE_MASTER = {
-        "大井": {"width": 25, "radius_factor": 1.0, "base_friction": 0.05},
-        "笠松": {"width": 20, "radius_factor": 1.2, "base_friction": 0.07}, # 笠松は砂が深くコーナーが急
+        "大井": {
+            "base_friction": 0.05,
+            "corner_penalty": 0.15,
+            # 前述した大井1600mの構成例（距離に応じて動的に変えるのが理想）
+            "layout_1600": [
+                {"type": "straight", "length": 300}, # スタート
+                {"type": "curve",    "length": 250}, # 1-2角
+                {"type": "straight", "length": 350}, # 向こう正面
+                {"type": "curve",    "length": 414}, # 3-4角
+                {"type": "straight", "length": 286}, # 直線
+            ]
+        },
+        "笠松": {
+            "base_friction": 0.07, # 砂が深い想定
+            "corner_penalty": 0.20, # コーナーが急な想定
+            "layout_1400": [...] 
+        }
     }
 
     @staticmethod
-    def create_from_df(race_df):
-        """
-        抽出されたDataFrame（1レース分）からContextを1つ生成
-        """
-        if race_df.empty:
-            return None
+    def create_from_df(race_df) -> RaceContext:
+        # 全馬共通の情報なので、最初の1行を参照
+        first_row = race_df.iloc[0]
+        course = first_row[RaceCol.COURSE]
+        condition = first_row[RaceCol.TRACK_CONDITION]
+        dist = int(first_row[RaceCol.DISTANCE])
 
-        # 最初の1行から基本情報を取得
-        base = race_df.iloc[0]
-        course = base[RaceCol.COURSE]
-        
-        # 会場マスターから設定を取得（なければデフォルト値）
-        master = ContextFactory.COURSE_MASTER.get(course, {"width": 20, "radius_factor": 1.0, "base_friction": 0.05})
+        # マスタから基本設定を取得
+        master = ContextFactory.COURSE_MASTER.get(course, {
+            "base_friction": 0.05, "corner_penalty": 0.1, "layout_1600": []
+        })
 
-        # 馬場状態による摩擦の微調整ロジック（Normalizerの一部）
-        condition_multiplier = {
-            "良": 1.0, "稍": 0.98, "重": 0.95, "不良": 0.92
-        }.get(base[RaceCol.TRACK_CONDITION], 1.0)
+        # --- 馬場状態による摩擦の補正 (Normalizing) ---
+        # 重馬場なら摩擦係数を上げるなどの処理
+        condition_map = {"良": 1.0, "稍": 1.05, "重": 1.15, "不": 1.25}
+        friction = master["base_friction"] * condition_map.get(condition, 1.0)
 
         return RaceContext(
             course_name=course,
-            distance=int(base[RaceCol.DISTANCE]),
-            track_condition=base[RaceCol.TRACK_CONDITION],
-            weather=base[RaceCol.WEATHER],
-            track_width=master['width'],
-            corner_radius=master['radius_factor'],
-            surface_friction=master['base_friction'] * condition_multiplier,
-            segment_data=[] # ここに前回計算した大井1600mの分割データなどを入れる
+            distance=dist,
+            track_condition=condition,
+            surface_friction=friction,
+            corner_radius=master["corner_penalty"],
+            segments=master.get(f"layout_{dist}", []) # 距離に応じたレイアウトを取得
         )
+        
 
 
 class HorseFactory:
