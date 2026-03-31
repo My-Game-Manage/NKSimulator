@@ -68,7 +68,8 @@ class RaceEngine:
             segment_type = self._get_current_segment_type(horse.state.current_position)
             
             # 2. 加速度の計算（簡易モデル）
-            accel = self._calculate_acceleration(horse, segment_type)
+            #accel = self._calculate_acceleration(horse, segment_type)
+            accel = self._calculate_acceleration_hard(horse, segment_type)
             
             # 3. 物理状態の更新（Horseクラスのメソッドを呼び出し）
             horse.update_physics(self.dt, accel)
@@ -125,6 +126,35 @@ class RaceEngine:
         accel = v_diff * horse.params.base_acceleration - self.context.surface_friction
     
         return accel
+        
+    def _calculate_acceleration_hard(self, horse, segment_type: str) -> float:
+        # 1. 基本最高速度
+        base_v = horse.params.max_velocity
+        remaining_dist = self.context.distance - horse.state.current_position
+    
+        # 2. スパート判定（残り600m以下 かつ スタミナに余裕がある）
+        # スタミナ残量に応じてスパートの「強さ」を変える
+        if remaining_dist <= 600 and horse.state.current_stamina > 0:
+            horse.state.is_spurt = True
+        
+            # 【調整ポイント】スタミナが余っているほど目標速度を上乗せする
+            # 例: 残スタミナ / 500 を速度に加算（4000残っていれば +8m/s）
+            stamina_bonus = horse.state.current_stamina / 500.0
+            target_v = base_v + (horse.params.grit * 2.0) + stamina_bonus
+        
+        else:
+            # 道中も少しペースを上げる（0.9 → 0.95）
+            target_v = base_v * 0.95
+
+        # 3. コーナー等の補正（既存ロジック）
+        if segment_type == "curve":
+            target_v -= self.context.corner_penalty
+        
+        if horse.state.current_stamina <= 0:
+            target_v *= 0.5  # バテ
+        
+        v_diff = target_v - horse.state.current_velocity
+        return v_diff * horse.params.base_acceleration - self.context.surface_friction
 
     def _consume_stamina(self, horse):
         """
