@@ -67,4 +67,4 @@ class ResultSaver:
         簡易結果表示
         """
         for row in df.columns:
-            self.logger.info(f"{row[RaceCol.RANK]} | {row[RaceCol.HORSE_NAME]} | {row[RaceCol.TIME]} | {row['remaining_stamina']} | {row['ave_velocity']}")
+            self.logger.info(f"{row[RaceCol.RANK]} | {row[RaceCol.HORSE_NAME]} | {row[RaceCol.TIME]:.1f} | {row['remaining_stamina']:.1f} | {row['ave_velocity']:.1f}")
