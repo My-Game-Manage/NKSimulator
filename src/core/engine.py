@@ -126,11 +126,22 @@ class RaceEngine:
         return accel
 
     def _consume_stamina(self, horse):
-        """速度に応じたスタミナ消費"""
-        # 速度が高いほどスタミナを激しく使う（速度の2乗に比例）
-        loss = (horse.state.current_velocity ** 2) * 0.01 * self.dt
+        """
+        スパート中の激しい消費をシミュレート
+        """
+        # 速度の2乗に比例した基本消費
+        base_loss = (horse.state.current_velocity ** 2) * 0.005
+    
+        # スパート中は消費を 1.5倍〜2.0倍 に増やす
+        multiplier = 2.0 if horse.state.is_spurt else 1.0
+    
+        # 最終的な消費量
+        loss = base_loss * multiplier * self.dt
         horse.state.current_stamina -= loss
-
+    
+        if horse.state.current_stamina < 0:
+            horse.state.current_stamina = 0
+            
     def run_race(self):
         """全馬がゴールするまでループ"""
         self.logger.info(f"Race Start: {self.context.distance}m")
