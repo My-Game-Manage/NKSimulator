@@ -44,6 +44,7 @@ class ContextFactory:
         race_num = first_row[RaceCol.RACE_NUMBER]
         condition = first_row[RaceCol.TRACK_CONDITION]
         dist = int(first_row[RaceCol.DISTANCE])
+        surface = first_row[RaceCol.SURFACE]
         weather = first_row[RaceCol.WEATHER]
 
         # マスタから基本設定を取得
@@ -60,6 +61,7 @@ class ContextFactory:
             course_name=course,
             race_number=race_num,
             distance=dist,
+            surface=surface,
             track_condition=condition,
             track_width=master['track_width'],
             weather=weather,
