@@ -18,7 +18,7 @@ class RaceContext:
     
     # 会場マスターデータから紐付ける静的情報
     track_width: float      # コース幅
-    corner_radius: float    # コーナーのきつさ補正
+    corner_penalty: float    # コーナーのきつさ補正
     surface_friction: float # 馬場状態による摩擦係数
 
     # --- コースレイアウト (区間データ) ---
