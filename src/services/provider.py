@@ -38,10 +38,10 @@ class RaceDataProvider:
         # 必要に応じて前処理（以前の _preprocess 相当）をここで呼ぶ
         df = self._preprocess(df)
 
-        fc_df = df[df['course'].isin(target_courses)]
+        fc_df = df[RaceCol.COURSE]
         self.logger.info(f"courses -> {len(fc_df)}")
 
-        fn_df = df[df['race_number'].isin(target_race_nums)]
+        fn_df = df[RaceCol.RACE_NUMBER]
         self.logger.info(f"num -> {len(fn_df)}")
 
         # フィルタリング
