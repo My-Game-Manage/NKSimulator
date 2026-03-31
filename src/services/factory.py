@@ -90,9 +90,11 @@ class HorseFactory:
         
         # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
-        
+
+        # 前処理
+        past_df = self._preprocess(past_performances)
         # 能力計算
-        params = self._calculate_params(past_performances, entry_row)
+        params = self._calculate_params(past_df, entry_row)
         
         return Horse(horse_id=horse_id, name=name, params=params)
 
@@ -126,3 +128,11 @@ class HorseFactory:
             intelligence=1.0,
             grit=1.0
         )
+
+    def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        型変換や欠損値処理など、読み込み直後の共通処理
+        """
+        # 例: race_number を確実に数値型にするなど
+        df[RaceCol.LAST_3F] = df[RaceCol.LAST_3F].astype(float)
+        return df
