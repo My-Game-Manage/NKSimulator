@@ -63,6 +63,12 @@ class RaceEngine:
                 continue
             
             all_finished = False
+
+            # 残り600m地点の通過チェック
+            remaining_dist = self.context.distance - horse.state.current_position
+            if remaining_dist <= 600.0 and horse.state.time_at_600m == 0.0:
+            # 初めて600mを切った瞬間の経過時間を記録
+            horse.state.time_at_600m = self.elapsed_time
             
             # 1. 現在のコース区間（直線 or コーナー）を特定
             segment_type = self._get_current_segment_type(horse.state.current_position)
