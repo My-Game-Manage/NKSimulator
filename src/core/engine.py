@@ -3,13 +3,15 @@ engine.py の概要
 
 レースContextと各馬のインスタンスを使い、1フレームずつ時間を進める処理を行う
 """
+from typing import List
+
 from utils.logger import setup_logger
 from models.horse import Horse
 from models.context import RaceContext
-from typing import List
+from services.saver import ResultSaver
 
 class RaceEngine:
-    def __init__(self, context: RaceContext, participants: List[Horse], dt: float = 0.1):
+    def __init__(self, context: RaceContext, participants: List[Horse], saver: ResultSaver, dt: float = 0.1):
         _CLASSNAME = "Engine"
         # クラス名を名前としてロガーを作成
         self.logger = setup_logger(_CLASSNAME)
@@ -18,9 +20,12 @@ class RaceEngine:
         
         self.context = context
         self.participants = participants
+        self.saver = saver # Saverを受け取る
         self.dt = dt  # 1ステップあたりの秒数 (0.1秒単位)
         self.elapsed_time = 0.0
         self.is_finished = False
+
+        self.finished_horse_ids = set() # 重複記録防止用
 
     def step(self):
         """1ステップ(dt秒)時間を進める"""
@@ -31,6 +36,13 @@ class RaceEngine:
         for horse in self.participants:
             # 1. ゴール済みならスキップ
             if horse.state.current_position >= self.context.distance:
+                continue
+            
+            # ゴール判定
+            if horse.state.current_position >= self.context.distance:
+                self.finished_horse_ids.add(horse.horse_id)
+                # Saverに記録
+                self.saver.record_finish(horse, self.elapsed_time, self.context)
                 continue
             
             all_finished = False
