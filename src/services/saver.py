@@ -67,5 +67,5 @@ class ResultSaver:
         簡易結果表示
         """
         pd.set_option('display.float_format', '{:.2f}'.format)
-        for r in df.columns():
+        for _, r in df.iterrows():
             print(r)
