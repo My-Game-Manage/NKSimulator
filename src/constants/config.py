@@ -16,7 +16,7 @@ class SimConfig:
     # --- RaceEngine用物理パラメータ ---
     DEFAULT_ACCEL = 0.8
     SURFACE_FRICTION_BASE = 0.05
-    CORNER_RADIUS_BASE = 0.1
+    CORNER_PENALTY_BASE = 0.1
 
     # --- 戦略・スパート関連 ---
     SPURT_DISTANCE = 600.0  # 残り何mでスパートするか
