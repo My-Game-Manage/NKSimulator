@@ -34,8 +34,8 @@ class RaceEngine:
 
         all_finished = True
         for horse in self.participants:
-            # 1. ゴール済みならスキップ
-            if horse.state.current_position >= self.context.distance:
+            # すでにゴール済みの馬はスキップ
+            if horse.horse_id in self.finished_horse_ids:
                 continue
             
             # ゴール判定
