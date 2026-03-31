@@ -8,6 +8,7 @@ simulator.py の概要
 """
 from utils.logger import setup_logger
 from constants.schema import RaceCol
+from models.context import RaceContext
 from services.provider import RaceDataProvider
 from services.factory import ContextFactory, HorseFactory
 
