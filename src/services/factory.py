@@ -149,8 +149,7 @@ class HorseFactory:
     def _calc_stamina(self, entry_row: pd.Series) -> float:
         # B. スタミナの推定 (距離実績から算出)
         # 過去に走った最長距離などをベースにスタミナ総量を決める
-        #stamina = entry_row[RaceCol.DISTANCE] * 1.2
-        stamina = entry_row[RaceCol.DISTANCE] * 0.9
+        stamina = entry_row[RaceCol.DISTANCE] * 1.2
         return stamina
 
     def _calc_power(self, past_df: pd.DataFrame) -> float:
