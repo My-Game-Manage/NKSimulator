@@ -44,6 +44,11 @@ class RaceEngine:
         self.is_finished = False
 
         self.finished_horse_ids = set() # 重複記録防止用
+        
+        # 通過順位を記録するチェックポイント (例: 第1、第2、第3、第4コーナー付近)
+        # 1600mなら [400, 800, 1200] などの地点を設定
+        self.checkpoints = [400.0, 800.0, 1200.0]
+        self.reached_checkpoints = []
 
     def step(self):
         """1ステップ(dt秒)時間を進める"""
@@ -78,15 +83,40 @@ class RaceEngine:
             # 4. スタミナ消費
             self._consume_stamina(horse)
             #self._consume_stamina_hard(horse)
+            
             # 残り600m地点の通過チェック
             remaining_dist = self.context.distance - horse.state.current_position
             if remaining_dist <= 600.0 and horse.state.time_at_600m == 0.0:
                 # 初めて600mを切った瞬間の経過時間を記録
                 horse.state.time_at_600m = self.elapsed_time
 
-
+            # チェックポイントの通過判定
+            for cp in self.checkpoints:
+                if cp not in self.reached_checkpoints:
+                    # 全馬がその地点を越えたか、あるいは先頭が越えた瞬間の順位を取るか
+                    # 一般的な通過順位は「そのコーナーを通過した順」なので、
+                    # ここでは「先頭が通過した瞬間」の全馬の順位を記録する例にします
+                    leader_pos = max(h.state.current_position for h in self.participants)
+                
+                    if leader_pos >= cp:
+                        self._record_passing_ranks()
+                        self.reached_checkpoints.append(cp)
+                        
+        # delta time
         self.elapsed_time += self.dt
         self.is_finished = all_finished
+
+    def _record_passing_ranks(self):
+        """現時点での位置に基づいて全馬の順位を確定し、Stateに保存する"""
+        # 位置が遠い順（降順）に並べ替え
+        sorted_horses = sorted(
+            self.participants, 
+            key=lambda h: h.state.current_position, 
+            reverse=True
+        )
+        
+        for i, horse in enumerate(sorted_horses):
+            horse.state.passing_ranks.append(i + 1)
 
     def _get_current_segment_type(self, position: float) -> str:
         """現在の位置から、直線かコーナーかを判定する"""
