@@ -122,7 +122,7 @@ class HorseFactory:
         # 能力計算
         params = self._calculate_params(past_df, entry_row)
         
-        return Horse(horse_id=horse_id, name=name, bracket_num=bracket_num, horse_num=hores_num, params=params)
+        return Horse(horse_id=horse_id, name=name, bracket_num=bracket_num, horse_num=horse_num, params=params)
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
