@@ -2,6 +2,23 @@
 engine.py の概要
 
 レースContextと各馬のインスタンスを使い、1フレームずつ時間を進める処理を行う
+
+現在のロジック：
+
+1. セグメント判定 (_get_current_segment_type)
+    馬の現在位置（current_position）を、コース全体のレイアウト（segments）と照合します。
+    「今、自分が直線にいるのか、コーナーにいるのか」という環境情報を確定させます。
+2. 加速度の算出 (_calculate_acceleration)
+    目標速度の決定: 基本は馬の最高速度（max_velocity）ですが、コーナーであれば corner_penalty を差し引き、スタミナ切れならデバフをかけます。
+    駆動力の計算: 目標速度と現在速度の差分（v_diff）に、馬固有の加速能力（base_acceleration）を掛け合わせます。
+    環境抵抗の減算: 算出された力から、馬場状態による抵抗（surface_friction）をマイナスします。
+3. 物理状態の更新 (update_physics)
+    速度更新: 速度 = 速度 + (加速度 * 経過時間)
+    位置更新: 位置 = 位置 + (速度 * 経過時間)
+    これにより、コンマ数秒後の「未来の場所」が決定します。
+4. スタミナ消費 (_consume_stamina)
+    速度の2乗に比例してスタミナを減らします。
+    「速く走れば走るほど、指数関数的に疲れる」という競馬の基本原則を表現しています。
 """
 from typing import List
 
@@ -47,16 +64,16 @@ class RaceEngine:
             
             all_finished = False
             
-            # 2. 現在のコース区間（直線 or コーナー）を特定
+            # 1. 現在のコース区間（直線 or コーナー）を特定
             segment_type = self._get_current_segment_type(horse.state.current_position)
             
-            # 3. 加速度の計算（簡易モデル）
+            # 2. 加速度の計算（簡易モデル）
             accel = self._calculate_acceleration(horse, segment_type)
             
-            # 4. 物理状態の更新（Horseクラスのメソッドを呼び出し）
+            # 3. 物理状態の更新（Horseクラスのメソッドを呼び出し）
             horse.update_physics(self.dt, accel)
             
-            # 5. スタミナ消費
+            # 4. スタミナ消費
             self._consume_stamina(horse)
 
         self.elapsed_time += self.dt
