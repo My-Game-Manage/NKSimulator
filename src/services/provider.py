@@ -43,7 +43,7 @@ class RaceDataProvider:
             (df[RaceCol.COURSE].isin(target_courses)) & 
             (df[RaceCol.RACE_NUMBER].isin(target_race_nums))
         ]
-        self.logger.info(f"filtered -> {len(filtered_df)}")
+        self.logger.debug(f"filtered -> {len(filtered_df)}")
 
         # レース単位のリストにして返す
         race_sets = []
