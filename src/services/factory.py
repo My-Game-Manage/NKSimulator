@@ -17,7 +17,8 @@ class ContextFactory:
     COURSE_MASTER = {
         "大井": {
             "base_friction": 0.05,
-            "corner_penalty": 0.15,
+            "track_width": 25,
+            "corner_radius": 0.15,
             # 前述した大井1600mの構成例（距離に応じて動的に変えるのが理想）
             "layout_1600": [
                 {"type": "straight", "length": 300}, # スタート
@@ -29,7 +30,8 @@ class ContextFactory:
         },
         "笠松": {
             "base_friction": 0.07, # 砂が深い想定
-            "corner_penalty": 0.20, # コーナーが急な想定
+            "track_width": 20,
+            "corner_radius": 0.20, # コーナーが急な想定
             "layout_1400": [...] 
         }
     }
@@ -41,10 +43,11 @@ class ContextFactory:
         course = first_row[RaceCol.COURSE]
         condition = first_row[RaceCol.TRACK_CONDITION]
         dist = int(first_row[RaceCol.DISTANCE])
+        weather = first_row[RaceCol.WEATHER]
 
         # マスタから基本設定を取得
         master = ContextFactory.COURSE_MASTER.get(course, {
-            "base_friction": 0.05, "corner_penalty": 0.1, "layout_1600": []
+            "track_width": 25, "base_friction": 0.05, "corner_radius": 0.1, "layout_1600": []
         })
 
         # --- 馬場状態による摩擦の補正 (Normalizing) ---
@@ -56,8 +59,10 @@ class ContextFactory:
             course_name=course,
             distance=dist,
             track_condition=condition,
+            track_width=master['track_width'],
+            weather=weather,
             surface_friction=friction,
-            corner_radius=master["corner_penalty"],
+            corner_radius=master["corner_radius"],
             segments=master.get(f"layout_{dist}", []) # 距離に応じたレイアウトを取得
         )
         
