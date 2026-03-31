@@ -27,7 +27,6 @@ class RaceDataProvider:
         【メイン機能】日付・コース・レース番号を指定して、該当するレースのリストを返す
         """
         file_path = self.data_dir / f"full_races_{target_date}.csv"
-        self.logger.info(f"path: {file_path} - is exist? {file_path.exists()}")
         
         if not file_path.exists():
             self.logger.warning(f"{file_path} does not exist.")
@@ -38,12 +37,14 @@ class RaceDataProvider:
         
         # 必要に応じて前処理（以前の _preprocess 相当）をここで呼ぶ
         df = self._preprocess(df)
+        self.logger.info(f"preprocessed -> {len(df)}")
 
         # フィルタリング
         filtered_df = df[
             (df[RaceCol.COURSE].isin(target_courses)) & 
             (df[RaceCol.RACE_NUMBER].isin(target_race_nums))
         ]
+        self.logger.info(f"filtered -> {len(filtered_df)}")
 
         # レース単位のリストにして返す
         race_sets = []
