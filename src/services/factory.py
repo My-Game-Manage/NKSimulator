@@ -117,7 +117,7 @@ class HorseFactory:
         # 過去、track_conditionが「重・不良」の時の着順が良いなら高めに設定
         self.logger.info("パワー推定...")
         power_val = 1.0
-        heavy_cond_df = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不良'])]
+        heavy_cond_df = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不'])]
         self.logger.info(f"heavy: {heavy_cond_df[RaceCol.RANK]}")
         bad_track_performance = heavy_cond_df[RaceCol.RANK].mean(numeric_only=True)
         if bad_track_performance < 5.0: # 掲示板によく載っているなら
