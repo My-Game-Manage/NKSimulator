@@ -82,6 +82,7 @@ class HorseFactory:
         """
         現在の履歴データを使用してHorseインスタンスを生成
         """
+        self.logger.info("create horse processing...")
         if self.history_df is None:
             raise ValueError("History data is not loaded. Call set_history_source() first.")
 
@@ -101,6 +102,7 @@ class HorseFactory:
         
         # A. 最高速度の推定 (上がり3Fの平均から算出)
         # 例: 38.0秒なら 600/38 = 15.78 m/s。これに個体差を加味
+        self.logger.info("最高速度の推定...")
         if not past_df.empty:
             avg_last_3f = past_df[RaceCol.LAST_3F].mean(numeric_only=True)
             max_v = (600.0 / avg_last_3f) * 1.05  # スパート時は平均より速いと仮定
@@ -113,6 +115,7 @@ class HorseFactory:
 
         # C. パワー (馬場状態適性)
         # 過去、track_conditionが「重・不良」の時の着順が良いなら高めに設定
+        self.logger.info("パワー推定...")
         power_val = 1.0
         bad_track_performance = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不良'])][RaceCol.RANK].mean(numeric_only=True)
         if bad_track_performance < 5.0: # 掲示板によく載っているなら
