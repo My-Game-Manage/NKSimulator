@@ -55,5 +55,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add data/
+          git add results/
           git commit -m "Simulation Race data $(date +%Y-%m-%d)" || exit 0
           git push
