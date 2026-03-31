@@ -102,23 +102,39 @@ class HorseFactory:
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
-        
+        # TODO：加速度
+        # TODO：知能
+        # TODO：根性
+        return StaticParams(
+            max_velocity=self._calc_max_speed(past_df),
+            base_acceleration=0.8, # 加速度
+            stamina_capacity=self._calc_stamina(entry_row),
+            power=self._calc_power(past_df),
+            intelligence=1.0,
+            grit=1.0
+        )
+
+    def _calc_max_speed(self, df: pd.DataFrame) -> float:
         # A. 最高速度の推定 (上がり3Fの平均から算出)
         # 例: 38.0秒なら 600/38 = 15.78 m/s。これに個体差を加味
-        self.logger.info("最高速度の推定...")
-        if not past_df.empty:
-            avg_last_3f = past_df[RaceCol.LAST_3F].mean(numeric_only=True)
+        self.logger.debug("最高速度の推定...")
+        if not df.empty:
+            avg_last_3f = df[RaceCol.LAST_3F].mean(numeric_only=True)
             max_v = (600.0 / avg_last_3f) * 1.05  # スパート時は平均より速いと仮定
         else:
             max_v = 15.5  # データがない場合のデフォルト値
+        return max_v
 
+    def _calc_stamina(self, entry_row: pd.Series) -> float:
         # B. スタミナの推定 (距離実績から算出)
         # 過去に走った最長距離などをベースにスタミナ総量を決める
-        stamina = entry_row[RaceCol.DISTANCE] * 1.2 
+        stamina = entry_row[RaceCol.DISTANCE] * 1.2
+        return stamina
 
+    def _calc_power(self, df: pd.DataFrame) -> float:
         # C. パワー (馬場状態適性)
         # 過去、track_conditionが「重・不良」の時の着順が良いなら高めに設定
-        self.logger.info("パワー推定...")
+        self.logger.debug("パワー推定...")
         power_val = 1.0
         # 完走した（着順が1以上の）レースだけを抽出して計算
         heavy_cond_df = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不'])]
@@ -126,15 +142,7 @@ class HorseFactory:
         bad_track_performance = finished_races[RaceCol.RANK].mean(numeric_only=True)
         if bad_track_performance < 5.0: # 掲示板によく載っているなら
             power_val = 1.1
-
-        return StaticParams(
-            max_velocity=max_v,
-            base_acceleration=0.8, # 加速度
-            stamina_capacity=stamina,
-            power=power_val,
-            intelligence=1.0,
-            grit=1.0
-        )
+        return power_val
 
     def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         # 'rank' カラムの「取」「中」などを強制的に NaN に変換
