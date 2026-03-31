@@ -74,7 +74,7 @@ class RaceSimulator:
         
         # 結果の確認
         for h in horses:
-            self.logger(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
+            self.logger.info(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
 
     def _save_logs(self):
         """
