@@ -8,6 +8,12 @@ from src.core.simulator import RaceSimulator
 def convert_to_ints(data_list):
     """リスト内の要素をすべてint型に変換する関数"""
     return [int(x) for x in data_list]
+
+def fill_if_empty(data_list):
+    """リストが空なら1から12までの数字のリストに置き換える関数"""
+    if not data_list:
+        return list(range(1, 13))
+    return data_list
     
 def parse_list_arg(arg):
     """カンマ区切りの文字列をリストに変換する汎用関数"""
@@ -75,8 +81,8 @@ def main():
     #target_course_codes = convert_to_course_codes(args.course)
     target_course_codes = args.course
 
-    # レース番号をint型に修正
-    target_race_nums = convert_to_ints(args.race_num)
+    # レース番号をint型に修正し、空っぽならフル番号で埋める
+    target_race_nums = fill_if_empty(convert_to_ints(args.race_num))
     
     # シミュレーターの実行
     try:
