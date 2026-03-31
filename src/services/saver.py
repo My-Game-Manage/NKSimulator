@@ -30,6 +30,9 @@ class ResultSaver:
         last_3f = 0.0
         if horse.state.time_at_600m > 0:
             last_3f = finish_time - horse.state.time_at_600m
+        
+        # リストをハイフン繋ぎの文字列に変換
+        passing_order_str = "-".join(map(str, horse.state.passing_ranks))
             
         record = {
             RaceCol.COURSE: context.course_name,
@@ -45,6 +48,7 @@ class ResultSaver:
             "avg_velocity": round(context.distance / finish_time, 2) if finish_time > 0 else 0,
             "max_velocity": round(horse.params.max_velocity, 2),
             RaceCol.LAST_3F: round(last_3f, 2), # schema.pyの定数を使用
+            RaceCol.PASSING_ORDER: passing_order_str, # schema.py の定数を使用
         }
         self.results.append(record)
 
