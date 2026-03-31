@@ -35,7 +35,7 @@ class RaceSimulator:
         # 前述のロジックで [ {RaceCol.COURSE: "大井", RaceCol.ENTRIES: df}, ... ] が返る
         race_sets = provider.get_race_data_sets(target_date, course_filter, race_num_filter)
 
-        self.logger.debugf"race_data_sets: {race_data_sets}")
+        self.logger.debug(f"race_data_sets: {race_data_sets}")
         
         # 2. 過去データ（履歴）の読み込み (HorseFactory用)
         # 実際にはこれもProvider経由で取得するのが望ましいです
