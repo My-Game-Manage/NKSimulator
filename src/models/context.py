@@ -10,6 +10,7 @@ from typing import List, Dict
 class RaceContext:
     # CSVから取得する動的情報
     course_name: str
+    race_number: int
     distance: int
     track_condition: str  # 良, 稍, 重, 不
     weather: str
