@@ -51,6 +51,7 @@ class RaceSimulator:
                 # インスタンス化済みのfactoryから馬を生成
                 horse = self._entry_horse(horse_factory, row)
                 horses.append(horse)
+                self.logger.info(f"appended horse: {horse}")
             
             # 馬がいない場合は次のレースへ
             if not horses: continue
