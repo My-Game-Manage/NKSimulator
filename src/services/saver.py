@@ -37,6 +37,8 @@ class ResultSaver:
             RaceCol.SURFACE: context.surface,
             RaceCol.DISTANCE: context.distance,
             RaceCol.HORSE_ID: horse.horse_id,
+            RaceCol.BRACKET_NUM: horse.bracket_num,
+            RaceCol.HORSE_NUM: horse.horse_num,
             RaceCol.HORSE_NAME: horse.name,
             RaceCol.TIME: round(finish_time, 2),
             "remaining_stamina": round(horse.state.current_stamina, 2),
