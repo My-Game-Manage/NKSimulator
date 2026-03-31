@@ -41,6 +41,7 @@ class ContextFactory:
         # 全馬共通の情報なので、最初の1行を参照
         first_row = race_df.iloc[0]
         course = first_row[RaceCol.COURSE]
+        race_num = first_row[RaceCol.RACE_NUMBER]
         condition = first_row[RaceCol.TRACK_CONDITION]
         dist = int(first_row[RaceCol.DISTANCE])
         weather = first_row[RaceCol.WEATHER]
@@ -57,6 +58,7 @@ class ContextFactory:
 
         return RaceContext(
             course_name=course,
+            race_number=race_num,
             distance=dist,
             track_condition=condition,
             track_width=master['track_width'],
