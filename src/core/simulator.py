@@ -27,6 +27,8 @@ class RaceSimulator:
         """
         self.logger.info("実行中...")
 
+        self.logger.info(f"{target_date}\n{course_filter}\n{race_num_filter}")
+
         race_data_sets = self.provider.get_race_data_sets(target_date, course_filter, race_num_filter)
         self.logger.info(f"race_data_sets: {race_data_sets}")
 
