@@ -4,61 +4,61 @@ provider.py の概要
 出馬表のCSVを読み込み、レース情報を作成する
 """
 import pandas as pd
+from pathlib import Path
+from typing import List, Dict
+from utils.logger import setup_logger
 
 from constants.schema import RaceCol
 
 
 class RaceDataProvider:
-    def __init__(self, full_races_csv_path):
+def __init__(self, data_dir: str = "data"):
         """
-        出走表CSVを読み込み、メモリに保持する
+        特定のファイルパスではなく、データが格納されているディレクトリを保持する
         """
-        self.df = pd.read_csv(full_races_csv_path)
-        self._preprocess()
+        _CLASSNAME = "RaceDataProvider"
+        # クラス名を名前としてロガーを作成
+        self.logger = setup_logger(_CLASSNAME)
+    
+        self.data_dir = Path(data_dir)
 
-    def _preprocess(self):
+    def get_race_data_sets(self, target_date: str, target_courses: List[str], target_race_nums: List[int]) -> List[Dict]:
         """
-        日付の型変換や、欠損値の補完など、抽出前の下準備を行う（中身は空でOK）
+        【メイン機能】日付・コース・レース番号を指定して、該当するレースのリストを返す
         """
-        pass
-
-    def get_race_entries(self, course: str, race_number: int):
-        """
-        指定された会場とレース番号に合致する行を抽出し、
-        扱いやすい辞書のリスト形式で返す
-        """
-        # 条件に合致する行をフィルタリング
-        race_df = self.df[
-            (self.df[RaceCol.COURSE] == course) & 
-            (self.df[RaceCol.RACE_NUMBER] == race_number)
-        ]
+        file_path = self.data_dir / f"full_races_{target_date}.csv"
         
-        # エンジンやFactoryが扱いやすいように、1行＝1辞書のリストに変換
-        return race_df.to_dict(orient='records')
+        if not file_path.exists():
+            self.logger.warning(f"{file_path} does not exist.")
+            return []
 
-    def get_race_info(self, course: str, race_number: int):
-        """
-        馬のリストではなく、レース全体の情報（距離、馬場状態など）を取得する
-        """
-        race_df = self.df[
-            (self.df[RaceCol.COURSE] == course) & 
-            (self.df[RaceCol.RACE_NUMBER] == race_number)
-        ]
+        # ここで読み込み（以前の __init__ でやっていた処理をここに移動）
+        df = pd.read_csv(file_path)
         
-        if race_df.empty:
-            return None
-            
-        # 最初の1行からレース共通情報を抽出
-        first_row = race_df.iloc[0]
-        return {
-            RaceCol.DISTANCE: first_row[RaceCol.DISTANCE],
-            RaceCol.SURFACE: first_row[RaceCol.SURFACE],
-            RaceCol.TRACK_CONDITION: first_row[RaceCol.TRACK_CONDITION],
-            RaceCol.NUM_HORSES: first_row[RaceCol.NUM_HORSES]
-        }
+        # 必要に応じて前処理（以前の _preprocess 相当）をここで呼ぶ
+        df = self._preprocess(df)
 
-    def get_all_race_numbers(self, course: str):
+        # フィルタリング
+        filtered_df = df[
+            (df[RaceCol.COURSE].isin(target_courses)) & 
+            (df[RaceCol.RACE_NUMBER].isin(target_race_nums))
+        ]
+
+        # レース単位のリストにして返す
+        race_sets = []
+        grouped = filtered_df.groupby([RaceCol.COURSE, RaceCol.RACE_NUMBER])
+        for (course, num), group in grouped:
+            race_sets.append({
+                RaceCol.COURSE: course,
+                RaceCol.RACE_NUMBER: num,
+                "entries": group  # DataFrameのまま渡すとFactoryで扱いやすいです
+            })
+        return race_sets
+
+    def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        その会場でその日に行われる全レース番号を取得する（12レースあるか等の確認用）
+        型変換や欠損値処理など、読み込み直後の共通処理
         """
-        return sorted(self.df[self.df[RaceCol.COURSE] == course][RaceCol.RACE_NUMBER].unique())
+        # 例: race_number を確実に数値型にするなど
+        df[RaceCol.RACE_NUMBER] = df[RaceCol.RACE_NUMBER].astype(int)
+        return df
