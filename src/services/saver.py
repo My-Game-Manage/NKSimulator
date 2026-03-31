@@ -66,5 +66,5 @@ class ResultSaver:
         """
         簡易結果表示
         """
-        for row in df.columns:
-            self.logger.info(f"{row[RaceCol.RANK]} | {row[RaceCol.HORSE_NAME]} | {row[RaceCol.TIME]:.1f} | {row['remaining_stamina']:.1f} | {row['ave_velocity']:.1f}")
+        pd.set_option('display.float_format', '{:.2f}'.format)
+        print(df)
