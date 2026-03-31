@@ -74,7 +74,8 @@ class RaceEngine:
             horse.update_physics(self.dt, accel)
             
             # 4. スタミナ消費
-            self._consume_stamina(horse)
+            #self._consume_stamina(horse)
+            self._consume_stamina_hard(horse)
 
         self.elapsed_time += self.dt
         self.is_finished = all_finished
@@ -142,6 +143,20 @@ class RaceEngine:
         if horse.state.current_stamina < 0:
             horse.state.current_stamina = 0
             
+    def _consume_stamina_hard(self, horse):
+        # 速度の2.5乗くらいにすると、高速域での消費が劇的に増えます
+        speed_factor = horse.state.current_velocity ** 2.5
+    
+        # スパート中はさらに係数を上げる
+        multiplier = 3.0 if horse.state.is_spurt else 1.0
+    
+        # 定数（0.01）を調整して、ゴール時にスタミナがほぼ0になるよう追い込む
+        loss = speed_factor * 0.02 * multiplier * self.dt
+        horse.state.current_stamina -= loss
+    
+        if horse.state.current_stamina < 0:
+            horse.state.current_stamina = 0
+        
     def run_race(self):
         """全馬がゴールするまでループ"""
         self.logger.info(f"Race Start: {self.context.distance}m")
