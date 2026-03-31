@@ -17,6 +17,10 @@ class HorseState:
     is_spurt: bool = False         # スパート中か
     is_exhausted: bool = False     # バテているか
     current_lane: int = 1          # 現在走っているレーン
+    
+    # --- 計測用に追加 ---
+    time_at_600m: float = 0.0  # 残り600m地点を通過した時の時刻
+    last_3f_time: float = 0.0  # 算出された上がり3Fタイム
   
 class Horse:
     def __init__(self, horse_id: str, name: str, params: StaticParams):
