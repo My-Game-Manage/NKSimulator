@@ -87,6 +87,7 @@ class RaceSimulator:
         # 全レース終了後にまとめて保存
         save_file = f"simulation_{date}.csv"
         final_df = saver.save_to_csv(save_file)
+        self.logger.info(f"Result: {final_df}")
 
     def _entry_horse(self, factory: HorseFactory, row):
         """
