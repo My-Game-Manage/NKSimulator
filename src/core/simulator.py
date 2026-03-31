@@ -46,24 +46,29 @@ class RaceSimulator:
         for race_data in race_data_sets:
             entries_df = race_data[RaceCol.ENTRIES]
             
-            horses = []
-            for _, row in entries_df.iterrows():
-                # インスタンス化済みのfactoryから馬を生成
-                horse = self._entry_horse(horse_factory, row)
-                horses.append(horse)
-                self.logger.info(f"appended horse: {horse.name}/{horse.horse_id}/{horse.params}")
-            
+            # 1. コンテキストの作成（レース全体の環境）
+            context = ContextFactory.create_from_df(entries_df)
+
+            # 2. 馬たちの作成（個体ごとの能力）
+            horses = [horse_factory.create_horse(row) for _, row in entries_df.iterrows()]
+
             # 馬がいない場合は次のレースへ
             if not horses: continue
-            
+
+            # 3. エンジンへの投入
+            engine = RaceEngine(context, horses)
+            self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
+                        
             # シミュレーション実行へ...
+            self._run_simulation(context, horses)
 
         self._save_logs()
         
-    def _runn_simulation(self, race_context):
+    def _run_simulation(self, context: RaceContext, horses: list):
         """
         1回のレースのシミュレーションを行う
         """
+        self.logger.info("シミュレーション開始...")
         pass
 
     def _save_logs(self):
