@@ -51,7 +51,7 @@ def __init__(self, data_dir: str = "data"):
             race_sets.append({
                 RaceCol.COURSE: course,
                 RaceCol.RACE_NUMBER: num,
-                "entries": group  # DataFrameのまま渡すとFactoryで扱いやすいです
+                RaceCol.ENTRIES: group  # DataFrameのまま渡すとFactoryで扱いやすいです
             })
         return race_sets
 
