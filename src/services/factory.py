@@ -91,10 +91,8 @@ class HorseFactory:
         # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
 
-        # 前処理
-        past_df = self._preprocess(past_performances)
         # 能力計算
-        params = self._calculate_params(past_df, entry_row)
+        params = self._calculate_params(past_performances, entry_row)
         
         return Horse(horse_id=horse_id, name=name, params=params)
 
@@ -104,7 +102,7 @@ class HorseFactory:
         # A. 最高速度の推定 (上がり3Fの平均から算出)
         # 例: 38.0秒なら 600/38 = 15.78 m/s。これに個体差を加味
         if not past_df.empty:
-            avg_last_3f = past_df[RaceCol.LAST_3F].mean()
+            avg_last_3f = past_df[RaceCol.LAST_3F].mean(numeric_only=True)
             max_v = (600.0 / avg_last_3f) * 1.05  # スパート時は平均より速いと仮定
         else:
             max_v = 15.5  # データがない場合のデフォルト値
@@ -116,7 +114,7 @@ class HorseFactory:
         # C. パワー (馬場状態適性)
         # 過去、track_conditionが「重・不良」の時の着順が良いなら高めに設定
         power_val = 1.0
-        bad_track_performance = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不良'])][RaceCol.RANK].mean()
+        bad_track_performance = past_df[past_df[RaceCol.TRACK_CONDITION].isin(['重', '不良'])][RaceCol.RANK].mean(numeric_only=True)
         if bad_track_performance < 5.0: # 掲示板によく載っているなら
             power_val = 1.1
 
@@ -128,11 +126,3 @@ class HorseFactory:
             intelligence=1.0,
             grit=1.0
         )
-
-    def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        型変換や欠損値処理など、読み込み直後の共通処理
-        """
-        # 例: race_number を確実に数値型にするなど
-        df[RaceCol.LAST_3F] = df[RaceCol.LAST_3F].astype(float)
-        return df
