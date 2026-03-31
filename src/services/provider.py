@@ -27,6 +27,7 @@ class RaceDataProvider:
         【メイン機能】日付・コース・レース番号を指定して、該当するレースのリストを返す
         """
         file_path = self.data_dir / f"full_races_{target_date}.csv"
+        self.logger.info(f"path: {file_path} - is exist? {file_path.exitst()}")
         
         if not file_path.exists():
             self.logger.warning(f"{file_path} does not exist.")
