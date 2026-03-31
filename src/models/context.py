@@ -12,6 +12,7 @@ class RaceContext:
     course_name: str
     race_number: int
     distance: int
+    surface: str
     track_condition: str  # 良, 稍, 重, 不
     weather: str
     
