@@ -23,10 +23,10 @@ class HorseState:
     last_3f_time: float = 0.0  # 算出された上がり3Fタイム
   
 class Horse:
-    def __init__(self, horse_id: str, name: str, gate_num: int, horse_num: int, params: StaticParams):
+    def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams):
         self.horse_id = horse_id
         self.name = name
-        self.gate_num = gate_num
+        self.gbracket_num = bracket_num
         self.horse_num = horse_num
         self.params = params
         
