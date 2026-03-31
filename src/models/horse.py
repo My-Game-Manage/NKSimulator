@@ -21,6 +21,7 @@ class HorseState:
     # --- 計測用に追加 ---
     time_at_600m: float = 0.0  # 残り600m地点を通過した時の時刻
     last_3f_time: float = 0.0  # 算出された上がり3Fタイム
+    passing_ranks: list = []  # 通過順位を格納するリスト [2, 2, 3] のようなイメージ
   
 class Horse:
     def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams):
