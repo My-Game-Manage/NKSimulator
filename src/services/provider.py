@@ -12,7 +12,7 @@ from constants.schema import RaceCol
 
 
 class RaceDataProvider:
-def __init__(self, data_dir: str = "data"):
+    def __init__(self, data_dir: str = "data"):
         """
         特定のファイルパスではなく、データが格納されているディレクトリを保持する
         """
