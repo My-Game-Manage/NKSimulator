@@ -47,6 +47,8 @@ class RaceCol:
     MOTHER = "mother_name"
     # --- タグ処理用追加 ---
     RACE_DATA = "race_data"
+    # --- 管理・構造用に追加 ---
+    ENTRIES = "entries"  # 出走馬リスト用のキー
 
     # --- 日本語戻しマッピング (表示・出力用) ---
     TO_JAPANESE = {
@@ -82,5 +84,7 @@ class RaceCol:
         PRIZE: "賞金",
         FATHER: "父馬",
         MOTHER: "母馬",
+        # プログラム用の追加分
         RACE_DATA: "レース情報",
+        ENTRIES: "出走馬一覧",
     }
