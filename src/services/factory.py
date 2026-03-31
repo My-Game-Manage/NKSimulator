@@ -131,7 +131,7 @@ class HorseFactory:
         stamina = entry_row[RaceCol.DISTANCE] * 1.2
         return stamina
 
-    def _calc_power(self, df: pd.DataFrame) -> float:
+    def _calc_power(self, past_df: pd.DataFrame) -> float:
         # C. パワー (馬場状態適性)
         # 過去、track_conditionが「重・不良」の時の着順が良いなら高めに設定
         self.logger.debug("パワー推定...")
