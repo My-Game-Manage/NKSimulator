@@ -92,8 +92,11 @@ class HorseFactory:
         # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
 
+        # 前処理
+        past_df = self._preprocess(past_performances)
+
         # 能力計算
-        params = self._calculate_params(past_performances, entry_row)
+        params = self._calculate_params(past_df, entry_row)
         
         return Horse(horse_id=horse_id, name=name, params=params)
 
@@ -131,3 +134,8 @@ class HorseFactory:
             intelligence=1.0,
             grit=1.0
         )
+
+    def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
+        # 'rank' カラムの「取」「中」などを強制的に NaN に変換
+        df[RaceCol.RANK] = pd.to_numeric(df[RaceCol.RANK], errors='coerce')
+        return df
