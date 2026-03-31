@@ -68,7 +68,8 @@ def main():
     target_date = normalize_date_format(args.date)
 
     # 会場指定（名前またはコード）をすべてコードに変換
-    target_course_codes = convert_to_course_codes(args.course)
+    #target_course_codes = convert_to_course_codes(args.course)
+    target_course_codes = args.course
     
     # シミュレーターの実行
     try:
