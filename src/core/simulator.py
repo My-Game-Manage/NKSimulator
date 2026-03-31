@@ -6,7 +6,8 @@ simulator.py の概要
 3. 実行管理：RaceEngine でゴールするまでループを回す
 4. ログなどの記録
 """
-from src.utils.logger import setup_logger
+from utils.logger import setup_logger
+from services.provider import RaceDataProvider
 
 class RaceSimulator:
     def __init__(self):
@@ -16,6 +17,8 @@ class RaceSimulator:
 
         self.logger.info("初期化中...")
 
+        self.provider = RaceDataProvider()
+
         self._racing_contexts = []
 
     def run(self, target_date=None, course_filter=None, race_num_filter=None):
@@ -24,8 +27,11 @@ class RaceSimulator:
         """
         self.logger.info("実行中...")
 
-        for ctx in self._racing_contexts:
-            self._running_simulator(ctx)
+        race_data_sets = self.provider.get_race_data_sets(target_date, course_filter, race_num_filter)
+        self.logger.info(f"race_data_sets: {race_data_sets}")
+
+        #for ctx in self._racing_contexts:
+        #    self._running_simulator(ctx)
 
         self._save_logs()
         
