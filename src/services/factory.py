@@ -110,6 +110,8 @@ class HorseFactory:
 
         horse_id = entry_row[RaceCol.HORSE_ID]
         name = entry_row[RaceCol.HORSE_NAME]
+        bracket_num =  entry_row[RaceCol.BRACKET_NUM]
+        horse_num =  entry_row[RaceCol.HORSE_NUM]
         
         # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
@@ -120,7 +122,7 @@ class HorseFactory:
         # 能力計算
         params = self._calculate_params(past_df, entry_row)
         
-        return Horse(horse_id=horse_id, name=name, params=params)
+        return Horse(horse_id=horse_id, name=name, bracket_num=bracket_num, horse_num=hores_num, params=params)
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
