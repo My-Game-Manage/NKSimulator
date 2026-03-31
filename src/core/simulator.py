@@ -43,7 +43,7 @@ class RaceSimulator:
         horse_factory.set_history_source(self._get_horse_source(target_date))
 
         # 3. レースエントリー毎の処理
-        for race_data in race_sets:
+        for race_data in race_data_sets:
             entries_df = race_data[RaceCol.ENTRIES]
             
             horses = []
