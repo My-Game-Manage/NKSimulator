@@ -129,7 +129,7 @@ class HorseFactory:
         # TODO：根性
         return StaticParams(
             max_velocity=self._calc_max_speed(past_df),
-            base_acceleration=0.8, # 加速度
+            base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
             stamina_capacity=self._calc_stamina(entry_row),
             power=self._calc_power(past_df),
             intelligence=1.0,
@@ -142,9 +142,9 @@ class HorseFactory:
         self.logger.debug("最高速度の推定...")
         if not df.empty:
             avg_last_3f = df[RaceCol.LAST_3F].mean(numeric_only=True)
-            max_v = (600.0 / avg_last_3f) * 1.05  # スパート時は平均より速いと仮定
+            max_v = (SimConfig.SPURT_DISTANCE / avg_last_3f) * SimConfig.MAX_VELOCITY_COEFF  # スパート時は平均より速いと仮定
         else:
-            max_v = 15.5  # データがない場合のデフォルト値
+            max_v = SimConfig.DEFAULT_MAX_VELOCITY  # データがない場合のデフォルト値
         return max_v
 
     def _calc_stamina(self, entry_row: pd.Series) -> float:
