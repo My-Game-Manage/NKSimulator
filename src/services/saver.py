@@ -61,3 +61,10 @@ class ResultSaver:
         df.to_csv(save_path, index=False, encoding="utf-8-sig")
         self.logger.info(f"結果を保存しました: {save_path}")
         return df
+        
+    def display_result(self, df: pd.DataFrame):
+        """
+        簡易結果表示
+        """
+        for row in df.columns:
+            self.logger.info(f"{row[RaceCol.RANK]} | {row[RaceCol.HORSE_NAME]} | {row[RaceCol.TIME]} | {row['remaining_stamina']} | {row['ave_velocity']}")
