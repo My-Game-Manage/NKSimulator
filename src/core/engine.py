@@ -102,21 +102,26 @@ class RaceEngine:
         スパートロジックを組み込んだ加速度計算
         """
         # 1. 基本となる目標速度（StaticParamsから取得）
-        target_v = horse.params.max_velocity
+        base_v = horse.params.max_velocity
     
         # 2. スパート判定 (残り距離 600m を基準)
         remaining_dist = self.context.distance - horse.state.current_position
-    
+        
         # 馬の知能(intelligence)によってスパート開始位置を前後させる (例: 1.0なら600m)
         spurt_line = SimConfig.SPURT_DISTANCE * horse.params.intelligence 
     
-        if remaining_dist <= spurt_line and not horse.state.is_exhausted:
-            horse.state.is_spurt = True
-            # スパート時は最高速度をさらに引き上げる (根性値を加味)
-            target_v += (SimConfig.SPURT_SPEED_BOOST * horse.params.grit) 
+        #if remaining_dist <= spurt_line and not horse.state.is_exhausted:
+        #    horse.state.is_spurt = True
+        #    # スパート時は最高速度をさらに引き上げる (根性値を加味)
+        #    target_v += (SimConfig.SPURT_SPEED_BOOST * horse.params.grit) 
+        if remaining_dist <= SimConfig.SPURT_DISTANCE:
+            # スパート時の上乗せを最小限にする
+            target_v = base_v + SimConfig.SPURT_SPEED_BOOST
         else:
             # 道中はスタミナ温存のため、最高速度の 90% 程度に抑える
-            target_v *= SimConfig.CRUISING_SPEED_COEFF
+            #target_v *= SimConfig.CRUISING_SPEED_COEFF
+            # 道中を base_v より速く設定し、スタミナを削りながらタイムを稼ぐ
+            target_v = base_v * SimConfig.CRUISING_SPEED_COEFF
 
         # 3. コーナーペナルティの適用
         if segment_type == "curve":
