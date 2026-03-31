@@ -3,7 +3,7 @@ horse.py の概要
 
 馬の色々な状態について管理するクラス
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from src.models.params import StaticParams
 
