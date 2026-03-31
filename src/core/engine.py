@@ -89,20 +89,41 @@ class RaceEngine:
         return "straight" # 予備
 
     def _calculate_acceleration(self, horse, segment_type: str) -> float:
-        """加速度の決定ロジック"""
+        """
+        スパートロジックを組み込んだ加速度計算
+        """
+        # 1. 基本となる目標速度（StaticParamsから取得）
         target_v = horse.params.max_velocity
-        
-        # コーナーなら減速ペナルティを適用
+    
+        # 2. スパート判定 (残り距離 600m を基準)
+        remaining_dist = self.context.distance - horse.state.current_position
+    
+        # 馬の知能(intelligence)によってスパート開始位置を前後させる (例: 1.0なら600m)
+        spurt_line = 600 * horse.params.intelligence 
+    
+        if remaining_dist <= spurt_line and not horse.state.is_exhausted:
+            horse.state.is_spurt = True
+            # スパート時は最高速度をさらに引き上げる (根性値を加味)
+            target_v += (1.5 * horse.params.grit) 
+        else:
+            # 道中はスタミナ温存のため、最高速度の 90% 程度に抑える
+            target_v *= 0.9
+
+        # 3. コーナーペナルティの適用
         if segment_type == "curve":
             target_v -= self.context.corner_radius
-            
-        # スタミナ切れなら大幅減速
+
+        # 4. スタミナ切れ（バテ）の判定
         if horse.state.current_stamina <= 0:
-            target_v *= 0.6
-            
-        # P制御に近い簡易的な加速（目標速度に近づける）
+            horse.state.is_exhausted = True
+            horse.state.is_spurt = False
+            target_v *= 0.5  # 大幅な減速
+        
+        # 5. 現在速度との差分から加速度を決定
         v_diff = target_v - horse.state.current_velocity
-        return v_diff * horse.params.base_acceleration - self.context.surface_friction
+        accel = v_diff * horse.params.base_acceleration - self.context.surface_friction
+    
+        return accel
 
     def _consume_stamina(self, horse):
         """速度に応じたスタミナ消費"""
