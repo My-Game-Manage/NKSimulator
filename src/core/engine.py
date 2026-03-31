@@ -65,7 +65,7 @@ class RaceEngine:
         
         # コーナーなら減速ペナルティを適用
         if segment_type == "curve":
-            target_v -= self.context.corner_penalty
+            target_v -= self.context.corner_radius
             
         # スタミナ切れなら大幅減速
         if horse.state.current_stamina <= 0:
