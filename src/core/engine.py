@@ -23,12 +23,13 @@ engine.py の概要
 from typing import List
 
 from utils.logger import setup_logger
+from constants.config import SimConfig
 from models.horse import Horse
 from models.context import RaceContext
 from services.saver import ResultSaver
 
 class RaceEngine:
-    def __init__(self, context: RaceContext, participants: List[Horse], saver: ResultSaver, dt: float = 0.1):
+    def __init__(self, context: RaceContext, participants: List[Horse], saver: ResultSaver, dt: float = SimConfig.DT):
         _CLASSNAME = "Engine"
         # クラス名を名前としてロガーを作成
         self.logger = setup_logger(_CLASSNAME)
@@ -107,15 +108,15 @@ class RaceEngine:
         remaining_dist = self.context.distance - horse.state.current_position
     
         # 馬の知能(intelligence)によってスパート開始位置を前後させる (例: 1.0なら600m)
-        spurt_line = 600 * horse.params.intelligence 
+        spurt_line = SimConfig.SPURT_DISTANCE * horse.params.intelligence 
     
         if remaining_dist <= spurt_line and not horse.state.is_exhausted:
             horse.state.is_spurt = True
             # スパート時は最高速度をさらに引き上げる (根性値を加味)
-            target_v += (1.5 * horse.params.grit) 
+            target_v += (SimConfig.SPURT_SPEED_BOOST * horse.params.grit) 
         else:
             # 道中はスタミナ温存のため、最高速度の 90% 程度に抑える
-            target_v *= 0.9
+            target_v *= SimConfig.CRUISING_SPEED_COEFF
 
         # 3. コーナーペナルティの適用
         if segment_type == "curve":
@@ -133,66 +134,30 @@ class RaceEngine:
     
         return accel
         
-    def _calculate_acceleration_hard(self, horse, segment_type: str) -> float:
-        # 1. 基本最高速度
-        base_v = horse.params.max_velocity
-        remaining_dist = self.context.distance - horse.state.current_position
-    
-        # 2. スパート判定（残り600m以下 かつ スタミナに余裕がある）
-        # スタミナ残量に応じてスパートの「強さ」を変える
-        if remaining_dist <= 600 and horse.state.current_stamina > 0:
-            horse.state.is_spurt = True
-        
-            # 【調整ポイント】スタミナが余っているほど目標速度を上乗せする
-            # 例: 残スタミナ / 500 を速度に加算（4000残っていれば +8m/s）
-            stamina_bonus = horse.state.current_stamina / 500.0
-            target_v = base_v + (horse.params.grit * 2.0) + stamina_bonus
-        
-        else:
-            # 道中も少しペースを上げる（0.9 → 0.95）
-            target_v = base_v * 0.95
-
-        # 3. コーナー等の補正（既存ロジック）
-        if segment_type == "curve":
-            target_v -= self.context.corner_penalty
-        
-        if horse.state.current_stamina <= 0:
-            target_v *= 0.5  # バテ
-        
-        v_diff = target_v - horse.state.current_velocity
-        return v_diff * horse.params.base_acceleration - self.context.surface_friction
-
     def _consume_stamina(self, horse):
         """
         スパート中の激しい消費をシミュレート
         """
         # 速度の2乗に比例した基本消費
-        base_loss = (horse.state.current_velocity ** 2) * 0.005
+        #base_loss = (horse.state.current_velocity ** 2) * 0.005
+        # 速度の2乗に戻す（安定性のため）
+        speed_factor = horse.state.current_velocity ** 2
     
         # スパート中は消費を 1.5倍〜2.0倍 に増やす
-        multiplier = 2.0 if horse.state.is_spurt else 1.0
+        #multiplier = 2.0 if horse.state.is_spurt else 1.0
+        # スパート中の倍率を 1.5倍 程度に抑える
+        multiplier = 1.5 if horse.state.is_spurt else 1.0
     
         # 最終的な消費量
-        loss = base_loss * multiplier * self.dt
+        #loss = base_loss * multiplier * self.dt
+        #horse.state.current_stamina -= loss
+        # 係数を 0.008 前後に調整（1600m走るのに適した消費量）
+        loss = speed_factor * SimConfig.STAMINA_LOSS_COEFF * multiplier * self.dt
         horse.state.current_stamina -= loss
     
         if horse.state.current_stamina < 0:
             horse.state.current_stamina = 0
             
-    def _consume_stamina_hard(self, horse):
-        # 速度の2.5乗くらいにすると、高速域での消費が劇的に増えます
-        speed_factor = horse.state.current_velocity ** 2.5
-    
-        # スパート中はさらに係数を上げる
-        multiplier = 3.0 if horse.state.is_spurt else 1.0
-    
-        # 定数（0.01）を調整して、ゴール時にスタミナがほぼ0になるよう追い込む
-        loss = speed_factor * 0.02 * multiplier * self.dt
-        horse.state.current_stamina -= loss
-    
-        if horse.state.current_stamina < 0:
-            horse.state.current_stamina = 0
-        
     def run_race(self):
         """全馬がゴールするまでループ"""
         self.logger.info(f"Race Start: {self.context.distance}m")
