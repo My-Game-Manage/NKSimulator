@@ -9,7 +9,7 @@ engine.py の概要
     馬の現在位置（current_position）を、コース全体のレイアウト（segments）と照合します。
     「今、自分が直線にいるのか、コーナーにいるのか」という環境情報を確定させます。
 2. 加速度の算出 (_calculate_acceleration)
-    目標速度の決定: 基本は馬の最高速度（max_velocity）ですが、コーナーであれば corner_penalty を差し引き、スタミナ切れならデバフをかけます。
+    目標速度の決定: 基本は馬の最高速度（max_velocity）ですが、コーナーであれば corner_radius を差し引き、スタミナ切れならデバフをかけます。
     駆動力の計算: 目標速度と現在速度の差分（v_diff）に、馬固有の加速能力（base_acceleration）を掛け合わせます。
     環境抵抗の減算: 算出された力から、馬場状態による抵抗（surface_friction）をマイナスします。
 3. 物理状態の更新 (update_physics)
@@ -148,7 +148,7 @@ class RaceEngine:
 
         # 3. コーナー等の補正（既存ロジック）
         if segment_type == "curve":
-            target_v -= self.context.corner_penalty
+            target_v -= self.context.corner_radius
         
         if horse.state.current_stamina <= 0:
             target_v *= 0.5  # バテ
