@@ -55,11 +55,7 @@ class RaceSimulator:
 
             # 馬がいない場合は次のレースへ
             if not horses: continue
-
-            # 3. エンジンへの投入
-            engine = RaceEngine(context, horses)
-            self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
-                        
+                    
             # シミュレーション実行へ...
             self._run_simulation(context, horses)
 
@@ -70,7 +66,14 @@ class RaceSimulator:
         1回のレースのシミュレーションを行う
         """
         self.logger.info("シミュレーション開始...")
-        pass
+        # エンジン起動
+        engine = RaceEngine(context, horses)
+        self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
+        engine.run_race()
+        
+        # 結果の確認
+        for h in horses:
+            self.logger(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
 
     def _save_logs(self):
         """
