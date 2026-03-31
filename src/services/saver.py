@@ -26,6 +26,11 @@ class ResultSaver:
         """
         馬がゴールした瞬間のデータを記録する
         """
+        # 上がり3Fの計算
+        last_3f = 0.0
+        if horse.state.time_at_600m > 0:
+            last_3f = finish_time - horse.state.time_at_600m
+            
         record = {
             RaceCol.COURSE: context.course_name,
             RaceCol.RACE_NUMBER: getattr(context, 'race_number', 0), # Contextに持たせておくと便利
@@ -35,7 +40,8 @@ class ResultSaver:
             RaceCol.HORSE_NAME: horse.name,
             RaceCol.TIME: round(finish_time, 2),
             "remaining_stamina": round(horse.state.current_stamina, 2),
-            "avg_velocity": round(context.distance / finish_time, 2) if finish_time > 0 else 0
+            "avg_velocity": round(context.distance / finish_time, 2) if finish_time > 0 else 0,
+            RaceCol.LAST_3F: round(last_3f, 2), # schema.pyの定数を使用
         }
         self.results.append(record)
 
