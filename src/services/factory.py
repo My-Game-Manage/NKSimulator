@@ -8,6 +8,7 @@ from pathlib import Path
 
 from utils.logger import setup_logger
 from constants.schema import RaceCol
+from constants.config import SimConfig
 from models.context import RaceContext
 from models.horse import Horse
 from models.params import StaticParams
@@ -18,7 +19,7 @@ class ContextFactory:
         "大井": {
             "base_friction": 0.05,
             "track_width": 25,
-            "corner_radius": 0.15,
+            "corner_penalty": 0.15,
             # 前述した大井1600mの構成例（距離に応じて動的に変えるのが理想）
             "layout_1600": [
                 {"type": "straight", "length": 300}, # スタート
@@ -31,7 +32,7 @@ class ContextFactory:
         "笠松": {
             "base_friction": 0.07, # 砂が深い想定
             "track_width": 20,
-            "corner_radius": 0.20, # コーナーが急な想定
+            "corner_penalty": 0.20, # コーナーが急な想定
             "layout_1400": [...] 
         }
     }
@@ -49,7 +50,7 @@ class ContextFactory:
 
         # マスタから基本設定を取得
         master = ContextFactory.COURSE_MASTER.get(course, {
-            "track_width": 25, "base_friction": 0.05, "corner_radius": 0.1, "layout_1600": []
+            "track_width": 25, "base_friction": 0.05, "corner_penalty": 0.1, "layout_1600": []
         })
 
         # --- 馬場状態による摩擦の補正 (Normalizing) ---
@@ -66,7 +67,7 @@ class ContextFactory:
             track_width=master['track_width'],
             weather=weather,
             surface_friction=friction,
-            corner_radius=master["corner_radius"],
+            corner_penalty=master["corner_penalty"],
             segments=master.get(f"layout_{dist}", []) # 距離に応じたレイアウトを取得
         )
         
