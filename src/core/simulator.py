@@ -12,6 +12,7 @@ from models.context import RaceContext
 from services.provider import RaceDataProvider
 from services.factory import ContextFactory, HorseFactory
 from core.engine import RaceEngine
+from services.saver import ResultSaver
 
 class RaceSimulator:
     def __init__(self):
@@ -30,6 +31,9 @@ class RaceSimulator:
         self.logger.info("実行中...")
 
         self.logger.debug(f"{target_date}\n{course_filter}\n{race_num_filter}")
+
+        # 記録の起動
+        saver = ResultSaver()
 
         # 1. データの取得
         provider = RaceDataProvider(data_dir="data")
@@ -58,17 +62,17 @@ class RaceSimulator:
             if not horses: continue
                     
             # シミュレーション実行へ...
-            self._run_simulation(context, horses)
+            self._run_simulation(context, horses, saver)
 
         self._save_logs()
         
-    def _run_simulation(self, context: RaceContext, horses: list):
+    def _run_simulation(self, context: RaceContext, horses: list, saver: ResultSaver):
         """
         1回のレースのシミュレーションを行う
         """
         self.logger.info("シミュレーション開始...")
         # エンジン起動
-        engine = RaceEngine(context, horses)
+        engine = RaceEngine(context, horses, saver=saver)
         self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
         engine.run_race()
         
