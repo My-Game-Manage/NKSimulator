@@ -28,8 +28,9 @@ class ResultSaver:
         """
         record = {
             RaceCol.COURSE: context.course_name,
-            RaceCol.DISTANCE: context.distance,
             RaceCol.RACE_NUMBER: getattr(context, 'race_number', 0), # Contextに持たせておくと便利
+            RaceCol.SURFACE: context.surface,
+            RaceCol.DISTANCE: context.distance,
             RaceCol.HORSE_ID: horse.horse_id,
             RaceCol.HORSE_NAME: horse.name,
             RaceCol.TIME: round(finish_time, 2),
