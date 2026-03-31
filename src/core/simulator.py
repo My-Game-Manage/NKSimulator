@@ -33,7 +33,7 @@ class RaceSimulator:
         provider = RaceDataProvider(data_dir="data")
         
         # 前述のロジックで [ {RaceCol.COURSE: "大井", RaceCol.ENTRIES: df}, ... ] が返る
-        race_sets = provider.get_race_data_sets(target_date, course_filter, race_num_filter)
+        race_data_sets = provider.get_race_data_sets(target_date, course_filter, race_num_filter)
 
         self.logger.debug(f"race_data_sets: {race_data_sets}")
         
