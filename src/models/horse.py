@@ -26,7 +26,7 @@ class Horse:
     def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams):
         self.horse_id = horse_id
         self.name = name
-        self.gbracket_num = bracket_num
+        self.bracket_num = bracket_num
         self.horse_num = horse_num
         self.params = params
         
