@@ -50,7 +50,7 @@ class ContextFactory:
 
         # マスタから基本設定を取得
         master = ContextFactory.COURSE_MASTER.get(course, {
-            "track_width": 25, "base_friction": 0.05, "corner_penalty": 0.1, "layout_1600": []
+            "track_width": 25, "base_friction": 0.05, "corner_penalty": SimConfig.CORNER_PENALTY_BASE, "layout_1600": []
         })
 
         # --- 馬場状態による摩擦の補正 (Normalizing) ---
