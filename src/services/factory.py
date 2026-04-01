@@ -9,7 +9,7 @@ from pathlib import Path
 from utils.logger import setup_logger
 from constants.schema import RaceCol
 from constants.config import SimConfig
-from constants.strategy import StrategyType, STRATEGY_STAMINA_MAP
+from constants.strategy import StrategyType, STRATEGY_STAMINA_MAP, STRATEGY_LANE_MAP
 from models.context import RaceContext
 from models.horse import Horse
 from models.params import StaticParams
@@ -140,6 +140,7 @@ class HorseFactory:
             horse_num=horse_num,
             params=params,
             strategy=strategy,
+            lane=STRATEGY_LANE_MAP.get(strategy, 0),
         )
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series, distance: int, strategy: StrategyType) -> StaticParams:
