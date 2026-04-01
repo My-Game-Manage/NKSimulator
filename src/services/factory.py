@@ -122,7 +122,7 @@ class HorseFactory:
 
         # 脚質を判定
         strategy = self._determine_strategy(past_df)
-        self.logger.info(f"strategy: {strategy}")
+        self.logger.debug(f"strategy: {strategy}")
 
         # 能力計算
         params = self._calculate_params(past_df, entry_row)
