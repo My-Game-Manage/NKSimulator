@@ -237,7 +237,7 @@ class RaceEngine:
         
             # 外側にいればいるほど、1フレームで進める「コース上の距離」が短くなる
             # lane 0 = 1.0 / lane 3 = 0.946... (約5%のロス)
-            loss_coeff = radius / (radius + (horse.state.lane * lane_width))
+            loss_coeff = radius / (radius + (horse.lane * lane_width))
             return velocity * loss_coeff
     
     return velocity
