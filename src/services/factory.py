@@ -122,6 +122,7 @@ class HorseFactory:
 
         # 脚質を判定
         strategy = self._determine_strategy(past_df)
+        self.logger.info(f"strategy: {strategy}")
 
         # 能力計算
         params = self._calculate_params(past_df, entry_row)
@@ -202,15 +203,13 @@ class HorseFactory:
             # "9-9-9-7" -> [9, 9, 9, 7] に分解して最後のコーナー付近の順位を取得
             try:
                 ranks = [int(r) for r in passing_order.split("-") if r.isdigit()]
-                self.logger.info(f"strategy: {ranks}")
+                self.logger.debug(f"strategy: {ranks}")
                 if not ranks:
                     continue
                 
                 # 平均的な位置取りを頭数に対する比率で計算 (1位/10頭 = 0.1)
                 avg_rank = sum(ranks) / len(ranks)
                 ratios.append(avg_rank / num_horses)
-                self.logger.info(f"avg_rank - {avg_rank}/num_horses: {num_horses}")
-                self.logger.info(f"ratios: {ratios}")
             except ValueError:
                 continue
 
