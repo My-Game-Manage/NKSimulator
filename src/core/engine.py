@@ -76,14 +76,12 @@ class RaceEngine:
             
             # 2. 加速度の計算（簡易モデル）
             accel = self._calculate_acceleration(horse, segment_type)
-            #accel = self._calculate_acceleration_hard(horse, segment_type)
             
             # 3. 物理状態の更新（Horseクラスのメソッドを呼び出し）
             horse.update_physics(self.dt, accel)
             
             # 4. スタミナ消費
             self._consume_stamina(horse)
-            #self._consume_stamina_hard(horse)
             
             # 残り600m地点の通過チェック
             remaining_dist = self.context.distance - horse.state.current_position
