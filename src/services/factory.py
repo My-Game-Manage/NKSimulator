@@ -119,10 +119,20 @@ class HorseFactory:
         # 前処理
         past_df = self._preprocess(past_performances)
 
+        # 脚質を判定
+        strategy = self._determine_strategy(past_df)
+
         # 能力計算
         params = self._calculate_params(past_df, entry_row)
         
-        return Horse(horse_id=horse_id, name=name, bracket_num=bracket_num, horse_num=horse_num, params=params)
+        return Horse(
+            horse_id=horse_id,
+            name=name,
+            bracket_num=bracket_num,
+            horse_num=horse_num,
+            params=params,
+            strategy=strategy,
+        )
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
@@ -172,3 +182,46 @@ class HorseFactory:
         # 'rank' カラムの「取」「中」などを強制的に NaN に変換
         df[RaceCol.RANK] = pd.to_numeric(df[RaceCol.RANK], errors='coerce')
         return df
+        
+    def _determine_strategy(self, past_df: pd.DataFrame) -> str:
+        """
+        過去の通過順位から脚質を判定する
+        """
+        if past_df.empty:
+            return "Front"  # データがない場合は標準的な「先行」をデフォルトに
+
+        ratios = []
+        for _, row in past_df.iterrows():
+            passing_order = str(row.get(RaceCol.PASSING_ORDER, ""))
+            num_horses = row.get(RaceCol.NUM_HORSES, 10)
+            
+            if not passing_order or passing_order == "nan":
+                continue
+            
+            # "9-9-9-7" -> [9, 9, 9, 7] に分解して最後のコーナー付近の順位を取得
+            try:
+                ranks = [int(r) for r in passing_order.split("-") if r.isdigit()]
+                if not ranks:
+                    continue
+                
+                # 平均的な位置取りを頭数に対する比率で計算 (1位/10頭 = 0.1)
+                avg_rank = sum(ranks) / len(ranks)
+                ratios.append(avg_rank / num_horses)
+            except ValueError:
+                continue
+
+        if not ratios:
+            return "Front"
+
+        # 全レースの平均ポジション指数を算出
+        mean_ratio = sum(ratios) / len(ratios)
+
+        # 指数に基づいて脚質を割り当て
+        if mean_ratio <= 0.2:
+            return "Lead"    # 逃げ
+        elif mean_ratio <= 0.45:
+            return "Front"   # 先行
+        elif mean_ratio <= 0.75:
+            return "Sustained" # 差し
+        else:
+            return "Rear"    # 追込
