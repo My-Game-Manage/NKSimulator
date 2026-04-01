@@ -45,6 +45,7 @@ class ResultSaver:
             RaceCol.HORSE_NAME: horse.name,
             RaceCol.TIME: round(finish_time, 2),
             "remaining_stamina": round(horse.state.current_stamina, 2),
+            "stamina_capacity": horse.params.stamina_capacity,
             "avg_velocity": round(context.distance / finish_time, 2) if finish_time > 0 else 0,
             "max_velocity": round(horse.params.max_velocity, 2),
             RaceCol.LAST_3F: round(last_3f, 2), # schema.pyの定数を使用
