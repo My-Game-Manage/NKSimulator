@@ -209,6 +209,8 @@ class HorseFactory:
                 # 平均的な位置取りを頭数に対する比率で計算 (1位/10頭 = 0.1)
                 avg_rank = sum(ranks) / len(ranks)
                 ratios.append(avg_rank / num_horses)
+                self.logger.info(f"avg_rank - {avg_rank}/num_horses: {num_horses}")
+                self.logger.info(f"ratios: {ratios}")
             except ValueError:
                 continue
 
