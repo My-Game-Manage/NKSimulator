@@ -44,10 +44,12 @@ class Horse:
             current_stamina=self.params.stamina_capacity
         )
 
-    def update_physics(self, dt: float, acceleration: float):
+    def update_physics(self, dt: float, acceleration: float, effective_v: float):
         """Engineから計算された加速度を受け取り、位置と速度を更新する"""
         self.state.current_velocity += acceleration * dt
         # 速度がマイナスにならないようにガード
         self.state.current_velocity = max(0, self.state.current_velocity)
         
-        self.state.current_position += self.state.current_velocity * dt
+        # 位置の更新には effective_v を使い、速度の保持には本来の accel を使う
+        #self.state.current_position += self.state.current_velocity * dt
+        self.state.current_position += effective_v * dt
