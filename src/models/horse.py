@@ -23,7 +23,6 @@ class HorseState:
     time_at_600m: float = 0.0  # 残り600m地点を通過した時の時刻
     last_3f_time: float = 0.0  # 算出された上がり3Fタイム
     passing_ranks: list[int] = field(default_factory=list)  # 通過順位を格納するリスト [2, 2, 3] のようなイメージ
-    start_stamina: float = 0.0
   
 class Horse:
     def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: StrategyType):
