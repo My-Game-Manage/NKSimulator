@@ -118,6 +118,7 @@ class HorseFactory:
         name = entry_row[RaceCol.HORSE_NAME]
         bracket_num =  entry_row[RaceCol.BRACKET_NUM]
         horse_num =  entry_row[RaceCol.HORSE_NUM]
+        distance = entry_row[RaceCol.DISTANCE] # 距離を取得
         
         # 過去データの抽出
         past_performances = self.history_df[self.history_df[RaceCol.HORSE_ID] == horse_id]
@@ -129,8 +130,8 @@ class HorseFactory:
         strategy = self._determine_strategy(past_df)
         self.logger.debug(f"strategy: {strategy}")
 
-        # 能力計算
-        params = self._calculate_params(past_df, entry_row)
+        # 能力計算（distanceを渡すように変更）
+        params = self._calculate_params(past_df, entry_row, distance)
         
         return Horse(
             horse_id=horse_id,
@@ -141,7 +142,35 @@ class HorseFactory:
             strategy=strategy,
         )
 
-    def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
+    def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series, distance: int) -> StaticParams:
+        """
+        馬の基本能力値を算出する
+        """
+        # 過去の上がり3Fの平均を取得
+        avg_last_3f = past_df[RaceCol.LAST_3F].mean(numeric_only=True) if not past_df.empty else SimConfig.DEFAULT_LAST_3F
+        
+        # 距離に応じた動的係数を取得
+        dist_coeff = self._get_distance_velocity_coeff(distance)
+        
+        # 最終的な max_v の算出
+        # SimConfig.MAX_VELOCITY_COEFF (0.98等) に距離補正を掛ける
+        final_coeff = SimConfig.MAX_VELOCITY_COEFF * dist_coeff
+        max_v = (600.0 / avg_last_3f) * final_coeff
+        
+        # スタミナ初期値も距離に比例させる（例: 距離 * 1.2）
+        # これにより1200mでも1600mでも「同じような枯渇感」を再現しやすくなります
+        stamina_cap = distance * 1.2 
+
+        return StaticParams(
+            max_velocity=max_v,
+            base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
+            stamina_capacity=stamina_cap
+            power=self._calc_power(past_df),
+            intelligence=1.0,
+            grit=1.0,
+        )
+        
+    def _calculate_params_old(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
         # --- ロジックの例 ---
         # TODO：加速度
         # TODO：知能
@@ -155,7 +184,7 @@ class HorseFactory:
             intelligence=1.0,
             grit=1.0,
         )
-
+        
     def _calc_max_speed(self, df: pd.DataFrame) -> float:
         # A. 最高速度の推定 (上がり3Fの平均から算出)
         # 例: 38.0秒なら 600/38 = 15.78 m/s。これに個体差を加味
@@ -234,3 +263,17 @@ class HorseFactory:
             return StrategyType.SUSTAINED # 差し
         else:
             return StrategyType.REAR    # 追込
+            
+    def _get_distance_velocity_coeff(self, distance: int) -> float:
+        """
+        距離に応じて max_velocity の計算係数を動的に返す
+        基準: 1600m = 1.0 (SimConfig.MAX_VELOCITY_COEFF をそのまま使用)
+        """
+        # 1600mを基準とし、400m短くなるごとに係数を約0.07(7%)増加させる
+        # 1200mの場合: 1.0 + (400 / 400 * 0.07) = 1.07
+        base_dist = 1600
+        diff = (base_dist - distance) / 400
+        dist_coeff = 1.0 + (diff * 0.07)
+        
+        # 急激な変化を防ぐためのガード（0.9 ~ 1.15 の範囲に収める）
+        return max(0.9, min(1.15, dist_coeff))
