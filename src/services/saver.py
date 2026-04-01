@@ -53,8 +53,35 @@ class ResultSaver:
             "strategy": horse.strategy,
         }
         self.results.append(record)
-
+        
     def save_to_csv(self, filename: str = None):
+        """
+        蓄積されたデータをレースごとにソートしてCSVとして保存
+        """
+        if not self.results:
+            self.logger.info("保存するデータがありません。")
+            return
+
+        df = pd.DataFrame(self.results)
+        
+        # 1. レース番号(RACE_NUMBER)とタイム(TIME)で昇順ソート
+        # これにより、同じレース内でのタイム順に並びます
+        df = df.sort_values(by=[RaceCol.RACE_NUMBER, RaceCol.TIME])
+
+        # 2. レースごとにグループ化し、その中で着順（Rank）を付与
+        # groupby(RaceCol.RACE_NUMBER) を使うことで、レースごとに 1, 2, 3... と連番を振れます
+        df[RaceCol.RANK] = df.groupby(RaceCol.RACE_NUMBER).cumcount() + 1
+
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"sim_result_{timestamp}.csv"
+        
+        save_path = self.output_dir / filename
+        df.to_csv(save_path, index=False, encoding="utf-8-sig")
+        self.logger.info(f"結果を保存しました: {save_path}")
+        return df
+        
+    def save_to_csv_old(self, filename: str = None):
         """
         蓄積されたデータをCSVとして保存
         """
