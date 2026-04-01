@@ -20,6 +20,7 @@ class SimConfig:
     CORNER_PENALTY_BASE = 0.1
     # 道中の速度係数（0.9 -> 1.02 に引き上げ：道中を現実のペースに合わせる）
     CRUISING_SPEED_COEFF = 1.02
+    DISTANCE_DYNAMIC_COEFF = 0.12
     
     # --- 戦略・スパート関連 ---
     # スパート時のブースト（1.5 -> 0.2 に大幅抑制：上がりを40秒に近づける）
