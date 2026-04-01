@@ -202,6 +202,7 @@ class HorseFactory:
             # "9-9-9-7" -> [9, 9, 9, 7] に分解して最後のコーナー付近の順位を取得
             try:
                 ranks = [int(r) for r in passing_order.split("-") if r.isdigit()]
+                self.logger.info(f"strategy: {ranks}")
                 if not ranks:
                     continue
                 
