@@ -51,7 +51,6 @@ class ResultSaver:
             RaceCol.LAST_3F: round(last_3f, 2), # schema.pyの定数を使用
             RaceCol.PASSING_ORDER: passing_order_str, # schema.py の定数を使用
             "strategy": horse.strategy,
-            "is_spurt": horse.state.is_spurt,
             "is_exhausted": horse.state.is_exhausted,
         }
         self.results.append(record)
