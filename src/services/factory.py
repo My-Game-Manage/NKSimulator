@@ -28,7 +28,12 @@ class ContextFactory:
                 {"type": "straight", "length": 350}, # 向こう正面
                 {"type": "curve",    "length": 414}, # 3-4角
                 {"type": "straight", "length": 286}, # 直線
-            ]
+            ],
+            "layout_1200": [
+                {"type": "straight", "length": 480}, # スタートから3角まで（非常に長い）
+                {"type": "curve",    "length": 334}, # 3-4角（外回りの大きなカーブ）
+                {"type": "straight", "length": 386}, # 最後の直線
+            ],
         },
         "笠松": {
             "base_friction": 0.07, # 砂が深い想定
