@@ -144,20 +144,19 @@ class RaceEngine:
         # 馬の知能(intelligence)によってスパート開始位置を前後させる (例: 1.0なら600m)
         spurt_line = SimConfig.SPURT_DISTANCE * horse.params.intelligence 
     
-        #if remaining_dist <= spurt_line and not horse.state.is_exhausted:
-        #    horse.state.is_spurt = True
-        #    # スパート時は最高速度をさらに引き上げる (根性値を加味)
-        #    target_v += (SimConfig.SPURT_SPEED_BOOST * horse.params.grit) 
         if remaining_dist <= SimConfig.SPURT_DISTANCE:
             # スパート時の上乗せを最小限にする
             target_v = base_v + SimConfig.SPURT_SPEED_BOOST
         else:
-            # 道中はスタミナ温存のため、最高速度の 90% 程度に抑える
-            #target_v *= SimConfig.CRUISING_SPEED_COEFF
             # 道中を base_v より速く設定し、スタミナを削りながらタイムを稼ぐ
             #target_v = base_v * SimConfig.CRUISING_SPEED_COEFF
             # 脚質ごとの巡航速度係数を適用
             target_v = base_v * strat["cruising_coeff"]
+
+        # スタミナによるブースト（例：残量1000につき +0.5m/s）
+        # これにより、1600残っている馬はさらに加速しようとします
+        stamina_bonus = horse.state.current_stamina * 0.0005
+        target_v += stamina_bonus
 
         # 3. コーナーペナルティの適用
         if segment_type == "curve":
