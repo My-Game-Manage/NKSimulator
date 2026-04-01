@@ -182,7 +182,7 @@ class RaceEngine:
         # 速度の2乗に比例した基本消費
         #base_loss = (horse.state.current_velocity ** 2) * 0.005
         # 速度の2乗に戻す（安定性のため）
-        speed_factor = horse.state.current_velocity ** 2
+        speed_factor = horse.state.current_velocity ** SimConfig.CONSUMPTION_RATE
     
         # スパート中は消費を 1.5倍〜2.0倍 に増やす
         #multiplier = 2.0 if horse.state.is_spurt else 1.0
