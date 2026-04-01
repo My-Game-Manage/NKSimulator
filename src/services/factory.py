@@ -149,7 +149,6 @@ class HorseFactory:
             power=self._calc_power(past_df),
             intelligence=1.0,
             grit=1.0,
-            start_stamina=stamina,
         )
 
     def _calc_max_speed(self, df: pd.DataFrame) -> float:
