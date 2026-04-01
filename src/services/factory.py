@@ -9,7 +9,7 @@ from pathlib import Path
 from utils.logger import setup_logger
 from constants.schema import RaceCol
 from constants.config import SimConfig
-from constants.strategy import StrategyType
+from constants.strategy import StrategyType, STRATEGY_STAMINA_MAP
 from models.context import RaceContext
 from models.horse import Horse
 from models.params import StaticParams
@@ -131,7 +131,7 @@ class HorseFactory:
         self.logger.debug(f"strategy: {strategy}")
 
         # 能力計算（distanceを渡すように変更）
-        params = self._calculate_params(past_df, entry_row, distance)
+        params = self._calculate_params(past_df, entry_row, distance, strategy)
         
         return Horse(
             horse_id=horse_id,
@@ -142,7 +142,7 @@ class HorseFactory:
             strategy=strategy,
         )
 
-    def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series, distance: int) -> StaticParams:
+    def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series, distance: int, strategy: StrategyType) -> StaticParams:
         """
         馬の基本能力値を算出する
         """
@@ -156,10 +156,13 @@ class HorseFactory:
         # SimConfig.MAX_VELOCITY_COEFF (0.98等) に距離補正を掛ける
         final_coeff = SimConfig.MAX_VELOCITY_COEFF * dist_coeff
         max_v = (600.0 / avg_last_3f) * final_coeff
+
+        # --- 脚質によるスタミナ容量の補正 ---
+        # 逃げは消費が激しいため実質的な容量を少なめに、後方は温存が得意なため多めに設定
         
         # スタミナ初期値も距離に比例させる（例: 距離 * 1.2）
         # これにより1200mでも1600mでも「同じような枯渇感」を再現しやすくなります
-        stamina = self._calc_stamina(entry_row)
+        stamina = self._calc_stamina(entry_row, strategy)
 
         return StaticParams(
             max_velocity=max_v,
@@ -181,11 +184,12 @@ class HorseFactory:
             max_v = SimConfig.DEFAULT_MAX_VELOCITY  # データがない場合のデフォルト値
         return max_v
 
-    def _calc_stamina(self, entry_row: pd.Series) -> float:
+    def _calc_stamina(self, entry_row: pd.Series, strategy: StrategyType) -> float:
         # B. スタミナの推定 (距離実績から算出)
         # 過去に走った最長距離などをベースにスタミナ総量を決める
-        stamina = entry_row[RaceCol.DISTANCE] * 1.2
-        return stamina
+        base_stamina = entry_row[RaceCol.DISTANCE] * 1.2
+        stamina_cap = base_stamina * STRATEGY_STAMINA_MAP.get(strategy, 1.0)
+        return stamina_cap
 
     def _calc_power(self, past_df: pd.DataFrame) -> float:
         # C. パワー (馬場状態適性)
