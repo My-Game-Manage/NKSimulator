@@ -159,25 +159,10 @@ class HorseFactory:
         
         # スタミナ初期値も距離に比例させる（例: 距離 * 1.2）
         # これにより1200mでも1600mでも「同じような枯渇感」を再現しやすくなります
-        stamina_cap = distance * 1.2 
+        stamina = self._calc_stamina(entry_row)
 
         return StaticParams(
             max_velocity=max_v,
-            base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
-            stamina_capacity=stamina_cap,
-            power=self._calc_power(past_df),
-            intelligence=1.0,
-            grit=1.0,
-        )
-        
-    def _calculate_params_old(self, past_df: pd.DataFrame, entry_row: pd.Series) -> StaticParams:
-        # --- ロジックの例 ---
-        # TODO：加速度
-        # TODO：知能
-        # TODO：根性
-        stamina = self._calc_stamina(entry_row)
-        return StaticParams(
-            max_velocity=self._calc_max_speed(past_df),
             base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
             stamina_capacity=stamina,
             power=self._calc_power(past_df),
@@ -271,9 +256,12 @@ class HorseFactory:
         """
         # 1600mを基準とし、400m短くなるごとに係数を約0.07(7%)増加させる
         # 1200mの場合: 1.0 + (400 / 400 * 0.07) = 1.07
+        # 0.07 -> 0.12 に引き上げ
+        # 1200m時に係数が 1.12 になり、よりスプリントらしい速度が出ます
         base_dist = 1600
         diff = (base_dist - distance) / 400
-        dist_coeff = 1.0 + (diff * 0.07)
+        dist_coeff = 1.0 + (diff * SimConfig.DISTANCE_DYNAMIC_COEFF)
         
         # 急激な変化を防ぐためのガード（0.9 ~ 1.15 の範囲に収める）
-        return max(0.9, min(1.15, dist_coeff))
+        #return max(0.9, min(1.15, dist_coeff))
+        return max(0.85, min(1.20, dist_coeff))
