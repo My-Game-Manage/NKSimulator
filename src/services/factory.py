@@ -141,13 +141,15 @@ class HorseFactory:
         # TODO：加速度
         # TODO：知能
         # TODO：根性
+        stamina = self._calc_stamina(entry_row)
         return StaticParams(
             max_velocity=self._calc_max_speed(past_df),
             base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
-            stamina_capacity=self._calc_stamina(entry_row),
+            stamina_capacity=stamina,
             power=self._calc_power(past_df),
             intelligence=1.0,
-            grit=1.0
+            grit=1.0,
+            start_stamina=stamina,
         )
 
     def _calc_max_speed(self, df: pd.DataFrame) -> float:
