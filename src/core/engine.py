@@ -166,7 +166,7 @@ class RaceEngine:
         if horse.state.current_stamina <= 0:
             horse.state.is_exhausted = True
             horse.state.is_spurt = False
-            target_v *= 0.5  # 大幅な減速
+            target_v *= SimConfig.EXHAUST_SPEED_COEFF  # 大幅な減速
         
         # 5. 現在速度との差分から加速度を決定
         v_diff = target_v - horse.state.current_velocity
@@ -182,18 +182,23 @@ class RaceEngine:
         #base_loss = (horse.state.current_velocity ** 2) * 0.005
         # 速度の2乗に戻す（安定性のため）
         speed_factor = horse.state.current_velocity ** SimConfig.CONSUMPTION_RATE
+        
+        # スパート中は消費を 1.5倍〜2.0倍 に増やす->1.5倍 程度に抑える
+        multiplier = SimConfig.SPART_MULTIPLIER if horse.state.is_spurt else SimConfig.NORMAL_SPART_MULTIPLIER
+
+        # 【追加】距離による消費係数の補正 (1600mを基準=1.0とする)
+        # 1200mなら 1200/1600 = 0.75倍 に消費を抑える
+        # これにより、同じ速度で走っても短距離の方がスタミナが持ちます
+        dist_adjustment = self.context.distance / 1600.0
     
-        # スパート中は消費を 1.5倍〜2.0倍 に増やす
-        #multiplier = 2.0 if horse.state.is_spurt else 1.0
-        # スパート中の倍率を 1.5倍 程度に抑える
-        multiplier = 1.5 if horse.state.is_spurt else 1.0
-    
-        # 最終的な消費量
-        #loss = base_loss * multiplier * self.dt
-        #horse.state.current_stamina -= loss
-        # 係数を 0.008 前後に調整（1600m走るのに適した消費量）
-        loss = speed_factor * SimConfig.STAMINA_LOSS_COEFF * multiplier * self.dt
+        #loss = speed_factor * SimConfig.STAMINA_LOSS_COEFF * dist_adjustment * self.dt
+        loss = speed_factor * SimConfig.STAMINA_LOSS_COEFF * dist_adjustment * multiplier * self.dt
         horse.state.current_stamina -= loss
+        
+        # 最終的な消費量
+        # 係数を 0.008 前後に調整（1600m走るのに適した消費量）
+        #loss = speed_factor * SimConfig.STAMINA_LOSS_COEFF * multiplier * self.dt
+        #horse.state.current_stamina -= loss
     
         if horse.state.current_stamina < 0:
             horse.state.current_stamina = 0
