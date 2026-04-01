@@ -26,13 +26,14 @@ class HorseState:
     passing_ranks: list[int] = field(default_factory=list)  # 通過順位を格納するリスト [2, 2, 3] のようなイメージ
   
 class Horse:
-    def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: StrategyType):
+    def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: StrategyType, lane: int):
         self.horse_id = horse_id
         self.name = name
         self.bracket_num = bracket_num
         self.horse_num = horse_num
         self.params = params
         self.strategy = strategy
+        self.lane = lane
         
         # 状態の初期化（レース開始時にリセット可能にする）
         self.state = None
