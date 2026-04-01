@@ -216,6 +216,7 @@ class RaceEngine:
             # 残り距離が脚質ごとのスパート開始距離に入ったらスイッチON
             if remaining_dist <= strat_params["spurt_dist"]:
                 horse.state.is_spurt = True
+                horse.state.spurt_dist = remaining_dist
                 self.logger.info(f"{horse.name} がスパート開始！ 残り: {remaining_dist:.1f}m")
             
     def run_race(self):
