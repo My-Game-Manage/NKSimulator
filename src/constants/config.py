@@ -29,7 +29,7 @@ class SimConfig:
     # スタミナ消費（0.008 -> 0.012 に引き上げ：終盤に足を鈍らせる）
     STAMINA_LOSS_COEFF = 0.06
     EXHAUST_SPEED_COEFF = 0.8  # スタミナ切れ時の速度倍率
-    CONSUMPTION_RATE = 2.5
+    CONSUMPTION_RATE = 2.2
 
     # --- その他 ---
     SPURT_DISTANCE = 600.0    # 残り何mでスパートするか
