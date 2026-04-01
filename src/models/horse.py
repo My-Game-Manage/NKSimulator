@@ -31,7 +31,7 @@ class Horse:
         self.bracket_num = bracket_num
         self.horse_num = horse_num
         self.params = params
-        self.strategy = StrategyType.FRONT
+        self.strategy = strategy
         
         # 状態の初期化（レース開始時にリセット可能にする）
         self.state = None
