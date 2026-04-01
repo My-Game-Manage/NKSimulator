@@ -134,26 +134,22 @@ class RaceEngine:
         スパートロジックを組み込んだ加速度計算
         """
         # その馬の脚質設定を取得
-        strat = StrategyConfig.get(horse.strategy)
+        strat_params = StrategyConfig.get(horse.strategy)
         
         # 1. 基本となる目標速度（StaticParamsから取得）
         base_v = horse.params.max_velocity
-    
-        # 2. スパート判定 (残り距離 600m を基準)
-        remaining_dist = self.context.distance - horse.state.current_position
-        
-        # 馬の知能(intelligence)によってスパート開始位置を前後させる (例: 1.0なら600m)
-        spurt_line = SimConfig.SPURT_DISTANCE * horse.params.intelligence 
-    
-        if remaining_dist <= SimConfig.SPURT_DISTANCE:
-            # スパート時の上乗せを最小限にする
+
+        # 目標速度の決定
+        if horse.state.is_exhausted:
+            # バテた時：大幅減速
+            target_v = base_v * SimConfig.EXHAUSTED_SPEED_COEFF
+        elif horse.state.is_spurt:
+            # スパート中：最高速度 + ブースト
             target_v = base_v + SimConfig.SPURT_SPEED_BOOST
         else:
-            # 道中を base_v より速く設定し、スタミナを削りながらタイムを稼ぐ
-            #target_v = base_v * SimConfig.CRUISING_SPEED_COEFF
-            # 脚質ごとの巡航速度係数を適用
-            target_v = base_v * strat["cruising_coeff"]
-
+            # 道中：脚質ごとの巡航速度
+            target_v = base_v * strat_params["cruising_coeff"]
+    
         # スタミナによるブースト（例：残量1000につき +0.5m/s）
         # これにより、1600残っている馬はさらに加速しようとします
         stamina_bonus = horse.state.current_stamina * 0.0005
