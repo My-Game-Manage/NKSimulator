@@ -18,6 +18,13 @@ STRATEGY_STAMINA_MAP = {
     StrategyType.REAR: 1.12        # 追込：直線にかけるため最大まで温存
 }
 
+STRATEGY_LANE_MAP = {
+    StrategyType.LEAD: 0,
+    StrategyType.FRONT: 1,
+    StrategyType.SUSTAINED: 3,
+    StrategyType.REAR: 5
+}
+
 class StrategyConfig:
     # 各脚質ごとの物理パラメータ補正
     PARAMS = {
