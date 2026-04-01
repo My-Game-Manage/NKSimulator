@@ -11,6 +11,13 @@ class StrategyType:
     SUSTAINED = "Sustained" # 差し
     REAR = "Rear"           # 追込
 
+class STRATEGY_STAMINA_MAP = {
+    StrategyType.LEAD: 0.92,      # 逃げ：ハイペース耐性が低い想定
+    StrategyType.FRONT: 0.98,     # 先行：標準よりやや低め
+    StrategyType.SUSTAINED: 1.05,  # 差し：スタミナ温存が得意
+    StrategyType.REAR: 1.12        # 追込：直線にかけるため最大まで温存
+}
+
 class StrategyConfig:
     # 各脚質ごとの物理パラメータ補正
     PARAMS = {
