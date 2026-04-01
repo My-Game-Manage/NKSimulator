@@ -164,7 +164,7 @@ class HorseFactory:
         return StaticParams(
             max_velocity=max_v,
             base_acceleration=SimConfig.DEFAULT_ACCEL, # 加速度
-            stamina_capacity=stamina_cap
+            stamina_capacity=stamina_cap,
             power=self._calc_power(past_df),
             intelligence=1.0,
             grit=1.0,
