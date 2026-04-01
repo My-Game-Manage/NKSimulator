@@ -80,10 +80,13 @@ class RaceEngine:
             # 3. 加速度の計算（簡易モデル）
             accel = self._calculate_acceleration(horse, segment_type)
             
-            # 4. 物理状態の更新（Horseクラスのメソッドを呼び出し）
-            horse.update_physics(self.dt, accel)
+            # 4. 物理状態の更新の箇所を以下のように調整
+            effective_v = self._calculate_effective_speed(horse, segment_type, accel)
             
-            # 5. スタミナ消費
+            # 5. 物理状態の更新（Horseクラスのメソッドを呼び出し）
+            horse.update_physics(self.dt, accel, effective_v)
+            
+            # 6. スタミナ消費
             self._consume_stamina(horse)
             
             # 残り600m地点の通過チェック
@@ -218,7 +221,26 @@ class RaceEngine:
                 horse.state.is_spurt = True
                 horse.state.spurt_dist = remaining_dist
                 self.logger.info(f"{horse.name} がスパート開始！ 残り: {remaining_dist:.1f}m")
-            
+                
+    def _calculate_effective_speed(self, horse, segment_type, actual_accel):
+        """
+        レーン（内外）によるコーナーでの距離ロスを計算する
+        """
+        velocity = horse.state.current_velocity
+    
+        if segment_type == "curve":
+            # 大井のコーナー半径を約80mと仮定
+            # レーン幅を1.5mとすると、1レーン外にいくごとに距離は約2%弱伸びる
+            # 簡易計算式: 補正係数 = (半径) / (半径 + レーン位置)
+            radius = 80.0
+            lane_width = 1.5
+        
+            # 外側にいればいるほど、1フレームで進める「コース上の距離」が短くなる
+            # lane 0 = 1.0 / lane 3 = 0.946... (約5%のロス)
+            loss_coeff = radius / (radius + (horse.state.lane * lane_width))
+            return velocity * loss_coeff
+    
+    return velocity
     def run_race(self):
         """全馬がゴールするまでループ"""
         self.logger.info(f"Race Start: {self.context.distance}m")
