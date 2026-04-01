@@ -9,6 +9,7 @@ from pathlib import Path
 from utils.logger import setup_logger
 from constants.schema import RaceCol
 from constants.config import SimConfig
+from constants.strategy import StrategyType
 from models.context import RaceContext
 from models.horse import Horse
 from models.params import StaticParams
@@ -188,7 +189,7 @@ class HorseFactory:
         過去の通過順位から脚質を判定する
         """
         if past_df.empty:
-            return "Front"  # データがない場合は標準的な「先行」をデフォルトに
+            return StrategyType.FRONT  # データがない場合は標準的な「先行」をデフォルトに
 
         ratios = []
         for _, row in past_df.iterrows():
@@ -211,17 +212,17 @@ class HorseFactory:
                 continue
 
         if not ratios:
-            return "Front"
+            return StrategyType.FRONT
 
         # 全レースの平均ポジション指数を算出
         mean_ratio = sum(ratios) / len(ratios)
 
         # 指数に基づいて脚質を割り当て
         if mean_ratio <= 0.2:
-            return "Lead"    # 逃げ
+            return StrategyType.LEAD    # 逃げ
         elif mean_ratio <= 0.45:
-            return "Front"   # 先行
+            return StrategyType.FRONT   # 先行
         elif mean_ratio <= 0.75:
-            return "Sustained" # 差し
+            return StrategyType.SUSTAINED # 差し
         else:
-            return "Rear"    # 追込
+            return StrategyType.REAR    # 追込
