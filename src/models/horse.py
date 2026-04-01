@@ -22,6 +22,7 @@ class HorseState:
     # --- 計測用に追加 ---
     time_at_600m: float = 0.0  # 残り600m地点を通過した時の時刻
     last_3f_time: float = 0.0  # 算出された上がり3Fタイム
+    spurt_dist: float = 0.0    # スパートを始めた位置の記録
     passing_ranks: list[int] = field(default_factory=list)  # 通過順位を格納するリスト [2, 2, 3] のようなイメージ
   
 class Horse:
