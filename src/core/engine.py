@@ -74,13 +74,16 @@ class RaceEngine:
             # 1. 現在のコース区間（直線 or コーナー）を特定
             segment_type = self._get_current_segment_type(horse.state.current_position)
             
-            # 2. 加速度の計算（簡易モデル）
+            # 2.【ここに追加】馬の状態（スパート、バテ）を最新の位置・スタミナに基づいて更新
+            self._update_horse_status(horse)
+            
+            # 3. 加速度の計算（簡易モデル）
             accel = self._calculate_acceleration(horse, segment_type)
             
-            # 3. 物理状態の更新（Horseクラスのメソッドを呼び出し）
+            # 4. 物理状態の更新（Horseクラスのメソッドを呼び出し）
             horse.update_physics(self.dt, accel)
             
-            # 4. スタミナ消費
+            # 5. スタミナ消費
             self._consume_stamina(horse)
             
             # 残り600m地点の通過チェック
@@ -200,6 +203,24 @@ class RaceEngine:
     
         if horse.state.current_stamina < 0:
             horse.state.current_stamina = 0
+
+    def _update_horse_status(self, horse):
+        """馬の状態（スパート、バテ）を更新する"""
+        # 1. バテ判定（既存ロジックに近いもの）
+        if horse.state.current_stamina <= 0:
+            horse.state.is_exhausted = True
+            horse.state.is_spurt = False # バテたらスパート終了
+            return
+
+        # 2. スパート開始判定
+        if not horse.state.is_spurt:
+            strat_params = StrategyConfig.get(horse.strategy)
+            remaining_dist = self.context.distance - horse.state.current_position
+        
+            # 残り距離が脚質ごとのスパート開始距離に入ったらスイッチON
+            if remaining_dist <= strat_params["spurt_dist"]:
+                horse.state.is_spurt = True
+                self.logger.info(f"{horse.name} がスパート開始！ 残り: {remaining_dist:.1f}m")
             
     def run_race(self):
         """全馬がゴールするまでループ"""
