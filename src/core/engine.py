@@ -163,7 +163,7 @@ class RaceEngine:
         if horse.state.current_stamina <= 0:
             horse.state.is_exhausted = True
             horse.state.is_spurt = False
-            target_v *= SimConfig.EXHAUST_SPEED_COEFF  # 大幅な減速
+            target_v *= SimConfig.EXHAUSTED_SPEED_COEFF  # 大幅な減速
         
         # 5. 現在速度との差分から加速度を決定
         v_diff = target_v - horse.state.current_velocity
