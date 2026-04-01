@@ -31,6 +31,8 @@ class SimConfig:
     STAMINA_LOSS_COEFF = 0.0485
     EXHAUST_SPEED_COEFF = 0.8  # スタミナ切れ時の速度倍率
     CONSUMPTION_RATE = 2.2
+    SPART_MULTIPLIER = 1.5
+    NORMAL_SPART_MULTIPLIER = 1.0
 
     # --- その他 ---
     SPURT_DISTANCE = 600.0    # 残り何mでスパートするか
