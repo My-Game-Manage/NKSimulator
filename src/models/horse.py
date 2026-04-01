@@ -6,6 +6,7 @@ horse.py の概要
 from dataclasses import dataclass, field
 
 from src.models.params import StaticParams
+from src.constants.strategy import StrategyType
 
 @dataclass
 class HorseState:
@@ -30,7 +31,7 @@ class Horse:
         self.bracket_num = bracket_num
         self.horse_num = horse_num
         self.params = params
-        self.strategy = 'Front'
+        self.strategy = StrategyType.FRONT
         
         # 状態の初期化（レース開始時にリセット可能にする）
         self.state = None
