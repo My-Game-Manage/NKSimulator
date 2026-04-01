@@ -24,6 +24,7 @@ from typing import List
 
 from utils.logger import setup_logger
 from constants.config import SimConfig
+from constants.strategy import StrategyConfig
 from models.horse import Horse
 from models.context import RaceContext
 from services.saver import ResultSaver
@@ -131,6 +132,9 @@ class RaceEngine:
         """
         スパートロジックを組み込んだ加速度計算
         """
+        # その馬の脚質設定を取得
+        strat = StrategyConfig.get(horse.strategy)
+        
         # 1. 基本となる目標速度（StaticParamsから取得）
         base_v = horse.params.max_velocity
     
@@ -151,7 +155,9 @@ class RaceEngine:
             # 道中はスタミナ温存のため、最高速度の 90% 程度に抑える
             #target_v *= SimConfig.CRUISING_SPEED_COEFF
             # 道中を base_v より速く設定し、スタミナを削りながらタイムを稼ぐ
-            target_v = base_v * SimConfig.CRUISING_SPEED_COEFF
+            #target_v = base_v * SimConfig.CRUISING_SPEED_COEFF
+            # 脚質ごとの巡航速度係数を適用
+            target_v = base_v * strat["cruising_coeff"]
 
         # 3. コーナーペナルティの適用
         if segment_type == "curve":
