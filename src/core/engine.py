@@ -240,7 +240,8 @@ class RaceEngine:
             loss_coeff = radius / (radius + (horse.lane * lane_width))
             return velocity * loss_coeff
     
-    return velocity
+        return velocity
+        
     def run_race(self):
         """全馬がゴールするまでループ"""
         self.logger.info(f"Race Start: {self.context.distance}m")
