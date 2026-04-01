@@ -13,6 +13,7 @@ class SimConfig:
     # 1.05から0.98に調整予定
     MAX_VELOCITY_COEFF = 0.98
     DEFAULT_MAX_VELOCITY = 15.5
+    DEFAULT_LAST_3F = 40.0
 
     # --- RaceEngine用物理パラメータ ---
     DEFAULT_ACCEL = 0.8
