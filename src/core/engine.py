@@ -354,14 +354,14 @@ class RaceEngine:
         target_lane = max(0.0, min(target_lane, 15.0))
 
         # 3. 移動処理、目標レーンとの差分を計算
-        lane_diff = target_lane - current_lane
+        lane_diff = target_lane - horse.state.current_lane
         if abs(lane_diff) > 0.01:
             # 1フレームあたりの移動量を計算
             move_amount = lane_change_speed * self.dt
             if lane_diff > 0:
-                horse.state.current_lane = min(current_lane + move_amount, target_lane)
+                horse.state.current_lane = min(horse.state.current_lane + move_amount, target_lane)
             else:
-                horse.state.current_lane = max(current_lane - move_amount, target_lane)
+                horse.state.current_lane = max(horse.state.current_lane - move_amount, target_lane)
 
     def _calculate_effective_speed(self, horse, segment_type, actual_accel):
         """
