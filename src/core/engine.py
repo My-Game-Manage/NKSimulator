@@ -149,8 +149,8 @@ class RaceEngine:
             exhaust_coeff = strat_params[StrategyParamKey.EXHAUST_SPEED_COEFF]
             target_v = base_v * exhaust_coeff
         elif horse.state.is_spurt:
-            # スパート中：最高速度 + ブースト
-            target_v = base_v + SimConfig.SPURT_SPEED_BOOST
+            # スパート中：最高速度
+            target_v = base_v
         else:
             # 道中：脚質ごとの巡航速度
             target_v = base_v * strat_params[StrategyParamKey.CRUISING_COEFF]
