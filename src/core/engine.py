@@ -231,10 +231,22 @@ class RaceEngine:
         """
         馬番に応じた初期位置から、脚質ごとの理想レーンへ徐々に移動させる
         """
-        # 1. 脚質ごとの目標レーンを取得 (STRATEGY_LANE_MAP から)
-        target_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
-        current_lane = horse.state.current_lane
-    
+        # 前方の馬との距離を取得
+        dist_to_front = self._get_foremost_horse_dist(horse)
+
+        # 基本の目標レーン
+        ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
+
+        # もし前との距離が 3m 以内なら「壁」とみなす
+        if dist_to_front < 3.0:
+            # 外側（レーン番号が増える方向）に回避を試みる
+            target_lane = horse.state.current_lane + 1.0
+            # コース幅（track_width）を超えないように制限
+            target_lane = min(target_lane, 15.0) 
+        else:
+            # 前が空いていれば、理想のレーンに戻ろうとする
+            target_lane = ideal_lane
+            
         # 2. 移動速度の設定
         # 1秒間に最大 0.5 レーン分移動すると仮定 (急激な横移動を防ぐ)
         lane_change_speed = 0.5 
@@ -271,6 +283,23 @@ class RaceEngine:
             return velocity * loss_coeff
     
         return velocity
+
+    def _get_foremost_horse_dist(self, target_horse: Horse) -> float:
+        """
+        同じレーン上にいる前方の馬との距離を返す。いない場合は十分な距離(999m)を返す。
+        """
+        min_dist = 999.0
+        for other in self.participants:
+            if target_horse.horse_id == other.horse_id:
+                continue
+        
+            # 同じレーン（あるいは非常に近いレーン）にいるか判定
+            if abs(target_horse.state.current_lane - other.state.current_lane) < 0.5:
+                dist = other.state.current_position - target_horse.state.current_position
+                # 前方にいて、かつ一番近い馬を探す
+                if 0 < dist < min_dist:
+                    min_dist = dist
+        return min_dist
         
     def run_race(self):
         """全馬がゴールするまでループ"""
