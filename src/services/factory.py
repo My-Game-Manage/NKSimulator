@@ -134,7 +134,7 @@ class HorseFactory:
         params = self._calculate_params(past_df, entry_row, distance, strategy)
         
         # 馬番 - 1 を初期レーンとする（1番枠なら0、2番枠なら1...）
-        initial_lane = entry_row[RaceCol.HORSE_NUMBER] - 1
+        initial_lane = entry_row[RaceCol.HORSE_NUM] - 1
         
         return Horse(
             horse_id=horse_id,
