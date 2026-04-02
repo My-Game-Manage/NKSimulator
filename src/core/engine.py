@@ -157,6 +157,11 @@ class RaceEngine:
         else:
             # 道中：脚質ごとの巡航速度
             target_v = base_v * strat_params[StrategyParamKey.CRUISING_COEFF]
+
+        # 前が詰まっている（1.5m以内）なら強制的に速度制限
+        if horse.state.distance_to_front < 1.5:
+            # 前の馬にぶつからないよう、目標速度を現在の速度の90%に抑える
+            target_v = min(target_v, horse.state.current_velocity * 0.9)
     
         # スタミナによるブースト（例：残量1000につき +0.5m/s）
         # これにより、1600残っている馬はさらに加速しようとします
@@ -232,7 +237,9 @@ class RaceEngine:
         馬番に応じた初期位置から、脚質ごとの理想レーンへ徐々に移動させる
         """
         # 前方の馬との距離を取得
-        dist_to_front = self._get_foremost_horse_dist(horse)
+        dist_to_front = self._get_distance_to_front_horse(horse)
+        # 保存用
+        horse.state.distance_to_front = dist_to_front
 
         # 基本の目標レーン
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
@@ -285,19 +292,18 @@ class RaceEngine:
     
         return velocity
 
-    def _get_foremost_horse_dist(self, target_horse: Horse) -> float:
+    def _get_distance_to_front_horse(self, horse: Horse) -> float:
         """
-        同じレーン上にいる前方の馬との距離を返す。いない場合は十分な距離(999m)を返す。
+        同一レーン上の最も近い前方馬との距離を返す。いない場合は十分な距離(999m)を返す。
         """
         min_dist = 999.0
         for other in self.participants:
-            if target_horse.horse_id == other.horse_id:
+            if horse.horse_id == other.horse_id:
                 continue
         
-            # 同じレーン（あるいは非常に近いレーン）にいるか判定
-            if abs(target_horse.state.current_lane - other.state.current_lane) < 0.5:
-                dist = other.state.current_position - target_horse.state.current_position
-                # 前方にいて、かつ一番近い馬を探す
+            # 同じレーン（幅0.8程度の範囲）にいるか判定
+            if abs(horse.state.current_lane - other.state.current_lane) < 0.8:
+                dist = other.state.current_position - horse.state.current_position
                 if 0 < dist < min_dist:
                     min_dist = dist
         return min_dist
