@@ -325,30 +325,52 @@ class RaceEngine:
 
         # 基本の目標レーン
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
+        # 今のコース種類（直線か判定したい）
+        segment_type = self._get_current_segment_type(horse.state.current_position)
         
-        # 1. 基本は理想のレーンを目指す
-        target_lane = ideal_lane
+        # 1. 基本ターゲットの設定
+        # 直線かつ終盤なら、今のレーンを維持することを基本にする（内への引力を消す）
+        if segment_type == "straight" and horse.state.current_position > 800:
+            target_lane = horse.state.current_lane
+        else:
+            target_lane = ideal_lane
+
+        # 2. 回避・追い越しロジック
+        if dist < 5.0:
+            front_horse = self._get_front_horse_object(horse)
+            if front_horse:
+                front_v = front_horse.state.current_velocity
+                # 本来出したい速度
+                base_v = self._calculate_base_target_velocity(horse)
+            
+                # 前が自分より遅いなら、積極的に横へ（判定を0.05まで下げる）
+                if base_v > (front_v + 0.05):
+                    # 追い越し：外へ大きく出す
+                    target_lane = horse.state.current_lane + 2.0
+                else:
+                    # 前が速いなら後ろをキープ
+                    target_lane = horse.state.current_lane
         
         # 2. 壁判定のロジック
         # --- 動的な壁判断 ---
-        if dist < 4.0:
-            front_horse = self._get_front_horse_object(horse)
-            if front_horse:
-                # 自分の本来の能力(ideal_v)が、前の馬の速度(front_v)より明らかに速い場合
-                ideal_v = self._calculate_base_target_velocity(horse)
-                front_v = front_horse.state.current_velocity
-            
-                if ideal_v > (front_v + 0.2):
-                    # 「邪魔だ！」と判断して外に持ち出す
-                    # 現在のレーンから少し外(数字が増える方向)へ
-                    target_lane = horse.state.current_lane + 1.2
-                else:
-                    # 前の馬の方が速いなら、そのまま後ろについてスタミナ温存
-                    target_lane = horse.state.current_lane
+        #if dist < 4.0:
+        #    front_horse = self._get_front_horse_object(horse)
+        #    if front_horse:
+        #        # 自分の本来の能力(ideal_v)が、前の馬の速度(front_v)より明らかに速い場合
+        #        ideal_v = self._calculate_base_target_velocity(horse)
+        #        front_v = front_horse.state.current_velocity
+        #    
+        #        if ideal_v > (front_v + 0.2):
+        #            # 「邪魔だ！」と判断して外に持ち出す
+        #            # 現在のレーンから少し外(数字が増える方向)へ
+        #            target_lane = horse.state.current_lane + 1.2
+        #        else:
+        #            # 前の馬の方が速いなら、そのまま後ろについてスタミナ温存
+        #            target_lane = horse.state.current_lane
                 
         # 復帰ロジック：前が空いた（distが大）なら、理想のレーン（内）へ戻る
-        elif horse.state.current_lane > ideal_lane:
-            target_lane = ideal_lane
+        #elif horse.state.current_lane > ideal_lane:
+        #    target_lane = ideal_lane
 
         # 境界チェック：0〜15レーンの範囲に収める
         target_lane = max(0.0, min(target_lane, 15.0))
