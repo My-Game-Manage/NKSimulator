@@ -151,7 +151,15 @@ class RaceEngine:
         base_v = horse.params.max_velocity
 
         # 目標速度の決定
-        if horse.state.is_exhausted:
+        # --- テンの攻防ロジックを追加 ---
+        if horse.state.current_position < 300.0:
+            # スタートから300m（向こう正面の半ば）までは、脚質に関わらず位置を取りに行く
+            # 逃げ・先行なら最高速度の 105%、差し・追込でも 100% を出すイメージ
+            if horse.strategy in [StrategyType.LEAD, StrategyType.FRONT]:
+                target_v = horse.params.max_velocity * 1.05
+            else:
+                target_v = horse.params.max_velocity * 1.00
+        elif horse.state.is_exhausted:
             # バテた時：大幅減速
             # 【修正後】脚質ごとの「粘り」係数を適用
             exhaust_coeff = strat_params[StrategyParamKey.EXHAUST_SPEED_COEFF]
