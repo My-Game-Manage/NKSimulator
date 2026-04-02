@@ -153,7 +153,7 @@ class RaceEngine:
             target_v = base_v + SimConfig.SPURT_SPEED_BOOST
         else:
             # 道中：脚質ごとの巡航速度
-            target_v = base_v * strat_params["StrategyParamKey.CRUISING_COEFF"]
+            target_v = base_v * strat_params[StrategyParamKey.CRUISING_COEFF]
     
         # スタミナによるブースト（例：残量1000につき +0.5m/s）
         # これにより、1600残っている馬はさらに加速しようとします
