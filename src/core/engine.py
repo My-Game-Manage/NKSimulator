@@ -145,7 +145,9 @@ class RaceEngine:
         # 目標速度の決定
         if horse.state.is_exhausted:
             # バテた時：大幅減速
-            target_v = base_v * SimConfig.EXHAUSTED_SPEED_COEFF
+            # 【修正後】脚質ごとの「粘り」係数を適用
+            exhaust_coeff = strat_params[StrategyParamKey.EXHAUST_SPEED_COEFF]
+            target_v = base_v * exhaust_coeff
         elif horse.state.is_spurt:
             # スパート中：最高速度 + ブースト
             target_v = base_v + SimConfig.SPURT_SPEED_BOOST
