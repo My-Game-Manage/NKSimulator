@@ -24,7 +24,7 @@ from typing import List
 
 from utils.logger import setup_logger
 from constants.config import SimConfig
-from constants.strategy import StrategyConfig, StrategyParamKey
+from constants.strategy import StrategyConfig, StrategyParamKey, STRATEGY_LANE_MAP
 from models.horse import Horse
 from models.context import RaceContext
 from services.saver import ResultSaver
