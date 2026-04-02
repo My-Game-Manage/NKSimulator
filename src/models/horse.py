@@ -25,6 +25,8 @@ class HorseState:
     spurt_dist: float = 0.0    # スパートを始めた位置の記録
     passing_ranks: list[int] = field(default_factory=list)  # 通過順位を格納するリスト [2, 2, 3] のようなイメージ
     distance_to_front: float = 999.0
+    time_at_200m: float = 0.0  # 200m通過タイム
+    velocity_at_200m: float = 0.0 # 200m地点の速度
   
 class Horse:
     def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: StrategyType, lane: int):
