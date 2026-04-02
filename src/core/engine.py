@@ -248,6 +248,7 @@ class RaceEngine:
     def _update_lane_position(self, horse):
         """
         馬番に応じた初期位置から、脚質ごとの理想レーンへ徐々に移動させる
+        進路取りの動態化：馬番単位（0-15）のスケールに合わせる
         """
         # 前方の馬との距離を取得
         dist_to_front = self._get_distance_to_front_horse(horse)
@@ -257,65 +258,53 @@ class RaceEngine:
         # 基本の目標レーン
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
 
+        # 1. 移動速度の設定＞移動速度の向上
+        # 1秒間に 2.0〜3.0 レーン分動けるようにして、テンの合流を速める
+        lane_change_speed = 2.5
+
         # もし前との距離が 3m 以内なら「壁」とみなす
+        target_lane = ideal_lane
         current_lane = horse.state.current_lane
         if dist_to_front < 3.0:
-            # 外側（レーン番号が増える方向）に回避を試みる
-            target_lane = current_lane + 1.0
-            # コース幅（track_width）を超えないように制限
-            target_lane = min(target_lane, 15.0) 
-        else:
-            # 前が空いていれば、理想のレーンに戻ろうとする
-            target_lane = ideal_lane
-            
-        # 2. 移動速度の設定
-        # 1秒間に最大 0.5 レーン分移動すると仮定 (急激な横移動を防ぐ)
-        lane_change_speed = 0.5 
-    
-        # 3. 目標レーンとの差分を計算
+            # 外に避ける幅も、レーンが細分化されたので調整
+            target_lane = current_lane + 1.5
+            target_lane = min(target_lane, 15.0)
+
+        # 3. 移動処理、目標レーンとの差分を計算
         lane_diff = target_lane - current_lane
-    
         if abs(lane_diff) > 0.01:
             # 1フレームあたりの移動量を計算
             move_amount = lane_change_speed * self.dt
-        
-            # 目標に近づける
             if lane_diff > 0:
                 horse.state.current_lane = min(current_lane + move_amount, target_lane)
             else:
                 horse.state.current_lane = max(current_lane - move_amount, target_lane)
-                
+
     def _calculate_effective_speed(self, horse, segment_type, actual_accel):
         """
-        レーン（内外）によるコーナーでの距離ロスを計算する
+        コーナーでの距離ロス計算のスケール修正
         """
         velocity = horse.state.current_velocity
-    
         if segment_type == "curve":
-            # 大井のコーナー半径を約80mと仮定
-            # レーン幅を1.5mとすると、1レーン外にいくごとに距離は約2%弱伸びる
-            # 簡易計算式: 補正係数 = (半径) / (半径 + レーン位置)
             radius = 80.0
-            lane_width = 1.5
+            # 16レーンに分かれたため、1レーンあたりの実質的な「幅」を小さく見積もる
+            # (枠単位の1.5mを、馬番単位の 0.6m〜0.8m 程度に修正)
+            effective_lane_width = 0.7 
         
-            # 外側にいればいるほど、1フレームで進める「コース上の距離」が短くなる
-            # lane 0 = 1.0 / lane 3 = 0.946... (約5%のロス)
-            loss_coeff = radius / (radius + (horse.lane * lane_width))
+            loss_coeff = radius / (radius + (horse.state.current_lane * effective_lane_width))
             return velocity * loss_coeff
-    
         return velocity
-
+        
     def _get_distance_to_front_horse(self, horse: Horse) -> float:
         """
         同一レーン上の最も近い前方馬との距離を返す。いない場合は十分な距離(999m)を返す。
+        同一レーン判定の閾値を調整
         """
         min_dist = 999.0
         for other in self.participants:
-            if horse.horse_id == other.horse_id:
-                continue
-        
-            # 同じレーン（幅0.8程度の範囲）にいるか判定
-            if abs(horse.state.current_lane - other.state.current_lane) < 0.8:
+            if horse.horse_id == other.horse_id: continue
+            # 16レーンあるため、幅 0.5 程度を「同じ進路」とみなす
+            if abs(horse.state.current_lane - other.state.current_lane) < 0.5:
                 dist = other.state.current_position - horse.state.current_position
                 if 0 < dist < min_dist:
                     min_dist = dist
