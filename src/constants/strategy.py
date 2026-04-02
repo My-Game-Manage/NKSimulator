@@ -26,26 +26,29 @@ STRATEGY_LANE_MAP = {
 }
 
 class StrategyConfig:
-    # 各脚質ごとの物理パラメータ補正
+# 各脚質ごとの物理パラメータ補正
     PARAMS = {
         StrategyType.LEAD: {
-            "cruising_coeff": 1.05,  # 前半から飛ばす
-            "spurt_dist": 600.0,     # 早めにスパート
+            "cruising_coeff": 1.04,  # 少し抑えて道中のスタミナ温存
+            "spurt_dist": 350.0,     # 直線に入ってから一気にスパート
+            "exhaust_speed_coeff": 0.90, # バテても粘る（根性）
         },
         StrategyType.FRONT: {
-            "cruising_coeff": 1.00,  # 標準的
-            "spurt_dist": 600.0,
+            "cruising_coeff": 1.00,
+            "spurt_dist": 400.0,     # 逃げよりは早いが、600mよりは遅らせる
+            "exhaust_speed_coeff": 0.88, # 逃げの次に粘る
         },
         StrategyType.SUSTAINED: {
-            "cruising_coeff": 0.96,  # 道中温存
-            "spurt_dist": 500.0,     # 直線手前から
+            "cruising_coeff": 0.95,  # 道中はゆったり脚を溜める
+            "spurt_dist": 550.0,     # 3-4角の中間付近から進出開始
+            "exhaust_speed_coeff": 0.80, # バテると一気に止まる
         },
         StrategyType.REAR: {
-            "cruising_coeff": 0.92,  # かなり温存
-            "spurt_dist": 400.0,     # 直線勝負
+            "cruising_coeff": 0.92,
+            "spurt_dist": 600.0,     # 最も早くスパートを開始してまくる
+            "exhaust_speed_coeff": 0.75, # 最後に賭ける分、切れたら終わり
         }
     }
-
     @classmethod
     def get(cls, strategy: str):
         return cls.PARAMS.get(strategy, cls.PARAMS[StrategyType.FRONT])
