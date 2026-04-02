@@ -325,18 +325,37 @@ class RaceEngine:
 
         # 基本の目標レーン
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
+        
+        # 1. 基本は理想のレーンを目指す
+        target_lane = ideal_lane
+    
+        # 2. 壁判定のロジック
+        if dist < 4.0: # 4m以内を検知対象にする
+            front_horse = self._get_front_horse_object(horse)
+            if front_horse:
+                # 自分の本来出したい速度（target_v）と前の馬の速度を比較
+                # ※ここで使う ideal_v は、同期ロジック適用前の「素」の目標速度
+                ideal_v = self._calculate_base_target_velocity(horse) 
+            
+                # 【重要】自分の方が 0.2m/s 以上速いポテンシャルがあるなら「壁」
+                if ideal_v > (front_horse.state.current_velocity + 0.2):
+                    # 外に持ち出して追い抜きを試みる
+                    target_lane = horse.state.current_lane + 1.2
+                else:
+                    # 前の馬の方が速い、あるいは同等なら「壁」ではない。
+                    # そのまま後ろについてスリップストリーム（同期）を狙う
+                    target_lane = horse.state.current_lane
+        # 3. 復帰ロジック
+        elif horse.state.current_lane > ideal_lane:
+            # 前に馬がいない（dist > 5.0など）なら、理想のレーン（内側）へ戻る
+            target_lane = ideal_lane    
+
+        # 境界チェック
+        target_lane = max(0.0, min(target_lane, 15.0))
 
         # 1. 移動速度の設定＞移動速度の向上
         # 1秒間に 2.0〜3.0 レーン分動けるようにして、テンの合流を速める
         lane_change_speed = 2.5
-
-        # もし前との距離が 3m 以内なら「壁」とみなす
-        target_lane = ideal_lane
-        current_lane = horse.state.current_lane
-        if dist_to_front < 3.0:
-            # 外に避ける幅も、レーンが細分化されたので調整
-            target_lane = current_lane + 1.5
-            target_lane = min(target_lane, 15.0)
 
         # 3. 移動処理、目標レーンとの差分を計算
         lane_diff = target_lane - current_lane
