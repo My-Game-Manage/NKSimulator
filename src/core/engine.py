@@ -139,8 +139,63 @@ class RaceEngine:
             if position <= accumulated_dist:
                 return seg['type']
         return "straight" # 予備
+        
+    def _calculate_acceleration(self, horse, segment_type):
+        """
+        加速度の算出：目標速度の決定と、前方馬との同期・回避・ブレーキを統合
+        """
+        strat_params = StrategyConfig.get(horse.strategy)
+    
+        # 1. 基本となる目標速度 (target_v) の決定
+        # スタートダッシュ(300m以内)
+        if horse.state.current_position < 300.0:
+            if horse.strategy in [StrategyType.LEAD, StrategyType.FRONT]:
+                target_v = horse.params.max_velocity * 1.05
+            else:
+                target_v = horse.params.max_velocity * 1.00
+        # バテ
+        elif horse.state.is_exhausted:
+            target_v = horse.params.max_velocity * strat_params[StrategyParamKey.EXHAUST_SPEED_COEFF]
+        # スパート
+        elif horse.state.is_spurt:
+            target_v = horse.params.max_velocity
+        # 巡航
+        else:
+            target_v = horse.params.max_velocity * strat_params[StrategyParamKey.CRUISING_COEFF]
 
-    def _calculate_acceleration(self, horse, segment_type: str) -> float:
+        # 2. 縦方向の隊列制御（同期・ブレーキの一本化）
+        dist = horse.state.distance_to_front
+    
+        # スタート直後（100m以内）は密集するため、極端なブレーキを無効化して縦に伸ばす
+        if horse.state.current_position > 100.0:
+            if dist < 5.0:
+                front_horse = self._get_front_horse_object(horse)
+                if front_horse:
+                    front_v = front_horse.state.current_velocity
+                
+                    if dist < 1.5:
+                        # 【ブレーキ】前の馬の速度を基準に、少しだけ減速して車間を保つ
+                        # 自分の現在速度ではなく、相手の速度(front_v)を基準にするのがポイント
+                        target_v = min(target_v, front_v * 0.98)
+                    else:
+                        # 【同期】1.5m〜5.0mの間は、前の馬の速度 +α で追走（隊列形成）
+                        # わずかに速く設定することで、隙があれば抜こうとする圧を表現
+                        target_v = min(target_v, front_v + 0.1)
+
+        # 3. 加速度の計算
+        # 目標速度と現在速度の差分から駆動力を算出
+        v_diff = target_v - horse.state.current_velocity
+        accel = v_diff * horse.params.base_acceleration
+    
+        # 環境抵抗（馬場状態など）を減算
+        actual_accel = accel - self.context.base_friction
+    
+        # 急激な減速・加速の制限（物理的な限界）
+        # 必要に応じて上限・下限を設けるとより安定します
+    
+        return actual_accel
+
+    def _calculate_acceleration_old(self, horse, segment_type: str) -> float:
         """
         スパートロジックを組み込んだ加速度計算
         """
