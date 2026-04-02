@@ -352,6 +352,8 @@ class RaceEngine:
 
         # 境界チェック
         target_lane = max(0.0, min(target_lane, 15.0))
+        # とりあずレーン間の移動速度を上げる＞2.5
+        lane_change_speed = 2.5
 
         # 3. 移動処理、目標レーンとの差分を計算
         lane_diff = target_lane - horse.state.current_lane
