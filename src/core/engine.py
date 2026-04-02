@@ -91,7 +91,12 @@ class RaceEngine:
             
             # 7. スタミナ消費
             self._consume_stamina(horse)
-            
+
+            # 200m通過時の記録
+            if horse.state.time_at_200m == 0.0 and horse.state.current_position >= 200.0:
+                horse.state.time_at_200m = self.elapsed_time
+                horse.state.velocity_at_200m = horse.state.current_velocity
+                
             # 残り600m地点の通過チェック
             remaining_dist = self.context.distance - horse.state.current_position
             if remaining_dist <= 600.0 and horse.state.time_at_600m == 0.0:
