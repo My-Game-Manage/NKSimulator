@@ -238,9 +238,10 @@ class RaceEngine:
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
 
         # もし前との距離が 3m 以内なら「壁」とみなす
+        current_lane = horse.state.current_lane
         if dist_to_front < 3.0:
             # 外側（レーン番号が増える方向）に回避を試みる
-            target_lane = horse.state.current_lane + 1.0
+            target_lane = current_lane + 1.0
             # コース幅（track_width）を超えないように制限
             target_lane = min(target_lane, 15.0) 
         else:
