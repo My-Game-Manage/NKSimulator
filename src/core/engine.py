@@ -319,9 +319,9 @@ class RaceEngine:
         進路取りの動態化：馬番単位（0-15）のスケールに合わせる
         """
         # 前方の馬との距離を取得
-        dist_to_front = self._get_distance_to_front_horse(horse)
+        dist = self._get_distance_to_front_horse(horse)
         # 保存用
-        horse.state.distance_to_front = dist_to_front
+        horse.state.distance_to_front = dist
 
         # 基本の目標レーン
         ideal_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
