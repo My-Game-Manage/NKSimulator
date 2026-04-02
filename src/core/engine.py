@@ -188,7 +188,7 @@ class RaceEngine:
         accel = v_diff * horse.params.base_acceleration
     
         # 環境抵抗（馬場状態など）を減算
-        actual_accel = accel - self.context.base_friction
+        actual_accel = accel - self.context.surface_friction
     
         # 急激な減速・加速の制限（物理的な限界）
         # 必要に応じて上限・下限を設けるとより安定します
