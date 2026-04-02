@@ -42,7 +42,8 @@ class Horse:
     def reset_state(self):
         """レース開始時の状態にリセットする"""
         self.state = HorseState(
-            current_stamina=self.params.stamina_capacity
+            current_stamina=self.params.stamina_capacity,
+            current_lane=float(self.lane),
         )
 
     def update_physics(self, dt: float, acceleration: float, effective_v: float):
