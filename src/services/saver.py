@@ -54,7 +54,7 @@ class ResultSaver:
             "spurt_dist": round(horse.state.spurt_dist, 2),
             # "is_exhausted": horse.state.is_exhausted,
             "lane": round(horse.state.current_lane, 2),
-            "dist_to_front": round(horse.state.dist_to_front, 2),
+            "dist_to_front": round(horse.state.distance_to_front, 2),
         }
         self.results.append(record)
         
