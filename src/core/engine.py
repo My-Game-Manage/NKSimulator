@@ -24,7 +24,7 @@ from typing import List
 
 from utils.logger import setup_logger
 from constants.config import SimConfig
-from constants.strategy import StrategyConfig
+from constants.strategy import StrategyConfig, StrategyParamKey
 from models.horse import Horse
 from models.context import RaceContext
 from services.saver import ResultSaver
@@ -151,7 +151,7 @@ class RaceEngine:
             target_v = base_v + SimConfig.SPURT_SPEED_BOOST
         else:
             # 道中：脚質ごとの巡航速度
-            target_v = base_v * strat_params["cruising_coeff"]
+            target_v = base_v * strat_params["StrategyParamKey.CRUISING_COEFF"]
     
         # スタミナによるブースト（例：残量1000につき +0.5m/s）
         # これにより、1600残っている馬はさらに加速しようとします
@@ -217,7 +217,7 @@ class RaceEngine:
             remaining_dist = self.context.distance - horse.state.current_position
         
             # 残り距離が脚質ごとのスパート開始距離に入ったらスイッチON
-            if remaining_dist <= strat_params["spurt_dist"]:
+            if remaining_dist <= strat_params[StrategyParamKey.SPURT_DIST]:
                 horse.state.is_spurt = True
                 horse.state.spurt_dist = remaining_dist
                 self.logger.info(f"{horse.name} がスパート開始！ 残り: {remaining_dist:.1f}m")
