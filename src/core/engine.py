@@ -328,30 +328,31 @@ class RaceEngine:
         
         # 1. 基本は理想のレーンを目指す
         target_lane = ideal_lane
-    
+        
         # 2. 壁判定のロジック
-        if dist < 4.0: # 4m以内を検知対象にする
+        # --- 動的な壁判断 ---
+        if dist < 4.0:
             front_horse = self._get_front_horse_object(horse)
             if front_horse:
-                # 自分の本来出したい速度（target_v）と前の馬の速度を比較
-                # ※ここで使う ideal_v は、同期ロジック適用前の「素」の目標速度
-                ideal_v = self._calculate_base_target_velocity(horse) 
+                # 自分の本来の能力(ideal_v)が、前の馬の速度(front_v)より明らかに速い場合
+                ideal_v = self._calculate_base_target_velocity(horse)
+                front_v = front_horse.state.current_velocity
             
-                # 【重要】自分の方が 0.2m/s 以上速いポテンシャルがあるなら「壁」
-                if ideal_v > (front_horse.state.current_velocity + 0.2):
-                    # 外に持ち出して追い抜きを試みる
+                if ideal_v > (front_v + 0.2):
+                    # 「邪魔だ！」と判断して外に持ち出す
+                    # 現在のレーンから少し外(数字が増える方向)へ
                     target_lane = horse.state.current_lane + 1.2
                 else:
-                    # 前の馬の方が速い、あるいは同等なら「壁」ではない。
-                    # そのまま後ろについてスリップストリーム（同期）を狙う
+                    # 前の馬の方が速いなら、そのまま後ろについてスタミナ温存
                     target_lane = horse.state.current_lane
-        # 3. 復帰ロジック
+                
+        # 復帰ロジック：前が空いた（distが大）なら、理想のレーン（内）へ戻る
         elif horse.state.current_lane > ideal_lane:
-            # 前に馬がいない（dist > 5.0など）なら、理想のレーン（内側）へ戻る
-            target_lane = ideal_lane    
+            target_lane = ideal_lane
 
-        # 境界チェック
+        # 境界チェック：0〜15レーンの範囲に収める
         target_lane = max(0.0, min(target_lane, 15.0))
+
         # とりあずレーン間の移動速度を上げる＞2.5
         lane_change_speed = 2.5
 
