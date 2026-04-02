@@ -11,6 +11,12 @@ class StrategyType:
     SUSTAINED = "Sustained" # 差し
     REAR = "Rear"           # 追込
 
+class StrategyParamKey:
+    """辞書のキーとして使用する定数群"""
+    CRUISING_COEFF = "cruising_coeff"
+    SPURT_DIST = "spurt_dist"
+    EXHAUST_SPEED_COEFF = "exhaust_speed_coeff"
+
 STRATEGY_STAMINA_MAP = {
     StrategyType.LEAD: 0.92,      # 逃げ：ハイペース耐性が低い想定
     StrategyType.FRONT: 0.98,     # 先行：標準よりやや低め
@@ -26,29 +32,32 @@ STRATEGY_LANE_MAP = {
 }
 
 class StrategyConfig:
-# 各脚質ごとの物理パラメータ補正
+    # 各脚質ごとの物理パラメータ補正
+    # Keyには定義した定数を使用し、数値は直接指定する構成
     PARAMS = {
         StrategyType.LEAD: {
-            "cruising_coeff": 1.04,  # 少し抑えて道中のスタミナ温存
-            "spurt_dist": 350.0,     # 直線に入ってから一気にスパート
-            "exhaust_speed_coeff": 0.90, # バテても粘る（根性）
+            StrategyParamKey.CRUISING_COEFF: 1.04,
+            StrategyParamKey.SPURT_DIST: 350.0,
+            StrategyParamKey.EXHAUST_SPEED_COEFF: 0.90,
         },
         StrategyType.FRONT: {
-            "cruising_coeff": 1.00,
-            "spurt_dist": 400.0,     # 逃げよりは早いが、600mよりは遅らせる
-            "exhaust_speed_coeff": 0.88, # 逃げの次に粘る
+            StrategyParamKey.CRUISING_COEFF: 1.00,
+            StrategyParamKey.SPURT_DIST: 400.0,
+            StrategyParamKey.EXHAUST_SPEED_COEFF: 0.88,
         },
         StrategyType.SUSTAINED: {
-            "cruising_coeff": 0.95,  # 道中はゆったり脚を溜める
-            "spurt_dist": 550.0,     # 3-4角の中間付近から進出開始
-            "exhaust_speed_coeff": 0.80, # バテると一気に止まる
+            StrategyParamKey.CRUISING_COEFF: 0.95,
+            StrategyParamKey.SPURT_DIST: 550.0,
+            StrategyParamKey.EXHAUST_SPEED_COEFF: 0.80,
         },
         StrategyType.REAR: {
-            "cruising_coeff": 0.92,
-            "spurt_dist": 600.0,     # 最も早くスパートを開始してまくる
-            "exhaust_speed_coeff": 0.75, # 最後に賭ける分、切れたら終わり
+            StrategyParamKey.CRUISING_COEFF: 0.92,
+            StrategyParamKey.SPURT_DIST: 600.0,
+            StrategyParamKey.EXHAUST_SPEED_COEFF: 0.75,
         }
     }
+
     @classmethod
-    def get(cls, strategy: str):
-        return cls.PARAMS.get(strategy, cls.PARAMS[StrategyType.FRONT])
+    def get(cls, strategy_type: str) -> dict:
+        """指定された脚質のパラメータを返す。存在しない場合は先行(FRONT)を返す。"""
+        return cls.PARAMS.get(strategy_type, cls.PARAMS[StrategyType.FRONT])
