@@ -18,6 +18,7 @@ class HorseState:
     is_spurt: bool = False         # スパート中か
     is_exhausted: bool = False     # バテているか
     current_lane: float = 1.0          # 現在走っているレーン
+    is_drafting: bool = False
     
     # --- 計測用に追加 ---
     time_at_600m: float = 0.0  # 残り600m地点を通過した時の時刻
