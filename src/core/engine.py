@@ -73,20 +73,23 @@ class RaceEngine:
             
             # 1. 現在のコース区間（直線 or コーナー）を特定
             segment_type = self._get_current_segment_type(horse.state.current_position)
+
+            # 2. 進路取りの更新（位置更新の前に行う）
+            self._update_lane_position(horse)
             
-            # 2.【ここに追加】馬の状態（スパート、バテ）を最新の位置・スタミナに基づいて更新
+            # 3.【ここに追加】馬の状態（スパート、バテ）を最新の位置・スタミナに基づいて更新
             self._update_horse_status(horse)
             
-            # 3. 加速度の計算（簡易モデル）
+            # 4. 加速度の計算（簡易モデル）
             accel = self._calculate_acceleration(horse, segment_type)
             
-            # 4. 物理状態の更新の箇所を以下のように調整
+            # 5. 物理状態の更新の箇所を以下のように調整
             effective_v = self._calculate_effective_speed(horse, segment_type, accel)
             
-            # 5. 物理状態の更新（Horseクラスのメソッドを呼び出し）
+            # 6. 物理状態の更新（Horseクラスのメソッドを呼び出し）
             horse.update_physics(self.dt, accel, effective_v)
             
-            # 6. スタミナ消費
+            # 7. スタミナ消費
             self._consume_stamina(horse)
             
             # 残り600m地点の通過チェック
@@ -223,6 +226,31 @@ class RaceEngine:
                 horse.state.is_spurt = True
                 horse.state.spurt_dist = remaining_dist
                 self.logger.info(f"{horse.name} がスパート開始！ 残り: {remaining_dist:.1f}m")
+
+    def _update_lane_position(self, horse):
+        """
+        馬番に応じた初期位置から、脚質ごとの理想レーンへ徐々に移動させる
+        """
+        # 1. 脚質ごとの目標レーンを取得 (STRATEGY_LANE_MAP から)
+        target_lane = STRATEGY_LANE_MAP.get(horse.strategy, 1)
+        current_lane = horse.state.current_lane
+    
+        # 2. 移動速度の設定
+        # 1秒間に最大 0.5 レーン分移動すると仮定 (急激な横移動を防ぐ)
+        lane_change_speed = 0.5 
+    
+        # 3. 目標レーンとの差分を計算
+        lane_diff = target_lane - current_lane
+    
+        if abs(lane_diff) > 0.01:
+            # 1フレームあたりの移動量を計算
+            move_amount = lane_change_speed * self.dt
+        
+            # 目標に近づける
+            if lane_diff > 0:
+                horse.state.current_lane = min(current_lane + move_amount, target_lane)
+            else:
+                horse.state.current_lane = max(current_lane - move_amount, target_lane)
                 
     def _calculate_effective_speed(self, horse, segment_type, actual_accel):
         """
