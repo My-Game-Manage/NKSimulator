@@ -71,14 +71,26 @@ class RaceSimulator:
         1回のレースのシミュレーションを行う
         """
         self.logger.info("シミュレーション開始...")
+        
         # エンジン起動
         engine = RaceEngine(context, horses, saver=saver)
         self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
+
+        # 前処理
+        self._prepare_simulation(horses)
+        
+        # レース開始
         engine.run_race()
         
         # 結果の確認
         for h in horses:
             self.logger.info(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
+
+    def _prepare_simulation(self, horses: list):
+        """各馬のリセット"""
+        for horse in horses:
+            horse.reset_state()
+            self.logger.info(f"{horse.name}: 初期レーン {horse.state.current_lane} に配置しました。")
 
     def _save_logs(self, saver: ResultSaver, date: str):
         """
