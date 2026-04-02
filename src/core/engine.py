@@ -171,10 +171,23 @@ class RaceEngine:
             # 道中：脚質ごとの巡航速度
             target_v = base_v * strat_params[StrategyParamKey.CRUISING_COEFF]
 
-        # 前が詰まっている（1.5m以内）なら強制的に速度制限
-        if horse.state.distance_to_front < 1.5:
-            # 前の馬にぶつからないよう、目標速度を現在の速度の90%に抑える
-            target_v = min(target_v, horse.state.current_velocity * 0.9)
+        # --- 追走・同期ロジックの追加 ---
+        dist = horse.state.distance_to_front
+        if dist < 5.0:  # 5m以内に馬がいる場合
+            front_horse = self._get_front_horse_object(horse)
+            if front_horse:
+                front_v = front_horse.state.current_velocity
+            
+                if dist < 1.5:
+                    # 【ブレーキ】近すぎる場合は、前の馬より少し遅い速度を目標にする
+                    target_v = min(target_v, front_v * 0.95)
+                elif 1.5 <= dist < 4.0:
+                    # 【追走同期】適切な車間距離なら、前の馬と同じペースで走る
+                    # わずかに (+0.1) 速く設定することで、隙があれば抜こうとする圧を表現
+                    target_v = min(target_v, front_v + 0.1)
+                
+                    # ※ここでスタミナ消費軽減フラグを立てるのも有効です
+                    horse.state.is_drafting = True
     
         # スタミナによるブースト（例：残量1000につき +0.5m/s）
         # これにより、1600残っている馬はさらに加速しようとします
@@ -309,6 +322,20 @@ class RaceEngine:
                 if 0 < dist < min_dist:
                     min_dist = dist
         return min_dist
+
+    def _get_front_horse_object(self, horse: Horse):
+        """同一レーン上で最も近い前方の馬オブジェクトを返す"""
+        min_dist = 999.0
+        front_horse = None
+        for other in self.participants:
+            if horse.horse_id == other.horse_id: continue
+            # 同一レーン判定（幅0.5）
+            if abs(horse.state.current_lane - other.state.current_lane) < 0.5:
+                dist = other.state.current_position - horse.state.current_position
+                if 0 < dist < min_dist:
+                    min_dist = dist
+                    front_horse = other
+        return front_horse
         
     def run_race(self):
         """全馬がゴールするまでループ"""
