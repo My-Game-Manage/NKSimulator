@@ -133,6 +133,9 @@ class HorseFactory:
         # 能力計算（distanceを渡すように変更）
         params = self._calculate_params(past_df, entry_row, distance, strategy)
         
+        # 馬番 - 1 を初期レーンとする（1番枠なら0、2番枠なら1...）
+        initial_lane = entry_row[RaceCol.HORSE_NUMBER] - 1
+        
         return Horse(
             horse_id=horse_id,
             name=name,
@@ -140,7 +143,7 @@ class HorseFactory:
             horse_num=horse_num,
             params=params,
             strategy=strategy,
-            lane=STRATEGY_LANE_MAP.get(strategy, 0),
+            lane=initial_lane,
         )
 
     def _calculate_params(self, past_df: pd.DataFrame, entry_row: pd.Series, distance: int, strategy: StrategyType) -> StaticParams:
