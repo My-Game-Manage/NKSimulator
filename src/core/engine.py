@@ -353,10 +353,6 @@ class RaceEngine:
         # 境界チェック
         target_lane = max(0.0, min(target_lane, 15.0))
 
-        # 1. 移動速度の設定＞移動速度の向上
-        # 1秒間に 2.0〜3.0 レーン分動けるようにして、テンの合流を速める
-        lane_change_speed = 2.5
-
         # 3. 移動処理、目標レーンとの差分を計算
         lane_diff = target_lane - current_lane
         if abs(lane_diff) > 0.01:
@@ -410,6 +406,17 @@ class RaceEngine:
                     min_dist = dist
                     front_horse = other
         return front_horse
+
+    def _calculate_base_target_velocity(self, horse):
+        """同期ロジックを適用する前の、脚質・区間・スタミナに基づく目標速度"""
+        strat_params = StrategyConfig.get(horse.strategy)
+        if horse.state.current_position < 300.0:
+            return horse.params.max_velocity * (1.05 if horse.strategy in [StrategyType.LEAD, StrategyType.FRONT] else 1.0)
+        if horse.state.is_exhausted:
+            return horse.params.max_velocity * strat_params[StrategyParamKey.EXHAUST_SPEED_COEFF]
+        if horse.state.is_spurt:
+            return horse.params.max_velocity
+        return horse.params.max_velocity * strat_params[StrategyParamKey.CRUISING_COEFF]
         
     def run_race(self):
         """全馬がゴールするまでループ"""
