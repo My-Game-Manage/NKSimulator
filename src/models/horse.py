@@ -3,13 +3,19 @@ horse.py の概要
 
 馬の色々な状態について管理するクラス
 """
-from dataclasses import dataclass, field
 
-from src.models.params import StaticParams
-from src.constants.strategy import StrategyType
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+from models.params import StaticParams
+from models.tactics import TacticsAI
+from constants.schema import SegmentType
+from constants.strategy import StrategyType
 
 @dataclass
 class HorseState:
+    """馬の動的な状態を保持する"""
     current_velocity: float = 0.0
     current_position: float = 0.0  # スタートからの距離(m)
     current_stamina: float = 0.0
@@ -17,7 +23,8 @@ class HorseState:
     # 状態フラグ
     is_spurt: bool = False         # スパート中か
     is_exhausted: bool = False     # バテているか
-    current_lane: float = 1.0          # 現在走っているレーン
+    current_lane: float = 0.0          # 現在走っているレーン
+    remaining_stamina: float = 0.0
     is_drafting: bool = False
     
     # --- 計測用に追加 ---
@@ -28,34 +35,65 @@ class HorseState:
     distance_to_front: float = 999.0
     time_at_200m: float = 0.0  # 200m通過タイム
     velocity_at_200m: float = 0.0 # 200m地点の速度
-  
+
 class Horse:
-    def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: StrategyType, lane: int):
+    def __init__(self, horse_id: str, name: str, bracket_num: int, horse_num: int, params: StaticParams, strategy: str):
         self.horse_id = horse_id
-        self.name = name
-        self.bracket_num = bracket_num
-        self.horse_num = horse_num
+        self.horse_name = name
         self.params = params
         self.strategy = strategy
-        self.lane = lane
+        self.bracket_num = bracket_num
+        self.horse_num = horse_num
         
-        # 状態の初期化（レース開始時にリセット可能にする）
+        # 初期状態の設定
         self.state = None
         self.reset_state()
-
+        
+        # 意思決定エンジンの搭載
+        self.tactics = TacticsAI(self)
+        
     def reset_state(self):
         """レース開始時の状態にリセットする"""
         self.state = HorseState(
             current_stamina=self.params.stamina_capacity,
-            current_lane=float(self.lane),
+            current_lane=0.0 # 初期値。実際には枠順等で初期化
         )
 
-    def update_physics(self, dt: float, acceleration: float, effective_v: float):
-        """Engineから計算された加速度を受け取り、位置と速度を更新する"""
-        self.state.current_velocity += acceleration * dt
-        # 速度がマイナスにならないようにガード
-        self.state.current_velocity = max(0, self.state.current_velocity)
+    def update_physics(self, target_v: float, target_lane: float, dt: float, friction: float, loss_coeff: float):
+        """
+        Engineから与えられた目標値に基づき、物理状態（速度・位置・スタミナ）を更新する。
+        """
+        # 1. 加速度の計算 (Engineにあったロジックをここに集約)
+        # コーナーロス等を適用した実質的な目標速度
+        effective_target_v = target_v * loss_coeff
         
-        # 位置の更新には effective_v を使い、速度の保持には本来の accel を使う
-        #self.state.current_position += self.state.current_velocity * dt
-        self.state.current_position += effective_v * dt
+        v_diff = effective_target_v - self.state.current_velocity
+        accel = (v_diff * self.params.base_acceleration) - friction
+        
+        # 2. 速度と位置の更新
+        self.state.current_velocity += accel * dt
+        # 速度がマイナスにならないよう制限
+        self.state.current_velocity = max(0.0, self.state.current_velocity)
+        
+        self.state.current_position += self.state.current_velocity * dt
+        
+        # 3. レーンの更新（目標レーンへじわじわ近づく）
+        lane_diff = target_lane - self.state.current_lane
+        # レーン移動速度（定数またはパラメータ化）
+        lane_change_speed = 0.5 * dt 
+        if abs(lane_diff) > lane_change_speed:
+            self.state.current_lane += lane_change_speed if lane_diff > 0 else -lane_change_speed
+        else:
+            self.state.current_lane = target_lane
+
+    def consume_stamina(self, dt: float):
+        """
+        現在の速度に基づきスタミナを消費させる。
+        """
+        # 速度の2乗に比例して消費（既存ロジックの継承）
+        consumption = (self.state.current_velocity ** 2) * 0.01 * dt
+        self.state.remaining_stamina -= consumption
+        
+        if self.state.remaining_stamina <= 0:
+            self.state.remaining_stamina = 0
+            self.state.is_exhausted = True

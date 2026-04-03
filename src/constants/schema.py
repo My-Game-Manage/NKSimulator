@@ -1,3 +1,15 @@
+from enum import Enum
+
+class SegmentType(Enum):
+    STRAIGHT = "straight"
+    CURVE = "curve"
+
+class CourseLocation(Enum):
+    """セグメントの名前ではなく『場所』の役割を定義"""
+    BACKSTRETCH = "backstretch"  # 向こう正面
+    WITHIN_CURVE = "within_curve" # コーナー中
+    HOME_STRETCH = "home_stretch" # 最後の直線
+    
 class NetkeibaDomain:
     # ドメイン定義
     NAR = 'nar'
