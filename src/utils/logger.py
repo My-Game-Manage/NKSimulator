@@ -3,17 +3,22 @@ import logging
 import os
 from datetime import datetime
 
-def setup_logger(name: str, log_dir: str = "logs"):
+def setup_logger(name: str, level: str = "INFO", log_dir: str = "logs"):
     """
     ロガーを初期化し、コンソールとファイルの両方に出力する設定を行う
+    - 引数 level を受け取るように変更
     """
     os.makedirs(log_dir, exist_ok=True)
     
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO) # どのレベル以上を記録するか
+    
+    # 文字列のレベルを数値定数に変換（例: "DEBUG" -> 10）
+    numeric_level = getattr(logging, level.upper(), logging.INFO)
+    logger.setLevel(numeric_level) 
 
-    # すでにハンドラが設定されている場合は重複しないように戻す
     if logger.handlers:
+        # 既存のハンドラがある場合も、レベルだけは最新の状態に更新する
+        logger.setLevel(numeric_level)
         return logger
 
     # 出力フォーマットの設定（時刻, レベル, メッセージ）
