@@ -63,3 +63,5 @@ JRA_MAX_COURSE_CODE = 10
 NAME_TO_COURSE: dict[str, CourseSpec] = {
     spec.name: spec for spec in COURSE_MASTER.values()
 }
+# 名前から会場コードを取得するために生成
+NAME_TO_CODE = {v.name: k for k, v in COURSE_MASTER.items()}

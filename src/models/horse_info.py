@@ -7,6 +7,7 @@ import pandas as pd
 from dataclasses import dataclass
 
 from src.models.horse_param import HorseParam
+from src.models.horse_state import HorseState
 
 
 @dataclass(frozen=True)

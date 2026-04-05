@@ -32,17 +32,18 @@ class RaceInfoFactory:
         race_info_list = []
 
         for race_data in race_data_sets:
+            race_id = race_data[RaceCol.RACE_ID]
             entries_df = race_data[RaceCol.ENTRIES]
             histories_df = race_data[RaceCol.HISTORIES]
-            race_info = self.create_race_info_from_df(entries_df, histories_df)
+            race_info = self.create_race_info_from_df(race_id, entries_df, histories_df)
             race_info_list.append(race_info)
 
         return race_info_list
     
-    def create_race_info_from_df(self, df: pd.DataFrame, h_df: pd.DataFrame) -> RaceInfo:
+    def create_race_info_from_df(self, race_id: str, df: pd.DataFrame, h_df: pd.DataFrame) -> RaceInfo:
         """RaceInfoを作成する"""
         # 1. プロトタイプ（共通部分）の作成
-        race_info_proto = self.create_race_info_prototype(df)
+        race_info_proto = self.create_race_info_prototype(race_id, df)
 
         # 2. 出馬表から馬のリスト作成
         # 馬のリスト作成を委譲
@@ -56,7 +57,7 @@ class RaceInfoFactory:
 
         return race_info
     
-    def create_race_info_prototype(self, race_df: pd.DataFrame) -> RaceInfo:
+    def create_race_info_prototype(self, race_id: str, race_df: pd.DataFrame) -> RaceInfo:
         """馬情報なしのRaceInfoのプロトタイプを作成"""
         # 全馬共通のため最初の1行を参照
         first_row = race_df.iloc[0]
@@ -71,6 +72,7 @@ class RaceInfoFactory:
         course_spec = NAME_TO_COURSE.get(course_name, DEFAULT_COURSE_SPEC_KEY)
 
         return RaceInfo(
+            race_id=race_id,
             course_name=course_name,
             race_name=first_row[RaceCol.RACE_NAME],
             race_num=first_row[RaceCol.RACE_NUMBER],

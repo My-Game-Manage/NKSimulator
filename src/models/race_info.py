@@ -11,6 +11,8 @@ from src.models.horse_info import HorseInfo
 
 @dataclass(frozen=True)
 class RaceInfo:
+    # 基本情報
+    race_id: str
     # CSVから取得するレース情報
     course_name: str
     race_name: str

@@ -11,6 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
+from src.constants.course_master import NAME_TO_CODE
 from src.utils.path_utils import get_race_cards_csv_filename, get_horse_history_csv_filename
 
 class RaceDataProvider:
@@ -47,8 +48,11 @@ class RaceDataProvider:
         # レース単位のリストにして返す
         race_sets = []
         grouped = filtered_df.groupby([RaceCol.COURSE, RaceCol.RACE_NUMBER])
+
         for (course, num), group in grouped:
+            race_id = f"{target_date}{NAME_TO_CODE[course]}{str(num).zfill(2)}"
             race_sets.append({
+                RaceCol.RACE_ID: race_id,
                 RaceCol.COURSE: course,
                 RaceCol.RACE_NUMBER: num,
                 RaceCol.ENTRIES: group,  # DataFrameのまま渡すとFactoryで扱いやすいです

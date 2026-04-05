@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 from src.services.provider import RaceDataProvider
 from src.services.race_factory import RaceInfoFactory
 from src.models.race_state import RaceState
+from src.models.race_info import RaceInfo
+
 
 class RaceSimulator:
     def __init__(self):
@@ -57,8 +59,9 @@ class RaceSimulator:
 
         return race_info_list
 
-    def _run_single_race(self, info) -> list[RaceState]:
-        """1レース分をEngineで動かして結果を返す"""
+    def _run_single_race(self, info: RaceInfo) -> list[RaceState]:
+        """1レースのシミュレーションを実行し、全ステップの履歴を返す"""
+        logger.info(f"レース開始: {info.race_id}")
         return []
     
     def _post_races(self):
