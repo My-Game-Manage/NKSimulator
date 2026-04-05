@@ -99,7 +99,6 @@ class HorseAbilityAnalyzer:
     def _determine_strategy(self, past_records: pd.DataFrame) -> StrategyEnum:
         # 最初のコーナー順位の平均比率を算出
         first_pos_ratios = []
-        # TODO: cleaning df
         valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
         for _, row in valid_records.iterrows():
             first_pos = int(row[RaceCol.PASSING_ORDER].split('-')[0])

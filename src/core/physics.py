@@ -13,6 +13,14 @@ def check_goal(distance: float, course_length: float) -> bool:
     """コースの距離と進んだ距離を比較し、ゴールしたかどうか判定する"""
     return distance >= course_length
 
+def calculate_simple_acceled_speed(current_velocity: float, accel: float, dt: float) -> float:
+    """加速度から次の速度を求めるシンプルな数式"""
+    return current_velocity + accel * dt
+
+def calculate_simple_target_position(new_velocity: float, current_distance: float, dt: float) -> float:
+    """新しい速度から次の距離を求めるシンプルな数式"""
+    return current_distance + new_velocity * dt
+
 def interpolate_goal_time(pre_dist: float, post_dist: float, pre_time: float, dt: float, goal_dist: float) -> float:
     """
     ゴールラインを跨いだ瞬間の推定タイムを計算する。
@@ -42,6 +50,11 @@ def get_current_section(distance: float, sections: list[TrackSection]) -> TrackS
         if section.start_at <= distance < (section.start_at + section.distance):
             return section
     return sections[-1] # ゴール後は最後の直線扱い
+
+def get_condition_modifier(condition) -> float:
+    """コンディションによる補正数値を返す"""
+    # TODO：とりあえず現状は1.0を返す
+    return 1.0
 
 def calculate_target_speed(param: HorseParam, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
     """

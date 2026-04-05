@@ -8,6 +8,8 @@ from dataclasses import dataclass, replace
 from src.constants.race_master import TrackCondition, TrackWeather
 from src.models.section import TrackSection
 from src.models.horse_info import HorseInfo
+from src.constants.schema import RaceCol
+
 
 @dataclass(frozen=True)
 class RaceInfo:
@@ -31,3 +33,7 @@ class RaceInfo:
     sections: list[TrackSection]
     # 馬のリスト
     horses: list[HorseInfo]
+
+    def get_horse(self, horse_id: str):
+        """指定したIDに一致するHorseInfoを返す。見つからない場合はNone。"""
+        return next((h_info for h_info in self.horses if h_info.horse_id == horse_id), None)

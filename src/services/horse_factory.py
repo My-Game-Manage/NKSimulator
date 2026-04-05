@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
 from src.models.horse_param import HorseParam
+from src.models.horse_state import HorseState
 from src.models.horse_info import HorseInfo
-from src.models.strategy import StrategyEnum
+from src.models.section import SectionType
 from src.services.ability_analyzer import HorseAbilityAnalyzer
 
 
@@ -39,6 +40,29 @@ class HorseFactory:
             horse_num=row[RaceCol.HORSE_NUM],
             past_records=horse_history_df,
             param=param,
+        )
+    
+    def reset_horse_state(self, h_info: HorseInfo) -> HorseState:
+        """HorseStateの初期化"""
+        horse_id = h_info.horse_id
+        max_velocity = h_info.param.max_speed
+        total_stamina = h_info.param.total_stamina
+        horse_num = h_info.horse_num
+        return HorseState(
+            horse_id=horse_id,
+            step=0,
+            elapsed_time=0.0,
+            distance=0,
+            velocity=0.0,
+            target_velocity=max_velocity,
+            stamina=total_stamina,
+            is_spurting=False,
+            is_exhausted=False,
+            section_name=SectionType.STRAIGHT,
+            lane_p=float(horse_num),
+            is_blocked=False,
+            is_finished=False,
+            finish_time=None,
         )
     
     def _get_horse_history_by_id(self, df: pd.DataFrame, horse_id: str) -> pd.DataFrame:

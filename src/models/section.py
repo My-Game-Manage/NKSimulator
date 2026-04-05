@@ -7,6 +7,7 @@ from enum import Enum
 from dataclasses import dataclass
 
 class SectionName(Enum):
+    IN_GATE = "in gate"                 # ゲート内
     STARTING = "starting straight"      # スタート直線
     HOMESTRETCH = "homa stretch"        # ゴール前直線
     BACKSTRETCH = "back stretch"        # 向こう正面

@@ -1,8 +1,10 @@
 """
-名前に関するヘルパー関数
-"""
-from src.constants.master_data import JYO_NAME_MAP
+name_utils.py の概要
 
-def course_name_from_course_id(course_id) -> str:
-    """コースIDからコース名に変換する"""
-    return JYO_NAME_MAP.get(course_id, "不明")
+名前に関するヘルパー関数群
+"""
+
+
+def get_save_file_name(date: str, course: str, distance: str, surface: str) -> str:
+    """保存用のファイル名作成"""
+    return f"{date}_{course}_{surface}{distance}"

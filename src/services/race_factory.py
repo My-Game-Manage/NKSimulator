@@ -15,6 +15,7 @@ from dataclasses import dataclass, replace
 
 from src.constants.schema import RaceCol
 from src.models.race_info import RaceInfo
+from src.models.race_state import RaceState
 from src.constants.race_master import TrackCondition, TrackWeather
 from src.constants.course_master import CourseSpec, NAME_TO_COURSE, DEFAULT_COURSE_SPEC_KEY
 from src.constants.track_master import TRACK_DATA, DEFAULT_TRACK_DATA_KEY
@@ -85,6 +86,19 @@ class RaceInfoFactory:
             surface_friction=course_spec.surface_friction,
             sections=sections,
             horses=[],
+        )
+    
+    def create_initial_state(self, info: RaceInfo) -> RaceState:
+        """RaceInfoからStateの初期値を作成"""
+        horse_stetes = []
+        for h_info in info.horses:
+            h_id = h_info.horse_id
+            h_state = self.horse_factory.reset_horse_state(h_info)
+            horse_stetes.append(h_state)
+        return RaceState(
+            step_count=0.0,
+            elapsed_time=0.0,
+            horse_states=horse_stetes,
         )
     
     def _get_track_name(self, course_name: str, distance: int, surface: str) -> str:

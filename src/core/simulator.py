@@ -12,13 +12,19 @@ from src.services.provider import RaceDataProvider
 from src.services.race_factory import RaceInfoFactory
 from src.models.race_state import RaceState
 from src.models.race_info import RaceInfo
+from src.core.engine import RaceEngine
+from src.services.saver import RaceResultSaver
 
 
 class RaceSimulator:
+    DT = 0.1
+    MAX_STEPS = 2000
     def __init__(self):
-        _CLASSNAME = "Simulator"
-        # クラス名を名前としてロガーを作成
         logger.info("初期化中...")
+
+        self.engine = RaceEngine()
+        self.factory = RaceInfoFactory()
+        self.saver = RaceResultSaver()
 
         self.race_info_list = []
         # レースごとの結果（History）を格納する辞書
@@ -44,7 +50,7 @@ class RaceSimulator:
             self.results[info.race_id] = history
         
         # 事後処理
-        self._post_races()
+        self._post_races(date)
 
         return True
     
@@ -54,16 +60,40 @@ class RaceSimulator:
         provider = RaceDataProvider(data_dir="data")
         race_data_sets = provider.get_race_data_sets(date, courses, race_numbers)
 
-        factory = RaceInfoFactory()
-        race_info_list = factory.get_race_info_list(race_data_sets)
+        race_info_list = self.factory.get_race_info_list(race_data_sets)
 
         return race_info_list
 
     def _run_single_race(self, info: RaceInfo) -> list[RaceState]:
         """1レースのシミュレーションを実行し、全ステップの履歴を返す"""
         logger.info(f"レース開始: {info.race_id}")
-        return []
+        # 1. 初期状態（0ステップ目）の生成
+        # info 内の各 HorseInfo から初期位置などを設定した RaceState を作る
+        current_state = self.factory.create_initial_state(info)
+        history = [current_state]
+        
+        dt = self.DT  # 0.1秒きざみ
+        max_steps = self.MAX_STEPS # 安全のための最大ステップ数
+        
+        # 2. 全馬がゴールするまでループ
+        for _ in range(max_steps):
+            # Engine に 「現在の状態」 と 「レースの固定情報」 を渡して 「次の状態」 を得る
+            # Engine自体に状態を持たせない（Stateless）のがコツです
+            next_state = self.engine.step(current_state, info, dt)
+            
+            history.append(next_state)
+            current_state = next_state
+            #logger.info(f"current_r_state: {current_state.horse_states}")
+            
+            # 全頭ゴールしたか判定
+            if current_state.is_all_goal:
+                break
+                
+        return history
     
-    def _post_races(self):
+    def _post_races(self, date: str):
         """レースの事後処理"""
-        pass
+        for race_info in self.race_info_list:
+            history = self.results[race_info.race_id]
+            result_df = self.saver.export_results(race_info, history)
+            self.saver.save_result_to_csv(date, race_info.course_name, race_info.distance, race_info.surface, result_df)
