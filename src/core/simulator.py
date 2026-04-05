@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.services.provider import RaceDataProvider
-from src.services.factory import RaceInfoFactory
+from src.services.race_factory import RaceInfoFactory
 from src.models.race_state import RaceState
 
 class RaceSimulator:

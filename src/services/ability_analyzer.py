@@ -1,150 +1,38 @@
 """
-factory.py の概要
+ability_analyzer.py の概要
 
-レースと出走馬の情報を取得し、RaceInfoのリストを返す。
+馬の能力に関する計算を行う。
 """
 import pandas as pd
-import numpy as np
 import logging
 
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-
-from dataclasses import dataclass, replace
-
 from src.constants.schema import RaceCol
-from src.models.race_info import RaceInfo
-from src.models.horse_info import HorseInfo
 from src.models.horse_param import HorseParam
 from src.models.strategy import StrategyEnum
-from src.constants.race_master import TrackCondition, TrackWeather
-from src.constants.course_master import CourseSpec, NAME_TO_COURSE, DEFAULT_COURSE_SPEC_KEY
-from src.constants.track_master import TRACK_DATA, DEFAULT_TRACK_DATA_KEY
 
 
-class RaceInfoFactory:
-    _CLASSNAME = "RaceInfoFactory"
+class HorseAbilityAnalyzer:
+    """過去データから馬の能力パラメータを算出する専門クラス"""
     def __init__(self):
         logger.info("初期化中...")
-
-    def get_race_info_list(self, race_data_sets: list[dict]) -> list[RaceInfo]:
-        """レース情報のリストを返す"""
-        race_info_list = []
-
-        for race_data in race_data_sets:
-            entries_df = race_data[RaceCol.ENTRIES]
-            histories_df = race_data[RaceCol.HISTORIES]
-            race_info = self.create_race_info_from_df(entries_df, histories_df)
-            race_info_list.append(race_info)
-
-        return race_info_list
-    
-    def create_race_info_from_df(self, df: pd.DataFrame, h_df: pd.DataFrame) -> RaceInfo:
-        """RaceInfoを作成する"""
-        # 1. プロトタイプ（共通部分）の作成
-        race_info_proto = self.create_race_info_prototype(df)
-
-        # 2. 出馬表から馬のリスト作成
-        horse_list = []
-        for _, row in df.iterrows():
-            horse_info = self.create_horse_info(row, h_df)
-            horse_list.append(horse_info)
-
-        # 3. プロトタイプに統合
-        race_info = replace(race_info_proto, horses=horse_list)
-
-        return race_info
-    
-    def _get_track_name(self, course_name: str, distance: int, surface: str) -> str:
-        """コース構成用の名前取得"""
-        suffix = "" if surface == "ダ" else "_芝"
-        return f"{course_name}_{distance}{suffix}"
-
-    def create_race_info_prototype(self, race_df: pd.DataFrame) -> RaceInfo:
-        """馬情報なしのRaceInfoのプロトタイプを作成"""
-        # 全馬共通のため最初の1行を参照
-        first_row = race_df.iloc[0]
-
-        # セクション取得
-        course_name = first_row[RaceCol.COURSE]
-        distance = first_row[RaceCol.DISTANCE]
-        surface = first_row[RaceCol.SURFACE]
-        sections = TRACK_DATA.get(f"{self._get_track_name(course_name, distance, surface)}", DEFAULT_TRACK_DATA_KEY)
-
-        # マスタからCourseSpec取得
-        course_spec = NAME_TO_COURSE.get(course_name, DEFAULT_COURSE_SPEC_KEY)
-
-        return RaceInfo(
-            course_name=course_name,
-            race_name=first_row[RaceCol.RACE_NAME],
-            race_num=first_row[RaceCol.RACE_NUMBER],
-            distance=distance,
-            surface=surface,
-            condition=TrackCondition.from_str(first_row[RaceCol.TRACK_CONDITION]),
-            weather=TrackWeather.from_str(first_row[RaceCol.WEATHER]),
-            track_width=course_spec.track_width,
-            corner_penalty=course_spec.corner_penalty,
-            surface_friction=course_spec.surface_friction,
-            sections=sections,
-            horses=[],
-        )
-    
-    def create_horse_info(self, row: pd.Series, df: pd.DataFrame) -> HorseInfo:
-        """HorseInfoを作成する"""
-        distance = row[RaceCol.DISTANCE]
-        # historyは自分のものだけ持たせる
-        horse_id = row[RaceCol.HORSE_ID]
-        horse_history_df = df[df[RaceCol.HORSE_ID] == horse_id]
-
-        return HorseInfo(
-            horse_id=row[RaceCol.HORSE_ID],
-            name=row[RaceCol.HORSE_NAME],
-            bracket_num=row[RaceCol.BRACKET_NUM],
-            horse_num=row[RaceCol.HORSE_NUM],
-            past_records=horse_history_df,
-            param=self.create_horse_param(distance, df)
-        )
-    
-    def create_horse_param(self, distance: int, df: pd.DataFrame) -> HorseParam:
-        """HorseParamを算出して作成"""
-        strategy = StrategyEnum.PUSHING #self._determine_strategy(df)
-        total_stamina, stamina_waste_rate = self._calculate_stamina_params(df, distance)
-
-        return HorseParam(
-            max_speed=self._calculate_max_speed(df),
-            acceleration=self._calculate_acceleration(df),
-            total_stamina=total_stamina,
-            stamina_waste_rate=stamina_waste_rate,
-            cornering_ability=self._calculate_cornering_ability(df),
-            gate_reaction=self._calculate_gate_reaction(df),
-            strategy=strategy,
-            target_spurt_dist=self._calculate_spurt_dist(df, strategy),
-        )
-
-    def get_horse_history_by_id(self, df: pd.DataFrame, horse_id: str) -> pd.DataFrame:
-        """
-        指定された馬IDの過去レース記録のみを抽出して返す。
-    
-        Args:
-            df (pd.DataFrame): 過去データの全レコードが入ったDataFrame
-            horse_id (str): 抽出したい馬のID (例: '2020106948')
-        Returns:
-            pd.DataFrame: 該当する馬のレコードのみを含むDataFrame
-        """
-        # ID列が数値型か文字列型か不明な場合を考慮し、文字列に変換して比較
-        # アップロードされたCSVの列名に合わせて 'horse_id' を指定
-        target_df = df[df[RaceCol.HORSE_ID].astype(str) == str(horse_id)].copy()
-    
-        if target_df.empty:
-            logger.warning(f"警告: ID {horse_id} に該当するデータは見つかりませんでした。")
-        else:
-            # 時系列順に並べ替えておくとシミュレーションの分析に便利
-            # 'date' 列がある場合はソート（必要に応じて有効化してください）
-            # target_df = target_df.sort_values('date')
-            pass
         
-        return target_df
+    def analyze(self, past_records: pd.DataFrame, current_distance: int) -> HorseParam:
+        strategy = self._determine_strategy(past_records)
+        total_stamina, efficiency = self._calculate_stamina_params(past_records, current_distance)
+        
+        return HorseParam(
+            max_speed=self._calculate_max_speed(past_records),
+            acceleration=self._calculate_acceleration(past_records),
+            total_stamina=total_stamina,
+            stamina_waste_rate=efficiency,
+            cornering_ability=self._calculate_cornering_ability(past_records),
+            gate_reaction=self._calculate_gate_reaction(past_records),
+            strategy=strategy,
+            target_spurt_dist=self._calculate_spurt_dist(past_records, strategy),
+        )
     
     def _calculate_max_speed(self, past_records: pd.DataFrame) -> float:
         # 1. 走破タイム(s)を算出 (タイムが '107.6' などの形式の場合)
@@ -212,7 +100,8 @@ class RaceInfoFactory:
         # 最初のコーナー順位の平均比率を算出
         first_pos_ratios = []
         # TODO: cleaning df
-        for _, row in past_records.iterrows():
+        valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
+        for _, row in valid_records.iterrows():
             first_pos = int(row[RaceCol.PASSING_ORDER].split('-')[0])
             first_pos_ratios.append(first_pos / row[RaceCol.NUM_HORSES])
 
