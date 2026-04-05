@@ -5,7 +5,7 @@ course_id_utils.py の概要
 """
 from typing import Dict, Optional
 
-from constants.course_master import CourseSpec, COURSE_MASTER, NAME_TO_COURSE
+from src.constants.course_master import CourseSpec, COURSE_MASTER, NAME_TO_COURSE
 
 
 def get_course_from_race_id(race_id: str) -> Optional[CourseSpec]:

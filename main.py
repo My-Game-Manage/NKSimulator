@@ -1,12 +1,12 @@
 # main.py
 import argparse
 import sys
-from utils.logger import setup_logger
-from utils.date_utils import get_today_jst, normalize_date_format
-from utils.numeric_utils import parse_list_from_args_with_comma, fill_list_if_empty, convert_to_int_list
-from utils.course_id_utils import is_valid_course_name
-from constants.course_master import COURSE_MASTER
-from core.simulator import RaceSimulator
+from src.utils.logger import setup_logger
+from src.utils.date_utils import get_today_jst, normalize_date_format
+from src.utils.numeric_utils import parse_list_from_args_with_comma, fill_list_if_empty, convert_to_int_list
+from src.utils.course_id_utils import is_valid_course_name
+from src.constants.course_master import COURSE_MASTER
+from src.core.simulator import RaceSimulator
 
 
 def main():

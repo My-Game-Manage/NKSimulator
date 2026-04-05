@@ -1,4 +1,8 @@
-# src/utils/logger.py
+"""
+logger.py の概要
+
+プログラム実行中のログを取得し、表示したり保存したりする。
+"""
 import logging
 import os
 from datetime import datetime
