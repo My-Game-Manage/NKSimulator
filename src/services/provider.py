@@ -5,16 +5,18 @@ race_provider.py の概要
 """
 import pandas as pd
 from pathlib import Path
+import logging
 
-from src.utils.logger import setup_logger
+# ロガーの取得（__name__ はファイル名/モジュール名になる）
+logger = logging.getLogger(__name__)
+
 from src.constants.schema import RaceCol
 from src.utils.path_utils import get_race_cards_csv_filename, get_horse_history_csv_filename
 
 class RaceDataProvider:
     _CLASSNAME = "RaceDataProvider"
     def __init__(self, data_dir: str = "data"):
-        self.logger = setup_logger(self._CLASSNAME)
-        self.logger.info("初期化中...")
+        logger.info("初期化中...")
 
         self.data_dir = Path(data_dir)
 
@@ -26,7 +28,7 @@ class RaceDataProvider:
         h_file_path = self.data_dir / get_horse_history_csv_filename(target_date)
         
         if not file_path.exists():
-            self.logger.warning(f"{file_path} does not exist.")
+            logger.warning(f"{file_path} does not exist.")
             return []
 
         # ここで読み込み
@@ -41,7 +43,6 @@ class RaceDataProvider:
             (df[RaceCol.COURSE].isin(target_courses)) & 
             (df[RaceCol.RACE_NUMBER].isin(target_race_nums))
         ]
-        self.logger.debug(f"filtered -> {len(filtered_df)}")
 
         # レース単位のリストにして返す
         race_sets = []

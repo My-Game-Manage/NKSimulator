@@ -5,9 +5,14 @@ factory.py の概要
 """
 import pandas as pd
 import numpy as np
+import logging
+
+# ロガーの取得（__name__ はファイル名/モジュール名になる）
+logger = logging.getLogger(__name__)
+
+
 from dataclasses import dataclass, replace
 
-from src.utils.logger import setup_logger
 from src.constants.schema import RaceCol
 from src.models.race_info import RaceInfo
 from src.models.horse_info import HorseInfo
@@ -21,19 +26,18 @@ from src.constants.track_master import TRACK_DATA, DEFAULT_TRACK_DATA_KEY
 class RaceInfoFactory:
     _CLASSNAME = "RaceInfoFactory"
     def __init__(self):
-        self.logger = setup_logger(self._CLASSNAME)
-        self.logger.info("初期化中...")
+        logger.info("初期化中...")
 
     def get_race_info_list(self, race_data_sets: list[dict]) -> list[RaceInfo]:
         """レース情報のリストを返す"""
         race_info_list = []
-        self.logger.debug(f"get? race_data_sets: {race_data_sets}")
+
         for race_data in race_data_sets:
             entries_df = race_data[RaceCol.ENTRIES]
             histories_df = race_data[RaceCol.HISTORIES]
             race_info = self.create_race_info_from_df(entries_df, histories_df)
-            self.logger.info(f"race_info: {race_info}")
             race_info_list.append(race_info)
+
         return race_info_list
     
     def create_race_info_from_df(self, df: pd.DataFrame, h_df: pd.DataFrame) -> RaceInfo:
@@ -45,7 +49,6 @@ class RaceInfoFactory:
         horse_list = []
         for _, row in df.iterrows():
             horse_info = self.create_horse_info(row, h_df)
-            self.logger.debug(f"horse_info: {horse_info}")
             horse_list.append(horse_info)
 
         # 3. プロトタイプに統合
@@ -62,13 +65,16 @@ class RaceInfoFactory:
         """馬情報なしのRaceInfoのプロトタイプを作成"""
         # 全馬共通のため最初の1行を参照
         first_row = race_df.iloc[0]
+
         # セクション取得
         course_name = first_row[RaceCol.COURSE]
         distance = first_row[RaceCol.DISTANCE]
         surface = first_row[RaceCol.SURFACE]
         sections = TRACK_DATA.get(f"{self._get_track_name(course_name, distance, surface)}", DEFAULT_TRACK_DATA_KEY)
+
         # マスタからCourseSpec取得
         course_spec = NAME_TO_COURSE.get(course_name, DEFAULT_COURSE_SPEC_KEY)
+
         return RaceInfo(
             course_name=course_name,
             race_name=first_row[RaceCol.RACE_NAME],
@@ -83,15 +89,14 @@ class RaceInfoFactory:
             sections=sections,
             horses=[],
         )
-
     
     def create_horse_info(self, row: pd.Series, df: pd.DataFrame) -> HorseInfo:
         """HorseInfoを作成する"""
-        self.logger.debug(f"create horse_info")
         distance = row[RaceCol.DISTANCE]
         # historyは自分のものだけ持たせる
         horse_id = row[RaceCol.HORSE_ID]
         horse_history_df = df[df[RaceCol.HORSE_ID] == horse_id]
+
         return HorseInfo(
             horse_id=row[RaceCol.HORSE_ID],
             name=row[RaceCol.HORSE_NAME],
@@ -103,10 +108,9 @@ class RaceInfoFactory:
     
     def create_horse_param(self, distance: int, df: pd.DataFrame) -> HorseParam:
         """HorseParamを算出して作成"""
-        self.logger.debug(f"create horse PARAM")
         strategy = StrategyEnum.PUSHING #self._determine_strategy(df)
         total_stamina, stamina_waste_rate = self._calculate_stamina_params(df, distance)
-        self.logger.debug(f"stamina: {total_stamina, stamina_waste_rate}")
+
         return HorseParam(
             max_speed=self._calculate_max_speed(df),
             acceleration=self._calculate_acceleration(df),
@@ -133,7 +137,7 @@ class RaceInfoFactory:
         target_df = df[df[RaceCol.HORSE_ID].astype(str) == str(horse_id)].copy()
     
         if target_df.empty:
-            self.logger.warning(f"警告: ID {horse_id} に該当するデータは見つかりませんでした。")
+            logger.warning(f"警告: ID {horse_id} に該当するデータは見つかりませんでした。")
         else:
             # 時系列順に並べ替えておくとシミュレーションの分析に便利
             # 'date' 列がある場合はソート（必要に応じて有効化してください）
@@ -163,12 +167,9 @@ class RaceInfoFactory:
         return max(0.5, accel_factor)
 
     def _calculate_stamina_params(self, past_records: pd.DataFrame, current_race_dist: float) -> tuple:
-        self.logger.debug(f"calc stamina param")
         # 1. 過去の最長距離をベースにする
         max_dist_history = past_records[RaceCol.DISTANCE].max()
         avg_weight = past_records[RaceCol.HORSE_WEIGHT].mean()
-        self.logger.debug(f"max_dist_history: {max_dist_history}")
-        self.logger.debug(f"avg_weight: {avg_weight}")
     
         # 総スタミナ: 距離適性が高いほど余裕が出るように算出
         total_stamina = max_dist_history * 1.2 + (avg_weight * 0.5)
@@ -182,7 +183,8 @@ class RaceInfoFactory:
     def _calculate_gate_reaction(self, past_records: pd.DataFrame) -> float:
         # 各レースの最初の通過順位を取り出す
         # 例: "5-4-3-2" -> 5
-        first_pos = past_records[RaceCol.PASSING_ORDER].str.split('-').str[0].astype(float)
+        valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
+        first_pos = valid_records[RaceCol.PASSING_ORDER].str.split('-').str[0].astype(float)
         # 頭数に対する比率にする（14頭立ての5位と、8頭立ての5位は意味が違うため）
         pos_ratio = first_pos / past_records[RaceCol.NUM_HORSES]
 
@@ -196,7 +198,6 @@ class RaceInfoFactory:
         # "8-7-5-3" のような馬はコーナーで加速している（適性高め）
         diffs = []
         valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
-        #for order in past_records[RaceCol.PASSING_ORDER]:
         for order in valid_records[RaceCol.PASSING_ORDER]:
             pts = order.split('-')
             if len(pts) >= 3:
@@ -241,13 +242,10 @@ class RaceInfoFactory:
         過去データからスタミナ消費効率（燃費）を推定する。
         1.0 を標準とし、値が小さいほど燃費が良い（スタミナが減りにくい）と定義する。
         """
-        self.logger.debug(f"estimate efficiency")
         # 1. 「上がり」の失速度合いをチェック
         # 全体の平均時速に対して、最後の600m(上がり3F)でどれだけ失速しているか
         avg_speed = (past_records[RaceCol.DISTANCE] / past_records[RaceCol.TIME]).mean()
         last_3f_speed = (600.0 / past_records[RaceCol.LAST_3F]).mean()
-        self.logger.debug(f"avg_speed: {avg_speed}")
-        self.logger.debug(f"last_3f_speed: {last_3f_speed}")
     
         # 失速率 (値が大きいほど、最後の方でバテている)
         # 通常、ダートでは最後は少し遅くなるので 1.05 くらいが標準
@@ -255,12 +253,10 @@ class RaceInfoFactory:
     
         # 2. 人気と着順の相関（精神的なムラ・掛かり癖の推測）
         # 人気より着順が大幅に悪いレースが多い馬は、道中で体力をロスしていると見なす
-        #pop_rank_diff = (past_records[RaceCol.RANK] - past_records[RaceCol.POPULARITY]).mean()
         # 数値に変換し、変換できなかった（NaNになった）行を削除
         valid_data = (pd.to_numeric(past_records[RaceCol.RANK], errors='coerce') - 
               pd.to_numeric(past_records[RaceCol.POPULARITY], errors='coerce')).dropna()
         pop_rank_diff = valid_data.mean()
-        self.logger.debug(f"pop_rank_diff: {pop_rank_diff}")
 
         # 3. 燃費係数の計算
         # ベースを 1.0 とし、失速しやすさとムラを加味

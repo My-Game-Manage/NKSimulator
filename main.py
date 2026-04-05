@@ -1,7 +1,8 @@
 # main.py
 import argparse
 import sys
-from src.utils.logger import setup_logger
+import logging
+
 from src.utils.date_utils import get_today_jst, normalize_date_format
 from src.utils.numeric_utils import parse_list_from_args_with_comma, fill_list_if_empty, convert_to_int_list
 from src.utils.course_id_utils import is_valid_course_name
@@ -59,11 +60,16 @@ def main():
 
     # ログレベルの設定
     # setup_loggerに引数から渡されたレベルをセット
-    logger = setup_logger("KeibaSimulator", level=args.log)
+    # loggerの設定（プログラム全体で一度だけ設定）
+    logging.basicConfig(
+        level=args.log,
+        format='%(asctime)s [%(levelname)s][%(funcName)s][%(lineno)d] %(name)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
     # logger実行
-    logger.debug("細かい計算過程を表示します（デバッグ用）")
-    logger.info("シミュレーションを開始します")
+    logging.debug("細かい計算過程を表示します（デバッグ用）")
+    logging.info("シミュレーションを開始します")
     
     # シミュレーターの実行
     try:
