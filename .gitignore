@@ -32,8 +32,10 @@ MANIFEST
 *.manifest
 *.spec
 
-# 結果はひとまず保存しない
+# 確認用の能力値、結果はひとまず保存しない
 results/
+prepared/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

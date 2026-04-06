@@ -62,6 +62,12 @@ class RaceSimulator:
 
         race_info_list = self.factory.get_race_info_list(race_data_sets)
 
+        if race_info_list:
+            # 能力値セーブ処理
+            for race_info in race_info_list:
+                param_df = self.saver.export_horses_params(race_info)
+                self.saver.save_prepared_to_csv(date, race_info.course_name, race_info.distance, race_info.surface, param_df)
+
         return race_info_list
 
     def _run_single_race(self, info: RaceInfo) -> list[RaceState]:
@@ -81,9 +87,13 @@ class RaceSimulator:
             # Engine自体に状態を持たせない（Stateless）のがコツです
             next_state = self.engine.step(current_state, info, dt)
             
+            # 2. Simulatorによる順位の確定（刻印）
+            # ここで全馬の距離を比較して正しい rank を入れる
+            next_state = next_state.update_ranks()
+
+            # 3. 履歴への追加と更新
             history.append(next_state)
             current_state = next_state
-            #logger.info(f"current_r_state: {current_state.horse_states}")
             
             # 全頭ゴールしたか判定
             if current_state.is_all_goal:

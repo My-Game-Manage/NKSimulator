@@ -63,6 +63,8 @@ class RaceEngine:
         # 4. 物理実行フェーズ（数値更新）
         # - 速度
         target_v = ph.calculate_simple_acceled_speed(current_state.velocity, h_info.param.acceleration, dt)
+        # 最大速度までに制限
+        target_v = ph.manage_limited_speed(target_v, h_info.param.max_speed)
         # - 距離
         distance = ph.calculate_simple_target_position(target_v, current_state.distance, dt)
         # - スタミナ

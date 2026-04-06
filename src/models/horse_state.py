@@ -30,6 +30,7 @@ class HorseState:
     # --- 記録 ---
     is_finished: bool = False
     finish_time: float | None = None
+    rank: int = 99
 
     def next_step(self):
         return replace(self, step=self.step + 1)

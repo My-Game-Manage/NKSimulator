@@ -13,6 +13,10 @@ def check_goal(distance: float, course_length: float) -> bool:
     """コースの距離と進んだ距離を比較し、ゴールしたかどうか判定する"""
     return distance >= course_length
 
+def manage_limited_speed(target_speed: float, max_speed: float) -> float:
+    """限界速度までしか出せないようにする"""
+    return target_speed if target_speed <= max_speed else max_speed
+
 def calculate_simple_acceled_speed(current_velocity: float, accel: float, dt: float) -> float:
     """加速度から次の速度を求めるシンプルな数式"""
     return current_velocity + accel * dt
