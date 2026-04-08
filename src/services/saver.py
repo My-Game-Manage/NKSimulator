@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
 from src.models.horse_info import HorseInfo
-from src.models.race_info import RaceInfo
-from src.models.race_state import RaceState
+from src.models.race_info import RaceInfo, RaceParam, RaceState, RaceDataSet
 from src.utils.name_utils import get_save_file_name
 
 
@@ -52,14 +51,16 @@ class RaceResultSaver:
             })
         return pd.DataFrame(summary_data)
     
-    def export_horses_params(self, race_info: RaceInfo) -> pd.DataFrame:
+    def export_horses_params(self, race_info: RaceInfo, horse_params: dict) -> pd.DataFrame:
         """レース前の各馬の能力値をDataFrameに整形する"""
         summary_data = []
 
         # HorseInfoのリストを受取り、馬番でソート
-        sorted_horses = sorted(race_info.horses, key=lambda x: x.horse_num)
+        sorted_horses = sorted(horse_params.keys(), key=lambda x: x)
 
-        for h_info in sorted_horses:
+        for h_id in sorted_horses:
+            h_info = race_info.horses[h_id]
+            h_param = horse_params[h_id]
             summary_data.append({
                 RaceCol.COURSE: race_info.course_name,
                 RaceCol.RACE_NUMBER: race_info.race_num,
@@ -68,14 +69,14 @@ class RaceResultSaver:
                 RaceCol.HORSE_NUM: h_info.horse_num,
                 RaceCol.HORSE_NAME: h_info.name,
                 # 基本能力値
-                "max_speed": h_info.param.max_speed,
-                "acceleration": h_info.param.acceleration,
-                "total_stamina": h_info.param.total_stamina,
-                "stamina_waste_rate": h_info.param.stamina_waste_rate,
-                "cornering_ability": h_info.param.cornering_ability,
-                "gate_reaction": h_info.param.gate_reaction,
-                "strategy": h_info.param.strategy.value,
-                "target_spurt_dist": h_info.param.target_spurt_dist,
+                "max_speed": h_param.max_speed,
+                "acceleration": h_param.acceleration,
+                "total_stamina": h_param.total_stamina,
+                "stamina_waste_rate": h_param.stamina_waste_rate,
+                "cornering_ability": h_param.cornering_ability,
+                "gate_reaction": h_param.gate_reaction,
+                "strategy": h_param.strategy.value,
+                "target_spurt_dist": h_param.target_spurt_dist,
             })
 
         return pd.DataFrame(summary_data)

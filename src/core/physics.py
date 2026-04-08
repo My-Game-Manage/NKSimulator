@@ -5,8 +5,7 @@ physics.py の概要
 """
 from src.models.section import TrackSection, SectionType
 from src.constants.race_master import TrackCondition
-from src.models.horse_param import HorseParam
-from src.models.horse_state import HorseState
+from src.models.horse_info import HorseParam, HorseState
 
 
 def check_goal(distance: float, course_length: float) -> bool:

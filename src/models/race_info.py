@@ -21,6 +21,7 @@ class RaceInfo:
     course_name: str
     race_name: str
     race_num: int
+    # num_horses: int
     # grade: RaceGrade
     # 馬Infoの辞書（horse_id: h_info）
     horses: dict[str, HorseInfo] = field(default_factory=dict)
@@ -54,10 +55,21 @@ class RaceState:
     """
     レースの動的データを保持するクラス（Engineに渡し、受け取る）
     """
+    race_id: str
     step_count: int
     elapsed_time: float
     # 馬Stateの辞書（horse_id: h_state）
-    horse_states: dict[str, HorseState] = field(default_factory=dict)
+    horses: dict[str, HorseState] = field(default_factory=dict)
     # 現在の順位辞書（horse_id: rank）
     ranks: dict[str, int] = field(default_factory=dict)
 
+
+@dataclass(frozen=True)
+class RaceDataSet:
+    """
+    レースのデータセット
+    """
+    race_id: str
+    info: RaceInfo
+    param: RaceParam
+    state: RaceState

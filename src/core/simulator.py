@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 
 from src.services.provider import RaceDataProvider
 from src.services.race_factory import RaceInfoFactory
-from src.models.race_state import RaceState
-from src.models.race_info import RaceInfo
+from src.services.horse_factory import HorseFactory
+from src.models.race_info import RaceInfo, RaceParam, RaceState, RaceDataSet
+from src.models.horse_info import HorseInfo, HorseParam, HorseState
 from src.core.engine import RaceEngine
 from src.services.saver import RaceResultSaver
 
@@ -23,7 +24,6 @@ class RaceSimulator:
         logger.info("初期化中...")
 
         self.engine = RaceEngine()
-        self.factory = RaceInfoFactory()
         self.saver = RaceResultSaver()
 
         self.race_info_list = []
@@ -56,19 +56,38 @@ class RaceSimulator:
     
     def _prepare_races(self, date: str, courses, race_numbers) -> list:
         """レースの準備"""
-        # 1. CSVデータの読み込み
+        # 1. CSVデータの読み込み -> [RaceRawData...]
         provider = RaceDataProvider(data_dir="data")
-        race_data_sets = provider.get_race_data_sets(date, courses, race_numbers)
+        race_raw_data_list = provider.create_race_raw_data_list(date, courses, race_numbers)
 
-        race_info_list = self.factory.get_race_info_list(race_data_sets)
+        # 2. レース毎にRaceInfo等の基本データを作成
+        factory = RaceInfoFactory()
+        race_data_set_list = []
+        for raw_data in race_raw_data_list:
+            # Info作成
+            race_info = factory.create_race_info_with_horse_infos(raw_data)
+            # Param作成
+            race_param = factory.create_race_param_with_horse_params(raw_data)
+            # State作成
+            racec_state = factory.create_race_state_with_horse_states(
+                raw_data.race_id, race_info.horses, race_param.horses,
+                )
+            race_data_set_list.append(RaceDataSet(
+                race_id=race_info.race_id,
+                info=race_info,
+                param=race_param,
+                state=racec_state,
+            ))
 
-        if race_info_list:
+        if race_data_set_list:
             # 能力値セーブ処理
-            for race_info in race_info_list:
-                param_df = self.saver.export_horses_params(race_info)
-                self.saver.save_prepared_to_csv(date, race_info.course_name, race_info.distance, race_info.surface, param_df)
+            for race_data_set in race_data_set_list:
+                race_info = race_data_set.info
+                race_param = race_data_set.param
+                param_df = self.saver.export_horses_params(race_data_set.info, race_data_set.param.horses)
+                self.saver.save_prepared_to_csv(date, race_info.course_name, race_param.distance, race_param.surface, param_df)
 
-        return race_info_list
+        return race_data_set_list
 
     def _run_single_race(self, info: RaceInfo) -> list[RaceState]:
         """1レースのシミュレーションを実行し、全ステップの履歴を返す"""

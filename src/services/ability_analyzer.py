@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
-from src.models.horse_param import HorseParam
+from src.models.horse_info import HorseParam
 from src.models.strategy import StrategyEnum
 
 
@@ -18,23 +18,8 @@ class HorseAbilityAnalyzer:
     """過去データから馬の能力パラメータを算出する専門クラス"""
     def __init__(self):
         logger.info("初期化中...")
-        
-    def analyze(self, past_records: pd.DataFrame, current_distance: int) -> HorseParam:
-        strategy = self._determine_strategy(past_records)
-        total_stamina, efficiency = self._calculate_stamina_params(past_records, current_distance)
-        
-        return HorseParam(
-            max_speed=self._calculate_max_speed(past_records),
-            acceleration=self._calculate_acceleration(past_records),
-            total_stamina=total_stamina,
-            stamina_waste_rate=efficiency,
-            cornering_ability=self._calculate_cornering_ability(past_records),
-            gate_reaction=self._calculate_gate_reaction(past_records),
-            strategy=strategy,
-            target_spurt_dist=self._calculate_spurt_dist(past_records, strategy),
-        )
-    
-    def _calculate_max_speed(self, past_records: pd.DataFrame) -> float:
+
+    def calculate_max_speed(self, past_records: pd.DataFrame) -> float:
         # 1. 走破タイム(s)を算出 (タイムが '107.6' などの形式の場合)
         # 2. 全レースの時速(m/s)を計算
         speeds = past_records[RaceCol.DISTANCE] / past_records[RaceCol.TIME]
@@ -45,7 +30,7 @@ class HorseAbilityAnalyzer:
         # 大井の平均的なC3クラスなら 15.0 ~ 16.5 m/s 程度に収束するはずです
         return top_3_avg
 
-    def _calculate_acceleration(self, past_records: pd.DataFrame) -> float:
+    def calculate_acceleration(self, past_records: pd.DataFrame) -> float:
         # 上がり3F (last_3f) が速いほど高い値を返す
         # 例：平均的な上がりタイムより1秒速ければ +0.1 m/s^2
         avg_last_3f = past_records[RaceCol.LAST_3F].mean()
@@ -54,7 +39,7 @@ class HorseAbilityAnalyzer:
         accel_factor = 1.0 + (39.0 - avg_last_3f) * 0.05 
         return max(0.5, accel_factor)
 
-    def _calculate_stamina_params(self, past_records: pd.DataFrame, current_race_dist: float) -> tuple:
+    def calculate_stamina_params(self, past_records: pd.DataFrame, current_race_dist: float) -> tuple:
         # 1. 過去の最長距離をベースにする
         max_dist_history = past_records[RaceCol.DISTANCE].max()
         avg_weight = past_records[RaceCol.HORSE_WEIGHT].mean()
@@ -64,11 +49,11 @@ class HorseAbilityAnalyzer:
     
         # 2. 燃費: 過去の上がり3F(last_3f)と走破タイムのバランスを見る
         # 終盤にバテている（上がりタイムが極端に遅い）馬は燃費を悪く設定
-        stamina_efficiency = self._estimate_efficiency(past_records)
+        stamina_efficiency = self.estimate_efficiency(past_records)
     
         return total_stamina, stamina_efficiency
     
-    def _calculate_gate_reaction(self, past_records: pd.DataFrame) -> float:
+    def calculate_gate_reaction(self, past_records: pd.DataFrame) -> float:
         # 各レースの最初の通過順位を取り出す
         # 例: "5-4-3-2" -> 5
         valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
@@ -80,7 +65,7 @@ class HorseAbilityAnalyzer:
         # 標準を1.0とし、逃げ・先行馬なら1.2〜、出遅れがちな馬なら0.8〜
         return 1.2 - pos_ratio.mean()
     
-    def _calculate_cornering_ability(self, past_records: pd.DataFrame) -> float:
+    def calculate_cornering_ability(self, past_records: pd.DataFrame) -> float:
         # 3角と4角の順位差の平均を見る
         # "2-2-3-4" のような馬はコーナーで置かれている（適性低め）
         # "8-7-5-3" のような馬はコーナーで加速している（適性高め）
@@ -96,7 +81,7 @@ class HorseAbilityAnalyzer:
         ability = 0.5 + (sum(diffs) / len(diffs) if diffs else 0) * 0.1
         return max(0.2, min(1.0, ability))
 
-    def _determine_strategy(self, past_records: pd.DataFrame) -> StrategyEnum:
+    def determine_strategy(self, past_records: pd.DataFrame) -> StrategyEnum:
         # 最初のコーナー順位の平均比率を算出
         first_pos_ratios = []
         valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
@@ -112,7 +97,7 @@ class HorseAbilityAnalyzer:
         if avg_ratio <= 0.70: return StrategyEnum.BETWEEN  # 差し (中団)
         return StrategyEnum.PUSHING                         # 追込 (後方)
     
-    def _calculate_spurt_dist(self, past_records: pd.DataFrame, strategy: StrategyEnum) -> float:
+    def calculate_spurt_dist(self, past_records: pd.DataFrame, strategy: StrategyEnum) -> float:
         # 基本値は 600m (上がり3F)
         base_dist = 600.0
 
@@ -125,7 +110,7 @@ class HorseAbilityAnalyzer:
 
         return base_dist
     
-    def _estimate_efficiency(self, past_records: pd.DataFrame) -> float:
+    def estimate_efficiency(self, past_records: pd.DataFrame) -> float:
         """
         過去データからスタミナ消費効率（燃費）を推定する。
         1.0 を標準とし、値が小さいほど燃費が良い（スタミナが減りにくい）と定義する。

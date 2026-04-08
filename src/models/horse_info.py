@@ -16,8 +16,9 @@ class HorseInfo:
     name: str
     bracket_num: int
     horse_num: int
+    #jockey: str
     # 過去データ（辞書のリストではなくDataFrameで持つ）
-    past_records: pd.DataFrame 
+    # past_records: pd.DataFrame 
 
 
 @dataclass(frozen=True)
@@ -66,5 +67,3 @@ class HorseState:
     # --- 記録 ---
     is_finished: bool = False
     finish_time: float | None = None
-    rank: int = 99
-    passing_rank: list[int] = field(default_factory=list)
