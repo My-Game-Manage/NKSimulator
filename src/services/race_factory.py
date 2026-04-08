@@ -14,16 +14,18 @@ logger = logging.getLogger(__name__)
 from dataclasses import dataclass, replace
 
 from src.constants.schema import RaceCol
-from src.models.race_info import RaceInfo
-from src.models.race_state import RaceState
+from src.models.race_info import RaceInfo, RaceParam, RaceState
 from src.constants.race_master import TrackCondition, TrackWeather
 from src.constants.course_master import CourseSpec, NAME_TO_COURSE, DEFAULT_COURSE_SPEC_KEY
 from src.constants.track_master import TRACK_DATA, DEFAULT_TRACK_DATA_KEY
 from src.services.horse_factory import HorseFactory
+from src.models.section import TrackSection
 
 
 class RaceInfoFactory:
-    _CLASSNAME = "RaceInfoFactory"
+    """
+    レースに関する各データクラスを作成する
+    """
     def __init__(self):
         logger.info("初期化中...")
         self.horse_factory = HorseFactory()
@@ -85,6 +87,7 @@ class RaceInfoFactory:
             corner_penalty=course_spec.corner_penalty,
             surface_friction=course_spec.surface_friction,
             sections=sections,
+            checkpoints=self._get_checkpoints_from_sections(sections),
             horses=[],
         )
     
@@ -105,3 +108,7 @@ class RaceInfoFactory:
         """コース構成用の名前取得"""
         suffix = "" if surface == "ダ" else "_芝"
         return f"{course_name}_{distance}{suffix}"
+
+    def _get_checkpoints_from_sections(self, sections: list[TrackSection]) -> list[float]:
+        """セクション情報から記録地点のリストを返す"""
+        return [s.start_at for s in sections if s.start_at > 0]

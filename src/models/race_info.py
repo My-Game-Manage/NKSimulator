@@ -3,16 +3,18 @@ race_info.py の概要
 
 レースの開催会場とコース等の静的データを保持するデータクラス。
 """
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field
 
 from src.constants.race_master import TrackCondition, TrackWeather
 from src.models.section import TrackSection
-from src.models.horse_info import HorseInfo
-from src.constants.schema import RaceCol
+from src.models.horse_info import HorseInfo, HorseParam, HorseState
 
 
 @dataclass(frozen=True)
 class RaceInfo:
+    """
+    レースの基本情報を保持するデータクラス（レース準備で利用するだけ）
+    """
     # 基本情報
     race_id: str
     # CSVから取得するレース情報
@@ -20,6 +22,16 @@ class RaceInfo:
     race_name: str
     race_num: int
     # grade: RaceGrade
+    # 馬Infoの辞書（horse_id: h_info）
+    horses: dict[str, HorseInfo] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RaceParam:
+    """
+    レースの静的データを保持するデータクラス（Engineに渡す静的数値）
+    """
+    race_id: str
     distance: int
     surface: str
     condition: TrackCondition
@@ -30,10 +42,22 @@ class RaceInfo:
     surface_friction: float # 馬場摩擦係数
     # --- コースレイアウト (区間データ) ---
     # 距離に応じて個数が変わるセグメントリスト
-    sections: list[TrackSection]
-    # 馬のリスト
-    horses: list[HorseInfo]
+    sections: list[TrackSection] = field(default_factory=list)
+    # 記録するチェックポイント距離のリスト
+    checkpoints: list[int] = field(default_factory=list)
+    # 馬Paramの辞書（hores_id: h_param）
+    horses: dict[str, HorseParam] = field(default_factory=dict)
 
-    def get_horse(self, horse_id: str):
-        """指定したIDに一致するHorseInfoを返す。見つからない場合はNone。"""
-        return next((h_info for h_info in self.horses if h_info.horse_id == horse_id), None)
+
+@dataclass(frozen=True)
+class RaceState:
+    """
+    レースの動的データを保持するクラス（Engineに渡し、受け取る）
+    """
+    step_count: int
+    elapsed_time: float
+    # 馬Stateの辞書（horse_id: h_state）
+    horse_states: dict[str, HorseState] = field(default_factory=dict)
+    # 現在の順位辞書（horse_id: rank）
+    ranks: dict[str, int] = field(default_factory=dict)
+
