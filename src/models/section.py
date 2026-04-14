@@ -9,10 +9,11 @@ from dataclasses import dataclass
 class SectionName(Enum):
     IN_GATE = "in gate"                 # ゲート内
     STARTING = "starting straight"      # スタート直線
-    HOMESTRETCH = "homa stretch"        # ゴール前直線
+    HOMESTRETCH = "home stretch"        # ゴール前直線
     BACKSTRETCH = "back stretch"        # 向こう正面
     TURN_1ST_2ND = "1st and 2nd turns"  # 1-2角
     TURN_3RD_4TH = "3rd and 4th turns"  # 3-4角
+    HOME_STRAIGHT = "home straight"     # ホームストレート（デフォルト）
 
 
 class SectionType(Enum):

@@ -9,12 +9,12 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class CourseSpec:
     name: str
-    is_jra: bool
-    is_excluded: bool
-    track_width: int
-    corner_penalty: float
-    furf_friction: float
-    surface_friction: float
+    is_jra: bool                # 中央判定
+    is_excluded: bool           # 除外判定
+    track_width: int            # トラック幅
+    corner_penalty: float       # コーナー係数
+    turf_friction: float        # 芝係数
+    surface_friction: float     # ダート係数
 
 DEFAULT_WIDTH = 25
 DEFAULT_CORNER_PENA = 0.1

@@ -3,10 +3,30 @@ physics.py の概要
 
 レースのシミュレートに関する物理演算を行う関数群。
 """
-from src.models.section import TrackSection, SectionType
+from src.models.section import TrackSection, SectionType, SectionName
 from src.constants.race_master import TrackCondition
 from src.models.horse_info import HorseParam, HorseState
 
+# チェック系
+def is_horse_finished(distance: float, course_length: float) -> bool:
+    """コースの距離と現在の距離を比較してゴールしたかどうかを返す"""
+    return distance >= course_length
+
+# 要素取得系
+def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:
+    """距離から現在のセクションを返す"""
+    accumulated_dist = 0
+    for section in sections:
+        accumulated_dist +=section.distance
+        if position <= accumulated_dist:
+            return section
+    return TrackSection(SectionType.STRAIGHT, 9999, 9999, SectionName.HOME_STRAIGHT) # 予備
+
+# 物理演算系
+def calculate_acceleration(target_v: float, current_v: float, accel_power: float) -> float:
+    """速度と加速能力から加速度を算出"""
+    v_diff = target_v - current_v
+    return v_diff * accel_power
 
 def check_goal(distance: float, course_length: float) -> bool:
     """コースの距離と進んだ距離を比較し、ゴールしたかどうか判定する"""

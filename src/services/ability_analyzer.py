@@ -19,16 +19,19 @@ class HorseAbilityAnalyzer:
     def __init__(self):
         logger.info("初期化中...")
 
-    def calculate_max_speed(self, past_records: pd.DataFrame) -> float:
+    def calculate_min_max_speed(self, past_records: pd.DataFrame) -> tuple:
         # 1. 走破タイム(s)を算出 (タイムが '107.6' などの形式の場合)
         # 2. 全レースの時速(m/s)を計算
         speeds = past_records[RaceCol.DISTANCE] / past_records[RaceCol.TIME]
     
         # 3. 上位3件の平均をとる（1回きりのラッキーパンチを防ぐため）
         top_3_avg = speeds.nlargest(3).mean()
+
+        # 4. 下位3件の平均を取る
+        worst_3_avg = speeds.nsmallest(3).mean()
     
         # 大井の平均的なC3クラスなら 15.0 ~ 16.5 m/s 程度に収束するはずです
-        return top_3_avg
+        return top_3_avg, worst_3_avg
 
     def calculate_acceleration(self, past_records: pd.DataFrame) -> float:
         # 上がり3F (last_3f) が速いほど高い値を返す

@@ -12,8 +12,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
-from src.models.horse_info import HorseInfo
-from src.models.race_info import RaceInfo, RaceParam, RaceState, RaceDataSet
+from src.models.horse_info import HorseProfile
+from src.models.race_info import RaceInfo, RaceProfile, RaceState
 from src.utils.name_utils import get_save_file_name
 
 
@@ -28,55 +28,51 @@ class RaceResultSaver:
         os.makedirs(self.result_dir, exist_ok=True)
         os.makedirs(self.prepared_dir, exist_ok=True)
 
-    def export_results(self, race_info: RaceInfo, history: list[RaceState]) -> pd.DataFrame:
+    def export_results(self, race_profile: RaceProfile, history: list[RaceState]) -> pd.DataFrame:
         """レース結果を記録用のDataFrameに整形する"""
         # 記録の最後のRaceStateを取得
         last_state = history[-1]
 
         summary_data = []
 
-        for h_state in last_state.horse_states:
-            h_info = race_info.get_horse(h_state.horse_id)
+        for h_state in last_state.horses:
+            h_prof = race_profile.horses[h_state.horse_id]
 
             summary_data.append({
-                RaceCol.COURSE: race_info.course_name,
-                RaceCol.RACE_NUMBER: race_info.race_num,
+                RaceCol.COURSE: race_profile.course_name,
+                RaceCol.RACE_NUMBER: race_profile.race_num,
                 RaceCol.HORSE_ID: h_state.horse_id,
-                RaceCol.BRACKET_NUM: h_info.bracket_num,
-                RaceCol.HORSE_NUM: h_info.horse_num,
-                RaceCol.HORSE_NAME: h_info.name,
+                RaceCol.BRACKET_NUM: h_prof.bracket_num,
+                RaceCol.HORSE_NUM: h_prof.horse_num,
+                RaceCol.HORSE_NAME: h_prof.name,
                 RaceCol.RANK: h_state.rank,
                 RaceCol.TIME: round(h_state.finish_time, 2),
                 "is_exhausted": h_state.is_exhausted,
             })
         return pd.DataFrame(summary_data)
     
-    def export_horses_params(self, race_info: RaceInfo, horse_params: dict) -> pd.DataFrame:
+    def export_horses_params(self, race_profile: RaceProfile) -> pd.DataFrame:
         """レース前の各馬の能力値をDataFrameに整形する"""
         summary_data = []
 
-        # HorseInfoのリストを受取り、馬番でソート
-        sorted_horses = sorted(horse_params.keys(), key=lambda x: x)
-
-        for h_id in sorted_horses:
-            h_info = race_info.horses[h_id]
-            h_param = horse_params[h_id]
+        for h_id, h_prof in race_profile.horses.items():
             summary_data.append({
-                RaceCol.COURSE: race_info.course_name,
-                RaceCol.RACE_NUMBER: race_info.race_num,
-                RaceCol.HORSE_ID: h_info.horse_id,
-                RaceCol.BRACKET_NUM: h_info.bracket_num,
-                RaceCol.HORSE_NUM: h_info.horse_num,
-                RaceCol.HORSE_NAME: h_info.name,
+                RaceCol.COURSE: race_profile.course_name,
+                RaceCol.RACE_NUMBER: race_profile.race_num,
+                RaceCol.HORSE_ID: h_prof.horse_id,
+                RaceCol.BRACKET_NUM: h_prof.bracket_num,
+                RaceCol.HORSE_NUM: h_prof.horse_num,
+                RaceCol.HORSE_NAME: h_prof.name,
                 # 基本能力値
-                "max_speed": h_param.max_speed,
-                "acceleration": h_param.acceleration,
-                "total_stamina": h_param.total_stamina,
-                "stamina_waste_rate": h_param.stamina_waste_rate,
-                "cornering_ability": h_param.cornering_ability,
-                "gate_reaction": h_param.gate_reaction,
-                "strategy": h_param.strategy.value,
-                "target_spurt_dist": h_param.target_spurt_dist,
+                "max_speed": h_prof.max_speed,
+                "min_speed": h_prof.min_speed,
+                "acceleration": h_prof.acceleration,
+                "total_stamina": h_prof.total_stamina,
+                "stamina_waste_rate": h_prof.stamina_waste_rate,
+                "cornering_ability": h_prof.cornering_ability,
+                "gate_reaction": h_prof.gate_reaction,
+                "strategy": h_prof.strategy.value,
+                "target_spurt_dist": h_prof.target_spurt_dist,
             })
 
         return pd.DataFrame(summary_data)
