@@ -10,7 +10,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
-from src.models.horse_info import HorseParam
 from src.models.strategy import StrategyEnum
 
 

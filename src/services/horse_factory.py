@@ -59,7 +59,7 @@ class HorseFactory:
         horse_profiles = {}
         for _, row in entries.iterrows():
             horse_id = row[RaceCol.HORSE_ID]
-            horse_profiles[horse_id] = self.create_horse_profile(horse_id, past_recoreds, distance)
+            horse_profiles[horse_id] = self.create_horse_profile(row, past_recoreds, distance)
         return horse_profiles
 
     def create_horse_profile(self, row: pd.Series, past_records: pd.DataFrame, distance: int) -> HorseProfile:

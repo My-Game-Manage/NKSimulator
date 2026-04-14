@@ -63,6 +63,9 @@ class RaceResultSaver:
                 RaceCol.BRACKET_NUM: h_prof.bracket_num,
                 RaceCol.HORSE_NUM: h_prof.horse_num,
                 RaceCol.HORSE_NAME: h_prof.name,
+                RaceCol.JOCKEY: h_prof.jockey,
+                RaceCol.HORSE_WEIGHT: h_prof.horse_weight,
+                RaceCol.WEIGHT_CARRIED: h_prof.weight_carried,
                 # 基本能力値
                 "max_speed": h_prof.max_speed,
                 "min_speed": h_prof.min_speed,

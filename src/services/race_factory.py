@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field
 
 from src.constants.schema import RaceCol
 from src.models.race_info import RaceInfo, RaceProfile, RaceState, RaceRawData
@@ -91,7 +91,7 @@ class RaceInfoFactory:
         race_id = raw_data.race_id
         course_name = raw_data.course
         race_name = first_row[RaceCol.RACE_NAME]
-        race_num = raw_data.race_num,
+        race_num = raw_data.race_num
         num_horses = first_row[RaceCol.NUM_HORSES]
         distance = first_row[RaceCol.DISTANCE]
         surface = first_row[RaceCol.SURFACE]

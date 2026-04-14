@@ -5,7 +5,7 @@ physics.py の概要
 """
 from src.models.section import TrackSection, SectionType, SectionName
 from src.constants.race_master import TrackCondition
-from src.models.horse_info import HorseParam, HorseState
+from src.models.horse_info import HorseProfile, HorseState
 
 # チェック系
 def is_horse_finished(distance: float, course_length: float) -> bool:
@@ -79,7 +79,7 @@ def get_condition_modifier(condition) -> float:
     # TODO：とりあえず現状は1.0を返す
     return 1.0
 
-def calculate_target_speed(param: HorseParam, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
+def calculate_target_speed(param: HorseProfile, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
     """
     目標速度の決定ロジック
     1. ベース速度: max_speed（基本能力）に、馬場状態（TrackCondition）の補正を掛けます
@@ -102,7 +102,7 @@ def calculate_target_speed(param: HorseParam, state: HorseState, section: TrackS
     
     return base_speed * section_mod * phase_mod
 
-def calculate_next_velocity(current_v: float, target_v: float, param: HorseParam, has_stamina: bool, dt: float) -> float:
+def calculate_next_velocity(current_v: float, target_v: float, param: HorseProfile, has_stamina: bool, dt: float) -> float:
     """
     加速・減速ロジック
     1. 加速時: 目標速度より遅い場合、acceleration パラメータを使って速度を上げます

@@ -44,9 +44,6 @@ class RaceSimulator:
             logger.warning(f"該当するレースがありません。: {self.race_data_set_list}")
             return False
         
-        # 能力値セーブ処理
-        self._save_prepared_data(date, self.race_data_set_list)
-        
         # 各レースのシミュレーション
         for race_data_set in self.race_data_set_list:
             history = self._run_single_race(race_data_set)
@@ -75,7 +72,7 @@ class RaceSimulator:
         # 2. レース毎にRaceInfoを作成
         factory = RaceInfoFactory()
         race_info_list = []
-        for raw_data in self.race_data_set_list:
+        for raw_data in race_raw_data_list:
             # Profile作成
             profile = factory.create_race_profile(raw_data)
             # State作成
@@ -86,6 +83,7 @@ class RaceSimulator:
                 profile=profile,
                 state=state,
             ))
+        return race_info_list
     
     def _save_prepared_data(self, date: str, race_info_list: list[RaceInfo]):
         """能力値セーブ処理"""
@@ -137,7 +135,7 @@ class RaceSimulator:
             result_df = self.saver.export_results(race_info, history)
             self.saver.save_result_to_csv(date, race_info.course_name, race_param.distance, race_param.surface, result_df)
 
-    def _save_result_as_single_race(self, date: str, race_data_set: RaceDataSet, history: list):
+    def _save_result_as_single_race(self, date: str, race_data_set, history: list):
         """テスト用：1レース分の結果をcsvにセーブする"""
         race_info = race_data_set.info
         race_param = race_data_set.param
