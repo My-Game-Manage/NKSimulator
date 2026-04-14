@@ -20,11 +20,11 @@ class RaceEngine:
     def __init__(self):
         logger.info("初期化中...")
         
-    def step(self, current_state: RaceState, race_param: RaceProfile, dt: float) -> RaceState:
+    def step(self, current_state: RaceState, race_profile: RaceProfile, dt: float) -> RaceState:
         """現在のStateからdt秒後のStateを生成して返す"""
         new_states = {}
         for h_id, h_state in current_state.horses.items():
-            new_horse_state = self._update_horse(h_id, race_param, current_state.horses, dt)
+            new_horse_state = self._update_horse(h_id, race_profile, current_state.horses, dt)
             new_states[h_id] = new_horse_state
 
         return RaceState(
@@ -42,10 +42,10 @@ class RaceEngine:
         """次のstepを計算して返す"""
         return current_step + 1
     
-    def _update_horse(self, horse_id: str, race_param: RaceProfile, horses: dict[str, HorseState], dt: float) -> HorseState:
+    def _update_horse(self, horse_id: str, race_profile: RaceProfile, horses: dict[str, HorseState], dt: float) -> HorseState:
         """馬の速度と距離の更新をし、次のStateを作成"""
         current_state = horses[horse_id]
-        current_param = race_param.horses[horse_id]
+        h_prof = race_profile.horses[horse_id]
         # 1. スキップ判定（すでにゴールしている馬はそのままStateを返す）
         if current_state.is_finished:
             return current_state.next_step()
@@ -53,50 +53,49 @@ class RaceEngine:
         # 2. 環境認識フェーズ
         # - 他馬との位置関係
         # - コース情報
-        horse_env = self._perceive_horse_position(current_state, race_param, horses)
+        horse_env = self._perceive_horse_position(current_state, race_profile, horses)
 
         # 3. 意思決定フェーズ（目標速度算出）
         # - ベース速度
         # - 制限（衝突回避）
         # - スタミナ制限
         horse_tactics = self._decide_horse_tactics(horse_env)
-        target_v = self._decide_horse_target_speed(current_param, horse_env, horse_tactics)
-        accel = ph.calculate_acceleration(target_v, current_state.velocity, current_param.acceleration)
+        target_v = self._decide_horse_target_speed(h_prof, horse_env, horse_tactics)
+        accel = ph.calculate_acceleration(target_v, current_state.current_velocity, h_prof.acceleration)
 
         # 4. 物理実行フェーズ（数値更新）
-        velocity = current_state.velocity + accel * dt
-        distance = current_state.distance + velocity * dt
+        velocity = current_state.current_velocity + accel * dt
+        distance = current_state.current_distance + velocity * dt
         finish_time = None
 
         # 5. ゴール判定
         is_finished = False
-        if ph.is_horse_finished(distance, race_param.distance):
+        if ph.is_horse_finished(distance, race_profile.distance):
             is_finished = True
-            finish_time = ph.interpolate_goal_time(current_state.distance, distance,
-                                                   current_state.elapsed_time, dt, race_param.distance)
+            finish_time = ph.interpolate_goal_time(current_state.current_distance, distance,
+                                                   current_state.elapsed_time, dt, race_profile.distance)
         
         # TODO: 各要素を更新
         return HorseState(
             horse_id=current_state.horse_id,
             step=self._calc_next_step(current_state.step),
             elapsed_time=self._calc_next_elapsed_time(current_state.elapsed_time, dt),
-            distance=distance,
-            velocity=velocity,
+            current_distance=distance,
+            current_velocity=velocity,
             target_velocity=target_v,
-            stamina=1,
+            remaining_stamina=1,
             is_spurting=False,
             is_exhausted=False,
-            section_name="",
-            lane_p=1,
+            current_lane=1,
             is_blocked=False,
             is_finished=is_finished,
             finish_time=finish_time,
         )
     
-    def _perceive_horse_position(self, current_state: HorseState, race_param: RaceProfile, horses: dict[str, HorseState]) -> HorseEnv:
+    def _perceive_horse_position(self, current_state: HorseState, race_profile: RaceProfile, horses: dict[str, HorseState]) -> HorseEnv:
         """馬の環境認識フェーズ（位置関係やコース場所）"""
         # 現在のセクション
-        section = ph.current_section_from(current_state.distance, race_param.sections)
+        section = ph.current_section_from(current_state.current_distance, race_profile.sections)
         # 前の馬がいるか？その距離
         dist_to_front = self._distance_to_front_horse_from(current_state, horses)
         return HorseEnv(
@@ -118,8 +117,8 @@ class RaceEngine:
         for h_id, other_state in horses.items():
             if current_state.horse_id == h_id: continue
             # 16レーンあるため、幅 0.5 程度を「同じ進路」とみなす
-            if abs(current_state.lane_p - other_state.lane_p) < 0.5:
-                dist = other_state.distance - current_state.distance
+            if abs(current_state.current_lane - other_state.current_lane) < 0.5:
+                dist = other_state.current_distance - current_state.current_distance
                 if 0 < dist < min_dist:
                     min_dist = dist
         return min_dist
@@ -159,10 +158,10 @@ class RaceEngine:
             mode=mode,
         )
 
-    def _decide_horse_target_speed(self, param: HorseProfile, env: HorseEnv, tactics: HorseTactics) -> float:
+    def _decide_horse_target_speed(self, h_prof: HorseProfile, env: HorseEnv, tactics: HorseTactics) -> float:
         """馬の意思決定フェーズ（目標速度決定）"""
         # 目標速度の設定
-        target_v = param.max_speed
+        target_v = h_prof.max_speed
         return target_v
     
     def _decide_horse_tactics_from(self) -> HorseTactics:
@@ -187,72 +186,7 @@ class RaceEngine:
     def _update_horse_remaining_stamina(self):
         """馬の残りのスタミナを更新する"""
         pass
-    
-    def _update_horse1(self, current_state: HorseState, h_info: HorseProfile, race_info: RaceInfo, dt: float) -> HorseState:
-        """馬を1step動かして、新しいStateを生成する"""
-
-        # 1. ゴール判定（すでにゴールしている馬はそのままStateを返す）
-        if current_state.is_finished:
-            return current_state.next_step()
-
-        # 2. 環境認識フェーズ
-        # - 他馬との位置関係
-        # - コース情報
-
-        # 3. 意思決定フェーズ（目標速度算出）
-        # - ベース速度
-        # - 制限（衝突回避）
-        # - スタミナ制限
-
-        # 4. 物理実行フェーズ（数値更新）
-        # - 速度
-        target_v = ph.calculate_simple_acceled_speed(current_state.velocity, h_info.param.acceleration, dt)
-        # 最大速度までに制限
-        target_v = ph.manage_limited_speed(target_v, h_info.param.max_speed)
-        # - 距離
-        distance = ph.calculate_simple_target_position(target_v, current_state.distance, dt)
-        # - スタミナ
-
-        # 5. 状態確定フェーズ（ゴール判定とフラグ更新）
-        # - ゴール判定
-        is_finished = False
-        finish_time = None
-        if ph.check_goal(distance, race_info.distance):
-            is_finished = True
-            logger.info(f"{h_info.name} - Goal!")
-            # ゴールした時はタイムを記録する
-            finish_time = ph.interpolate_goal_time(current_state.distance, distance, current_state.elapsed_time, dt, race_info.distance)
-        # - フラグ更新
-
-        horse_id = current_state.horse_id
-        step = current_state.step + 1
-        elapsed_time = round(current_state.elapsed_time + dt, 2) # 浮動小数点の誤差防止
-        velocity = target_v
-        target_velocity = h_info.param.max_speed
-        stamina = h_info.param.total_stamina
-        is_spurting = False
-        is_exhausted = False
-        section_name = SectionType.STRAIGHT
-        lane_p=0
-        is_blocked = False
-
-        return HorseState(
-            horse_id=horse_id,
-            step=step,
-            elapsed_time=elapsed_time,
-            distance=distance,
-            velocity=velocity,
-            target_velocity=target_velocity,
-            stamina=stamina,
-            is_spurting=is_spurting,
-            is_exhausted=is_exhausted,
-            section_name=section_name,
-            lane_p=lane_p,
-            is_blocked=is_blocked,
-            is_finished=is_finished,
-            finish_time=finish_time,
-        )
-    
+        
     def _update_lane_position(self, h_state: HorseState) -> float:
         """進路（lane）の更新"""
         return 1.0

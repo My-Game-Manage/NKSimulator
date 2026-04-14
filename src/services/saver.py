@@ -35,20 +35,21 @@ class RaceResultSaver:
 
         summary_data = []
 
-        for h_state in last_state.horses:
-            h_prof = race_profile.horses[h_state.horse_id]
-
+        for h_id, rank in last_state.ranks.items():
+            h_prof = race_profile.horses[h_id]
+            h_state = last_state.horses[h_id]
             summary_data.append({
                 RaceCol.COURSE: race_profile.course_name,
                 RaceCol.RACE_NUMBER: race_profile.race_num,
-                RaceCol.HORSE_ID: h_state.horse_id,
+                RaceCol.HORSE_ID: h_id,
                 RaceCol.BRACKET_NUM: h_prof.bracket_num,
                 RaceCol.HORSE_NUM: h_prof.horse_num,
                 RaceCol.HORSE_NAME: h_prof.name,
-                RaceCol.RANK: h_state.rank,
+                RaceCol.RANK: rank,
                 RaceCol.TIME: round(h_state.finish_time, 2),
                 "is_exhausted": h_state.is_exhausted,
             })
+
         return pd.DataFrame(summary_data)
     
     def export_horses_params(self, race_profile: RaceProfile) -> pd.DataFrame:
