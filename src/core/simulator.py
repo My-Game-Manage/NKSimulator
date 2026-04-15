@@ -1,112 +1,141 @@
 """
 simulator.py の概要
 
-1. 会場データの初期化
-2. 各馬のエントリー
-3. 実行管理：RaceEngine でゴールするまでループを回す
-4. ログなどの記録
+レースをシミュレートするための準備（会場データ、馬データ生成）と、Engineを使った実際のシミュレートを行う。
 """
-from utils.logger import setup_logger
-from constants.schema import RaceCol
-from models.context import RaceContext
-from services.provider import RaceDataProvider
-from services.factory import ContextFactory, HorseFactory
-from core.engine import RaceEngine
-from services.saver import ResultSaver
+import logging
+
+# ロガーの取得（__name__ はファイル名/モジュール名になる）
+logger = logging.getLogger(__name__)
+
+from src.services.provider import RaceDataProvider
+from src.services.race_factory import RaceInfoFactory
+from src.models.race_info import RaceInfo, RaceProfile, RaceState
+from src.core.engine import RaceEngine
+from src.services.saver import RaceResultSaver
+from src.services.race_analyzer import RaceAnalyer
+
 
 class RaceSimulator:
+    DT = 0.1
+    MAX_STEPS = 2000
     def __init__(self):
-        _CLASSNAME = "Simulator"
-        # クラス名を名前としてロガーを作成
-        self.logger = setup_logger(_CLASSNAME)
+        logger.info("初期化中...")
 
-        self.logger.info("初期化中...")
+        self.engine = RaceEngine()
+        self.saver = RaceResultSaver()
 
-        self._racing_contexts = []
+        self.race_info_list: list[RaceInfo] = []
 
-    def run(self, target_date=None, course_filter=None, race_num_filter=None):
+        # レースごとの結果（History）を格納する辞書
+        # key: race_id, value: list[RaceState]
+        self.results: dict[str, list[RaceState]] = {}
+
+    def run(self, date: str=None, courses: list[str] | None=None, race_numbers: list[int] | None=None) -> bool:
         """
         メインの実行メソッド
         """
-        self.logger.info("実行中...")
+        logger.info("実行中...")
 
-        self.logger.debug(f"{target_date}\n{course_filter}\n{race_num_filter}")
+        # 前準備
+        self.race_info_list = self.prepare_races(date, courses, race_numbers)
 
-        # 記録の起動
-        saver = ResultSaver()
+        if not self.race_info_list:
+            logger.warning(f"該当するレースがありません。: {self.race_info_list}")
+            return False
+        
+        # 各レースのシミュレーション
+        for race_info in self.race_info_list:
+            history = self._run_single_race(race_info)
+            self.results[race_info.race_id] = history
+        
+        # 事後処理
+        self.post_races(date)
 
-        # 1. データの取得
+        return True
+    
+    def prepare_races(self, date: str, courses, race_numbers) -> list:
+        """レースの準備"""
+        # レースのデータセットのリスト作成
+        race_info_list = self._create_race_info_list(date, courses, race_numbers)
+        # 事前能力値のセーブ
+        self._save_prepared_data(date, race_info_list)
+
+        return race_info_list
+    
+    def _create_race_info_list(self, date: str, courses: list, race_numbers: list) -> list[RaceInfo]:
+        """レースに必要な情報セットのリストを返す"""
+        # 1. CSVデータ読み込み
         provider = RaceDataProvider(data_dir="data")
-        
-        # 前述のロジックで [ {RaceCol.COURSE: "大井", RaceCol.ENTRIES: df}, ... ] が返る
-        race_data_sets = provider.get_race_data_sets(target_date, course_filter, race_num_filter)
+        race_raw_data_list = provider.create_race_raw_data_list(date, courses, race_numbers)
 
-        self.logger.debug(f"race_data_sets: {race_data_sets}")
-        
-        # 2. 過去データ（履歴）の読み込み (HorseFactory用)
-        # 実際にはこれもProvider経由で取得するのが望ましいです
-        horse_factory = HorseFactory()
-        horse_factory.set_history_source(self._get_horse_source(target_date))
+        # 2. レース毎にRaceInfoを作成
+        factory = RaceInfoFactory()
+        race_info_list = []
+        for raw_data in race_raw_data_list:
+            # Profile作成
+            profile = factory.create_race_profile(raw_data)
+            # State作成
+            state = factory.create_race_state(profile.race_id, profile.horses)
+            # リストに追加
+            race_info_list.append(RaceInfo(
+                race_id=profile.race_id,
+                profile=profile,
+                state=state,
+            ))
+        return race_info_list
+    
+    def _save_prepared_data(self, date: str, race_info_list: list[RaceInfo]):
+        """能力値セーブ処理"""
+        for race_info in race_info_list:
+            profile = race_info.profile
+            param_df = self.saver.export_horses_params(profile)
+            self.saver.save_prepared_to_csv(date, profile.course_name, profile.distance, profile.surface, param_df)
 
-        # 3. レースエントリー毎の処理
-        for race_data in race_data_sets:
-            entries_df = race_data[RaceCol.ENTRIES]
+    def _run_single_race(self, race_info: RaceInfo) -> list[RaceState]:
+        """1レースのシミュレーションを実行し、全ステップの履歴を返す"""
+        logger.info(f"レース開始: {race_info.race_id}")
+
+        analyzer = RaceAnalyer()
+
+        # 1. 初期状態（0ステップ目）の生成
+        # info 内の各 HorseInfo から初期位置などを設定した RaceState を作る
+        current_state = race_info.state
+        history = [current_state]
+        
+        dt = self.DT  # 0.1秒きざみ
+        max_steps = self.MAX_STEPS # 安全のための最大ステップ数
+        
+        # 2. 全馬がゴールするまでループ
+        for _ in range(max_steps):
+            # Engine に 「現在の状態」 と 「レースの固定情報」 を渡して 「次の状態」 を得る
+            # Engine自体に状態を持たせない（Stateless）のがコツです
+            next_state = self.engine.step(current_state, race_info.profile, dt)
             
-            # 1. コンテキストの作成（レース全体の環境）
-            context = ContextFactory.create_from_df(entries_df)
+            # 2. Simulatorによる順位の確定（刻印）
+            # ここで全馬の距離を比較して正しい rank を入れる
+            next_state = analyzer.update_ranks(next_state)
 
-            # 2. 馬たちの作成（個体ごとの能力）
-            horses = [horse_factory.create_horse(row) for _, row in entries_df.iterrows()]
+            # 3. 履歴への追加と更新
+            history.append(next_state)
+            current_state = next_state
+            
+            # 全頭ゴールしたか判定
+            if analyzer.is_all_goal(current_state):
+                break
+                
+        return history
+    
+    def post_races(self, date: str):
+        """レースの事後処理"""
+        for race_info in self.race_info_list:
+            profile = race_info.profile
+            history = self.results[race_info.race_id]
+            result_df = self.saver.export_results(profile, history)
+            self.saver.save_result_to_csv(date, profile.course_name, profile.distance, profile.surface, result_df)
 
-            # 馬がいない場合は次のレースへ
-            if not horses: continue
-                    
-            # シミュレーション実行へ...
-            self._run_simulation(context, horses, saver)
-
-        self._save_logs(saver, target_date)
-        
-    def _run_simulation(self, context: RaceContext, horses: list, saver: ResultSaver):
-        """
-        1回のレースのシミュレーションを行う
-        """
-        self.logger.info("シミュレーション開始...")
-        
-        # エンジン起動
-        engine = RaceEngine(context, horses, saver=saver)
-        self.logger.info(f"Setup complete for {context.course_name} {context.distance}m")
-
-        # 前処理
-        self._prepare_simulation(horses)
-        
-        # レース開始
-        engine.run_race()
-        
-        # 結果の確認
-        for h in horses:
-            self.logger.info(f"{h.name}: {engine.elapsed_time:.1f}秒 (残スタミナ: {h.state.current_stamina:.1f})")
-
-    def _prepare_simulation(self, horses: list):
-        """各馬のリセット"""
-        for horse in horses:
-            horse.reset_state()
-            self.logger.info(f"{horse.name}: 初期レーン {horse.state.current_lane} に配置しました。")
-
-    def _save_logs(self, saver: ResultSaver, date: str):
-        """
-        ログ情報の保存
-        """
-        # 全レース終了後にまとめて保存
-        save_file = f"simulation_{date}.csv"
-        final_df = saver.save_to_csv(save_file)
-        saver.display_result(final_df)
-
-    def _entry_horse(self, factory: HorseFactory, row):
-        """
-        馬インスタンスを作成
-        """
-        return factory.create_horse(row)
-
-    def _get_horse_source(self, date: str) -> str:
-        """馬の過去履歴のファイル"""
-        return f"data/horse_history_{date}.csv"
+    def _save_result_as_single_race(self, date: str, race_info: RaceInfo, history: list):
+        """テスト用：1レース分の結果をcsvにセーブする"""
+        race_profile = race_info.profile
+        result_df = self.saver.export_results(race_profile, history)
+        self.saver.save_result_to_csv(date, race_profile.course_name, race_profile.distance, race_profile.surface, result_df)

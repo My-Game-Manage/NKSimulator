@@ -1,119 +1,96 @@
 """
 saver.py の概要
 
-記録用
+レースの結果などをCSVで保存する。
 """
+import os
 import pandas as pd
-from datetime import datetime
 from pathlib import Path
+import logging
 
-from utils.logger import setup_logger
-from constants.schema import RaceCol
+# ロガーの取得（__name__ はファイル名/モジュール名になる）
+logger = logging.getLogger(__name__)
 
-class ResultSaver:
-    def __init__(self, output_dir: str = "results"):
-        _CLASSNAME = "ResultSaver"
-        # クラス名を名前としてロガーを作成
-        self.logger = setup_logger(_CLASSNAME)
+from src.constants.schema import RaceCol
+from src.models.horse_info import HorseProfile
+from src.models.race_info import RaceInfo, RaceProfile, RaceState
+from src.utils.name_utils import get_save_file_name
 
-        self.logger.info("初期化中...")
-        
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.results = []
 
-    def record_finish(self, horse, finish_time: float, context):
-        """
-        馬がゴールした瞬間のデータを記録する
-        """
-        # 上がり3Fの計算
-        last_3f = 0.0
-        if horse.state.time_at_600m > 0:
-            last_3f = finish_time - horse.state.time_at_600m
-        
-        # リストをハイフン繋ぎの文字列に変換
-        passing_order_str = "-".join(map(str, horse.state.passing_ranks))
-            
-        record = {
-            RaceCol.COURSE: context.course_name,
-            RaceCol.RACE_NUMBER: getattr(context, 'race_number', 0), # Contextに持たせておくと便利
-            RaceCol.SURFACE: context.surface,
-            RaceCol.DISTANCE: context.distance,
-            RaceCol.HORSE_ID: horse.horse_id,
-            RaceCol.BRACKET_NUM: horse.bracket_num,
-            RaceCol.HORSE_NUM: horse.horse_num,
-            RaceCol.HORSE_NAME: horse.name,
-            RaceCol.TIME: round(finish_time, 2),
-            "remaining_stamina": round(horse.state.current_stamina, 2),
-            "stamina_capacity": horse.params.stamina_capacity,
-            "avg_velocity": round(context.distance / finish_time, 2) if finish_time > 0 else 0,
-            "max_velocity": round(horse.params.max_velocity, 2),
-            RaceCol.LAST_3F: round(last_3f, 2), # schema.pyの定数を使用
-            RaceCol.PASSING_ORDER: passing_order_str, # schema.py の定数を使用
-            "strategy": horse.strategy,
-            "spurt_dist": round(horse.state.spurt_dist, 2),
-            # "is_exhausted": horse.state.is_exhausted,
-            "lane": round(horse.state.current_lane, 2),
-            "dist_to_front": round(horse.state.distance_to_front, 2),
-            "200m_time": round(horse.state.time_at_200m, 2),
-            "200m_velocity": round(horse.state.velocity_at_200m, 2),
-        }
-        self.results.append(record)
-        
-    def save_to_csv(self, filename: str = None):
-        """
-        蓄積されたデータをレースごとにソートしてCSVとして保存
-        """
-        if not self.results:
-            self.logger.info("保存するデータがありません。")
-            return
+class RaceResultSaver:
+    def __init__(self, prepared_dir: str = "prepared", result_dir: str = "results"):
+        logger.info("初期化中...")
 
-        df = pd.DataFrame(self.results)
-        
-        # 1. レース番号(RACE_NUMBER)とタイム(TIME)で昇順ソート
-        # これにより、同じレース内でのタイム順に並びます
-        df = df.sort_values(by=[RaceCol.RACE_NUMBER, RaceCol.TIME])
+        self.result_dir = Path(result_dir)
+        self.prepared_dir = Path(prepared_dir)
 
-        # 2. レースごとにグループ化し、その中で着順（Rank）を付与
-        # groupby(RaceCol.RACE_NUMBER) を使うことで、レースごとに 1, 2, 3... と連番を振れます
-        df[RaceCol.RANK] = df.groupby(RaceCol.RACE_NUMBER).cumcount() + 1
+        # ディレクトリがなければ作成する
+        os.makedirs(self.result_dir, exist_ok=True)
+        os.makedirs(self.prepared_dir, exist_ok=True)
 
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"sim_result_{timestamp}.csv"
-        
-        save_path = self.output_dir / filename
-        df.to_csv(save_path, index=False, encoding="utf-8-sig")
-        self.logger.info(f"結果を保存しました: {save_path}")
-        return df
-        
-    def save_to_csv_old(self, filename: str = None):
-        """
-        蓄積されたデータをCSVとして保存
-        """
-        if not self.results:
-            self.logger.info("保存するデータがありません。")
-            return
+    def export_results(self, race_profile: RaceProfile, history: list[RaceState]) -> pd.DataFrame:
+        """レース結果を記録用のDataFrameに整形する"""
+        # 記録の最後のRaceStateを取得
+        last_state = history[-1]
 
-        df = pd.DataFrame(self.results)
-        
-        # 着順（Rank）をタイム順に計算して付与
-        df = df.sort_values(by=RaceCol.TIME)
-        df[RaceCol.RANK] = range(1, len(df) + 1)
+        summary_data = []
 
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"sim_result_{timestamp}.csv"
-        
-        save_path = self.output_dir / filename
-        df.to_csv(save_path, index=False, encoding="utf-8-sig")
-        self.logger.info(f"結果を保存しました: {save_path}")
-        return df
-        
-    def display_result(self, df: pd.DataFrame):
-        """
-        簡易結果表示
-        """
-        pd.set_option('display.float_format', '{:.2f}'.format)
-        for _, r in df.iterrows():
-            print(r)
+        for h_id, rank in last_state.ranks.items():
+            h_prof = race_profile.horses[h_id]
+            h_state = last_state.horses[h_id]
+            summary_data.append({
+                RaceCol.COURSE: race_profile.course_name,
+                RaceCol.RACE_NUMBER: race_profile.race_num,
+                RaceCol.HORSE_ID: h_id,
+                RaceCol.BRACKET_NUM: h_prof.bracket_num,
+                RaceCol.HORSE_NUM: h_prof.horse_num,
+                RaceCol.HORSE_NAME: h_prof.name,
+                RaceCol.RANK: rank,
+                RaceCol.TIME: round(h_state.finish_time, 2),
+                "is_exhausted": h_state.is_exhausted,
+            })
+
+        return pd.DataFrame(summary_data)
+    
+    def export_horses_params(self, race_profile: RaceProfile) -> pd.DataFrame:
+        """レース前の各馬の能力値をDataFrameに整形する"""
+        summary_data = []
+
+        for h_id, h_prof in race_profile.horses.items():
+            summary_data.append({
+                RaceCol.COURSE: race_profile.course_name,
+                RaceCol.RACE_NUMBER: race_profile.race_num,
+                RaceCol.HORSE_ID: h_prof.horse_id,
+                RaceCol.BRACKET_NUM: h_prof.bracket_num,
+                RaceCol.HORSE_NUM: h_prof.horse_num,
+                RaceCol.HORSE_NAME: h_prof.name,
+                RaceCol.JOCKEY: h_prof.jockey,
+                RaceCol.HORSE_WEIGHT: h_prof.horse_weight,
+                RaceCol.WEIGHT_CARRIED: h_prof.weight_carried,
+                # 基本能力値
+                "max_speed": h_prof.max_speed,
+                "min_speed": h_prof.min_speed,
+                "acceleration": h_prof.acceleration,
+                "total_stamina": h_prof.total_stamina,
+                "stamina_waste_rate": h_prof.stamina_waste_rate,
+                "cornering_ability": h_prof.cornering_ability,
+                "gate_reaction": h_prof.gate_reaction,
+                "strategy": h_prof.strategy.value,
+                "target_spurt_dist": h_prof.target_spurt_dist,
+            })
+
+        return pd.DataFrame(summary_data)
+
+    def save_result_to_csv(self, date: str, course: str, distance: int, surface: str, history_df: pd.DataFrame):
+        """1レースのデータをCSVで保存する"""
+        fname = get_save_file_name(date, course,distance, surface)
+        save_path = self.result_dir / fname
+        history_df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
+        logger.info(f"{save_path}に結果を保存しました。")
+
+    def save_prepared_to_csv(self, date: str, course: str, distance: int, surface: str, params_df: pd.DataFrame):
+        """1レースのレース前データをCSVで保存する"""
+        fname = get_save_file_name(date, course,distance, surface)
+        save_path = self.prepared_dir / fname
+        params_df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
+        logger.info(f"{save_path}に結果を保存しました。")

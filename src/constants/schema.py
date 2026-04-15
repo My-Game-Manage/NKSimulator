@@ -54,6 +54,8 @@ class RaceCol:
     RACE_DATA = "race_data"
     # --- 管理・構造用に追加 ---
     ENTRIES = "entries"  # 出走馬リスト用のキー
+    HISTORIES = "histories" # 出走馬の過去データDF用のキー
+    RACE_ID = "race_id"     # 現状は疑似的に作成したID（将来的には本物のrace_id利用）
 
     # --- 日本語戻しマッピング (表示・出力用) ---
     TO_JAPANESE = {
@@ -92,4 +94,5 @@ class RaceCol:
         # プログラム用の追加分
         RACE_DATA: "レース情報",
         ENTRIES: "出走馬一覧",
+        RACE_ID: "レースID",
     }

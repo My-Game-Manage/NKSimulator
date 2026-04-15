@@ -1,61 +1,78 @@
 """
-provider.py の概要
+race_provider.py の概要
 
-出馬表のCSVを読み込み、レース情報を作成する
+出馬表CSVから該当のレースと出走馬のデータを取得する。
 """
 import pandas as pd
 from pathlib import Path
-from typing import List, Dict
-from utils.logger import setup_logger
+import logging
 
-from constants.schema import RaceCol
+# ロガーの取得（__name__ はファイル名/モジュール名になる）
+logger = logging.getLogger(__name__)
+
+from src.utils.name_utils import race_id_from, full_races_csv_filename_from, horse_history_csv_filename_from
+from src.models.race_info import RaceRawData
+from src.constants.schema import RaceCol
 
 
 class RaceDataProvider:
+    """出馬表CSVから該当するレースの列を取得する"""
     def __init__(self, data_dir: str = "data"):
-        """
-        特定のファイルパスではなく、データが格納されているディレクトリを保持する
-        """
-        _CLASSNAME = "RaceDataProvider"
-        # クラス名を名前としてロガーを作成
-        self.logger = setup_logger(_CLASSNAME)
-    
+        logger.info("初期化中...")
+
         self.data_dir = Path(data_dir)
 
-    def get_race_data_sets(self, target_date: str, target_courses: List[str], target_race_nums: List[int]) -> List[Dict]:
-        """
-        【メイン機能】日付・コース・レース番号を指定して、該当するレースのリストを返す
-        """
-        file_path = self.data_dir / f"full_races_{target_date}.csv"
+    def fetch_race_data(self, target_date: str) -> pd.DataFrame:
+        """レースの出馬表データCSVを取得"""
+        file_path = self.data_dir / full_races_csv_filename_from(target_date)
+        try:
+            race_df = pd.read_csv(file_path)
+            return race_df
+        except pd.errors.EmptyDataError:
+            logger.warning(f"{file_path}はありません。")
+            return pd.DataFrame()
+
+    def fetch_horse_history(self, target_date: str) -> pd.DataFrame:
+        """馬の過去データCSVをDataFrameで取得"""
+        file_path = self.data_dir / horse_history_csv_filename_from(target_date)
+        try:
+            h_df = pd.read_csv(file_path)
+            return h_df
+        except pd.errors.EmptyDataError:
+            logger.warning(f"{file_path}はありません。")
+            return pd.DataFrame()
+    
+    def create_race_raw_data_list(self, target_date: str, target_courses: list[str], target_race_nums: list[int]) -> list[RaceRawData]:
+        """出馬表など必要なデータのセット（RaceData）のリストを作成"""
+        race_df = self.fetch_race_data(target_date)
+        horse_df = self.fetch_horse_history(target_date)
         
-        if not file_path.exists():
-            self.logger.warning(f"{file_path} does not exist.")
+        if race_df.empty or horse_df.empty:
+            logger.warning("目的のレースデータが存在しません")
             return []
-
-        # ここで読み込み（以前の __init__ でやっていた処理をここに移動）
-        df = pd.read_csv(file_path)
         
-        # 必要に応じて前処理（以前の _preprocess 相当）をここで呼ぶ
-        df = self._preprocess(df)
+        cleared_race_df = self._preprocess(race_df)
 
-        # フィルタリング
-        filtered_df = df[
-            (df[RaceCol.COURSE].isin(target_courses)) & 
-            (df[RaceCol.RACE_NUMBER].isin(target_race_nums))
+        filtered_race_df = cleared_race_df[
+            (cleared_race_df[RaceCol.COURSE].isin(target_courses)) & 
+            (cleared_race_df[RaceCol.RACE_NUMBER].isin(target_race_nums))
         ]
-        self.logger.debug(f"filtered -> {len(filtered_df)}")
 
         # レース単位のリストにして返す
-        race_sets = []
-        grouped = filtered_df.groupby([RaceCol.COURSE, RaceCol.RACE_NUMBER])
+        race_raw_data_list = []
+        grouped = filtered_race_df.groupby([RaceCol.COURSE, RaceCol.RACE_NUMBER])
         for (course, num), group in grouped:
-            race_sets.append({
-                RaceCol.COURSE: course,
-                RaceCol.RACE_NUMBER: num,
-                RaceCol.ENTRIES: group  # DataFrameのまま渡すとFactoryで扱いやすいです
-            })
-        return race_sets
-
+            race_raw_data_list.append(
+                RaceRawData(
+                    race_id=race_id_from(target_date, course, num),
+                    course=course,
+                    race_num=num,
+                    entries=group,
+                    histories=horse_df,
+                )
+            )
+        return race_raw_data_list
+    
     def _preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         型変換や欠損値処理など、読み込み直後の共通処理
