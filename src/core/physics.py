@@ -5,7 +5,7 @@ physics.py の概要
 """
 from src.models.section import TrackSection, SectionType, SectionName
 from src.constants.race_master import TrackCondition
-from src.models.horse_info import HorseProfile, HorseState
+from src.models.horse_data import HorseProfile, HorseState
 
 # チェック系
 def is_horse_finished(distance: float, course_length: float) -> bool:

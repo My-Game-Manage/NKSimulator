@@ -12,8 +12,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
-from src.models.horse_info import HorseProfile
-from src.models.race_info import RaceInfo, RaceProfile, RaceState
+from src.models.horse_data import HorseProfile
+from src.models.race_data import RaceInfo, RaceProfile, RaceState
 from src.utils.name_utils import get_save_file_name
 
 

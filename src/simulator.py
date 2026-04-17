@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 from src.services.provider import RaceDataProvider
 from src.services.race_factory import RaceInfoFactory
-from src.models.race_info import RaceInfo, RaceProfile, RaceState
+from src.models.race_data import RaceInfo, RaceProfile, RaceState
 from src.core.engine import RaceEngine
 from src.services.saver import RaceResultSaver
 from src.services.race_analyzer import RaceAnalyer

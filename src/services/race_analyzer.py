@@ -8,8 +8,8 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.models.race_info import RaceState
-from src.models.horse_info import HorseState
+from src.models.race_data import RaceState
+from src.models.horse_data import HorseState
 
 
 class RaceAnalyer:

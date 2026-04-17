@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
-from src.models.horse_info import HorseProfile, HorseState
+from src.models.horse_data import HorseProfile, HorseState
 from src.services.ability_analyzer import HorseAbilityAnalyzer
 from src.models.strategy import StrategyEnum
 

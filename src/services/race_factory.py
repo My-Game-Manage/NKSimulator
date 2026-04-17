@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 
 from src.constants.schema import RaceCol
-from src.models.race_info import RaceInfo, RaceProfile, RaceState, RaceRawData
+from src.models.race_data import RaceInfo, RaceProfile, RaceState, RaceRawData
 from src.constants.race_master import TrackCondition, TrackWeather
 from src.constants.course_master import CourseSpec, NAME_TO_COURSE, DEFAULT_COURSE_SPEC_KEY
 from src.constants.track_master import TRACK_DATA, DEFAULT_TRACK_DATA_KEY
 from src.services.horse_factory import HorseFactory
 from src.models.section import TrackSection
-from src.models.horse_info import HorseProfile
+from src.models.horse_data import HorseProfile
 
 
 @dataclass(frozen=True)

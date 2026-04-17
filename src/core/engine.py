@@ -8,8 +8,8 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.models.race_info import RaceInfo, RaceProfile, RaceState
-from src.models.horse_info import HorseProfile, HorseState, HorseTactics, HorseEnv, HorseFactors
+from src.models.race_data import RaceInfo, RaceProfile, RaceState
+from src.models.horse_data import HorseProfile, HorseState, HorseTactics, HorseEnv, HorseFactors
 from src.models.section import SectionType, TrackSection, SectionName
 from src.constants.tactics_master import HorseMode, HorseMove
 import src.core.physics as ph

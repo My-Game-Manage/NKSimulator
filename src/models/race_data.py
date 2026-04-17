@@ -4,11 +4,20 @@ race_info.py の概要
 レースの開催会場とコース等の静的データを保持するデータクラス。
 """
 from dataclasses import dataclass, field, replace
+from enum import Enum
 import pandas as pd
 
-from src.constants.race_master import TrackCondition, TrackWeather
-from src.models.section import TrackSection
-from src.models.horse_info import HorseProfile, HorseState
+from src.constants.enums import SectionName, SectionType
+from src.models.horse_data import HorseProfile, HorseSnapshot
+
+
+@dataclass(frozen=True)
+class TrackSection:
+    type: SectionType
+    distance: float     # その区間の長さ (m)
+    start_at: float     # スタート地点からの累積距離 (m)
+    name: SectionName   # "向こう正面" "第3コーナー" など
+    slope: float = 0.0  # 勾配（%）。プラスなら上り坂、マイナスなら下り坂
 
 
 @dataclass(frozen=True)
@@ -26,15 +35,15 @@ class RaceProfile:
     """レースの固定データを保持するデータクラス"""
     # 基本情報
     race_id: str
-    course_name: str
+    course: str
     race_name: str
     race_num: int
     num_horses: int
     # 基本データ
     distance: int
     surface: str
-    condition: TrackCondition
-    weather: TrackWeather
+    condition: str
+    weather: str
     # コースデータ
     track_width: float          # コース幅
     corner_penalty: float       # コーナー係数
@@ -48,13 +57,13 @@ class RaceProfile:
 
 
 @dataclass(frozen=True)
-class RaceState:
+class RaceSnapshot:
     """レースの動的データを保持するデータクラス"""
     race_id: str
-    step_count: int
+    step: int
     elapsed_time: float
     # 馬Stateの辞書（horse_id: h_state）
-    horses: dict[str, HorseState] = field(default_factory=dict)
+    horses: dict[str, HorseSnapshot] = field(default_factory=dict)
     # 現在の順位辞書（horse_id: rank）
     ranks: dict[str, int] = field(default_factory=dict)
 
@@ -67,4 +76,4 @@ class RaceInfo:
     """レース関連のデータクラスをまとめるデータクラス"""
     race_id: str
     profile: RaceProfile
-    state: RaceState
+    snapshot: RaceSnapshot

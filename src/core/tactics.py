@@ -3,7 +3,7 @@ tactics.py の概要
 
 意思決定部分の関数の集合。
 """
-from src.models.horse_info import HorseProfile, HorseState
+from src.models.horse_data import HorseProfile, HorseState
 from src.constants.tactics_master import HorseMode, HorseMove
 
 def determinate_target_speed_from(param: HorseProfile, state: HorseState) -> float:
