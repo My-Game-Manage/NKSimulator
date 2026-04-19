@@ -3,9 +3,8 @@ physics.py の概要
 
 レースのシミュレートに関する物理演算を行う関数群。
 """
-from src.models.section import TrackSection, SectionType, SectionName
-from src.constants.race_master import TrackCondition
-from src.models.horse_data import HorseProfile, HorseState
+from src.models.horse_data import HorseProfile
+
 
 # チェック系
 def is_horse_finished(distance: float, course_length: float) -> bool:
@@ -13,15 +12,15 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
     return distance >= course_length
 
 # 要素取得系
-def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:
+#def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:
     """距離から現在のセクションを返す"""
-    accumulated_dist = 0
+    """accumulated_dist = 0
     for section in sections:
         accumulated_dist +=section.distance
         if position <= accumulated_dist:
             return section
     return TrackSection(SectionType.STRAIGHT, 9999, 9999, SectionName.HOME_STRAIGHT) # 予備
-
+"""
 # 物理演算系
 def calculate_acceleration(target_v: float, current_v: float, accel_power: float) -> float:
     """速度と加速能力から加速度を算出"""
@@ -67,25 +66,25 @@ def interpolate_goal_time(pre_dist: float, post_dist: float, pre_time: float, dt
     # 推定タイム
     return pre_time + (dt * ratio)
 
-def get_current_section(distance: float, sections: list[TrackSection]) -> TrackSection:
-    """現在位置から該当するセクションを返す"""
-    for section in sections:
-        if section.start_at <= distance < (section.start_at + section.distance):
-            return section
-    return sections[-1] # ゴール後は最後の直線扱い
+#def get_current_section(distance: float, sections: list[TrackSection]) -> TrackSection:
+#    """現在位置から該当するセクションを返す"""
+#    for section in sections:
+#        if section.start_at <= distance < (section.start_at + section.distance):
+#            return section
+#    return sections[-1] # ゴール後は最後の直線扱い
 
 def get_condition_modifier(condition) -> float:
     """コンディションによる補正数値を返す"""
     # TODO：とりあえず現状は1.0を返す
     return 1.0
 
-def calculate_target_speed(param: HorseProfile, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
+#def calculate_target_speed(param: HorseProfile, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
     """
     目標速度の決定ロジック
     1. ベース速度: max_speed（基本能力）に、馬場状態（TrackCondition）の補正を掛けます
     2. フェーズ補正: レース序盤・中盤・終盤（スパート）で倍率を変えます
     3. セクション補正: コーナー（CURVE）では、遠心力による減速（cornering_ability）を適用します
-    """
+    
     # 1. 馬場による基本速度の減衰 (良=1.0, 不良=0.95 など)
     condition_mod = get_condition_modifier(condition)
     base_speed = param.max_speed * condition_mod
@@ -101,6 +100,7 @@ def calculate_target_speed(param: HorseProfile, state: HorseState, section: Trac
     phase_mod = 1.0 if state.is_spurting else 0.9
     
     return base_speed * section_mod * phase_mod
+    """
 
 def calculate_next_velocity(current_v: float, target_v: float, param: HorseProfile, has_stamina: bool, dt: float) -> float:
     """

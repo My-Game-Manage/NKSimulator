@@ -10,6 +10,16 @@ import pandas as pd
 from src.constants.enums import SectionName, SectionType
 from src.models.horse_data import HorseProfile, HorseSnapshot
 
+@dataclass(frozen=True)
+class CourseSpec:
+    name: str
+    is_jra: bool                # 中央判定
+    is_excluded: bool           # 除外判定
+    track_width: int            # トラック幅
+    corner_penalty: float       # コーナー係数
+    turf_friction: float        # 芝係数
+    surface_friction: float     # ダート係数
+
 
 @dataclass(frozen=True)
 class TrackSection:

@@ -54,6 +54,7 @@ class HorseStrategyType(Enum):
 
 class HorseBehaviorType(Enum):
     IN_GATE = "in gate"
+    STARTING = "starting"
     RACING = "racing"
     BLOCKED = "blocked"
     EXHAUSTED = "exhausted"

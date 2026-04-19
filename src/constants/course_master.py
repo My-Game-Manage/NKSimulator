@@ -3,18 +3,13 @@ course_master.py の概要
 
 開催会場のコードの定義と、会場毎の特性（Spec）を定義している。
 """
-from dataclasses import dataclass
+from src.models.race_data import CourseSpec, TrackSection
+from src.constants.enums import SectionType, SectionName
 
 
-@dataclass(frozen=True)
-class CourseSpec:
-    name: str
-    is_jra: bool                # 中央判定
-    is_excluded: bool           # 除外判定
-    track_width: int            # トラック幅
-    corner_penalty: float       # コーナー係数
-    turf_friction: float        # 芝係数
-    surface_friction: float     # ダート係数
+# ---------------------------------------------------------
+# Course data
+# ---------------------------------------------------------
 
 DEFAULT_WIDTH = 25
 DEFAULT_CORNER_PENA = 0.1
@@ -65,3 +60,34 @@ NAME_TO_COURSE: dict[str, CourseSpec] = {
 }
 # 名前から会場コードを取得するために生成
 NAME_TO_CODE = {v.name: k for k, v in COURSE_MASTER.items()}
+
+# ---------------------------------------------------------
+# Track data
+# ---------------------------------------------------------
+DEFAULT_TRACK_DATA_KEY = "DEFAULT_1600"
+
+# コースのセクションのリスト
+# Keyは「会場名」_「距離」
+# 芝の時だけsufixで_「芝」
+TRACK_DATA = {
+    "DEFAULT_1600": [
+        TrackSection(SectionType.STRAIGHT, 200, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 300, 200, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 400, 500, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 400, 900, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
+    ],
+    "大井_1200": [
+        TrackSection(SectionType.STRAIGHT, 500, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 400, 500, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 300, 900, SectionName.HOMESTRETCH)
+    ],
+    "大井_1600": [
+        TrackSection(SectionType.STRAIGHT, 200, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 300, 200, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 400, 500, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 400, 900, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
+    ],
+}
+

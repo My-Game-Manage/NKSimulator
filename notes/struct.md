@@ -83,6 +83,22 @@ Stateパターン導入のために名前の混乱を避ける目的
     - provider
     - saver
 
+## Observer欲しいもの
+
+notifyで動作するもの。Event駆動型で欲しいもの
+
+レース中分析はしたい。plotできると便利
+でも記録の時点（update）じゃないと意味がないので、engine内では使えない
+となると、Simulatorに登録する形に
+そもそもSimulatorは（Factory）でコンストラクトする。
+create_raceをする
+sim.factory.create_race
+dateは固定。場所とナンバーはリストにできるが、場所は固定にしてしまうか。大井なら大井だけ、とか。その方が分かりやすい
+
+`sim.factory.create_races(date, course, nums)`
+これで`list[RaceInfo]`を得る。
+
+
 ## 設計案
 
 project_root/

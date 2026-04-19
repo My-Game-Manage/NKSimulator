@@ -8,9 +8,8 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.models.race_data import RaceInfo, RaceProfile, RaceState
-from src.models.horse_data import HorseProfile, HorseState, HorseTactics, HorseEnv, HorseFactors
-from src.models.section import SectionType, TrackSection, SectionName
+from src.models.race_data import RaceInfo, RaceProfile, RaceSnapshot
+from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.constants.tactics_master import HorseMode, HorseMove
 import src.core.physics as ph
 import src.core.tactics as tac
@@ -20,14 +19,14 @@ class RaceEngine:
     def __init__(self):
         logger.info("初期化中...")
         
-    def step(self, current_state: RaceState, race_profile: RaceProfile, dt: float) -> RaceState:
+    def step(self, current_state: RaceSnapshot, race_profile: RaceProfile, dt: float) -> RaceSnapshot:
         """現在のStateからdt秒後のStateを生成して返す"""
         new_states = {}
         for h_id, h_state in current_state.horses.items():
             new_horse_state = self._update_horse(h_id, race_profile, current_state.horses, dt)
             new_states[h_id] = new_horse_state
 
-        return RaceState(
+        return RaceSnapshot(
             race_id=current_state.race_id,
             step_count=self._calc_next_step(current_state.step_count),
             elapsed_time=self._calc_next_elapsed_time(current_state.elapsed_time, dt),
@@ -42,7 +41,7 @@ class RaceEngine:
         """次のstepを計算して返す"""
         return current_step + 1
     
-    def _update_horse(self, horse_id: str, race_profile: RaceProfile, horses: dict[str, HorseState], dt: float) -> HorseState:
+    def _update_horse(self, horse_id: str, race_profile: RaceProfile, horses: dict[str, HorseSnapshot], dt: float) -> HorseSnapshot:
         """馬の速度と距離の更新をし、次のStateを作成"""
         current_state = horses[horse_id]
         h_prof = race_profile.horses[horse_id]
@@ -76,7 +75,7 @@ class RaceEngine:
                                                    current_state.elapsed_time, dt, race_profile.distance)
         
         # TODO: 各要素を更新
-        return HorseState(
+        return HorseSnapshot(
             horse_id=current_state.horse_id,
             step=self._calc_next_step(current_state.step),
             elapsed_time=self._calc_next_elapsed_time(current_state.elapsed_time, dt),
@@ -92,26 +91,26 @@ class RaceEngine:
             finish_time=finish_time,
         )
     
-    def _perceive_horse_position(self, current_state: HorseState, race_profile: RaceProfile, horses: dict[str, HorseState]) -> HorseEnv:
+    def _perceive_horse_position(self, current_state: HorseSnapshot, race_profile: RaceProfile, horses: dict[str, HorseSnapshot]):
         """馬の環境認識フェーズ（位置関係やコース場所）"""
         # 現在のセクション
         section = ph.current_section_from(current_state.current_distance, race_profile.sections)
         # 前の馬がいるか？その距離
         dist_to_front = self._distance_to_front_horse_from(current_state, horses)
-        return HorseEnv(
-            current_section=section,
-            dist_to_front=dist_to_front,
-        )
+        return {
+            'current_section': section,
+            'dist_to_front':dist_to_front,
+        }
 
-    def _section_factor_from(self, current_distance: float, sections: list[TrackSection], corner_penalty: float) -> float:
-        """セクションによる補正値を返す"""
+    """def _section_factor_from(self, current_distance: float, sections: list[TrackSection], corner_penalty: float) -> float:
+        セクションによる補正値を返す
         section_type = ph.current_section_from(current_distance, sections)
         if section_type is SectionType.CURVE:
             return corner_penalty
         else:
             return 1.0 # Nothing
-        
-    def _distance_to_front_horse_from(self, current_state: HorseState, horses: dict[str, HorseState]) -> float:
+    """    
+    def _distance_to_front_horse_from(self, current_state: HorseSnapshot, horses: dict[str, HorseSnapshot]) -> float:
         """前の馬との距離の更新"""
         min_dist = 999.0
         for h_id, other_state in horses.items():
@@ -126,9 +125,9 @@ class RaceEngine:
     def _surface_friction_factor_from(self, race_param: RaceProfile) -> float:
         """馬場による補正を返す"""
         return race_param.surface_friction
-    
+    """
     def _decide_horse_tactics(self, horse_env: HorseEnv) -> HorseTactics:
-        """環境情報からTacticsを返す"""
+        環境情報からTacticsを返す
         # この部分は本来はtacticsに投げる
         section = horse_env.current_section
         dist_to_front = horse_env.dist_to_front
@@ -157,19 +156,21 @@ class RaceEngine:
             move=move,
             mode=mode,
         )
+        """
 
-    def _decide_horse_target_speed(self, h_prof: HorseProfile, env: HorseEnv, tactics: HorseTactics) -> float:
+    def _decide_horse_target_speed(self, h_prof: HorseProfile, env: dict, tactics: str) -> float:
         """馬の意思決定フェーズ（目標速度決定）"""
         # 目標速度の設定
         target_v = h_prof.max_speed
         return target_v
     
-    def _decide_horse_tactics_from(self) -> HorseTactics:
+    def _decide_horse_tactics_from(self) -> str:
         """HorseTacticsを返す"""
-        return HorseTactics(
-            move=HorseMove.STAY,
-            mode=HorseMode.KEEP,
-        )
+        #return HorseTactics(
+        #    move=HorseMove.STAY,
+        #    mode=HorseMode.KEEP,
+        #)
+        return ""
 
     def _update_horse_status(self):
         """馬の各数値を更新する"""
@@ -187,7 +188,7 @@ class RaceEngine:
         """馬の残りのスタミナを更新する"""
         pass
         
-    def _update_lane_position(self, h_state: HorseState) -> float:
+    def _update_lane_position(self, h_state: HorseSnapshot) -> float:
         """進路（lane）の更新"""
         return 1.0
     

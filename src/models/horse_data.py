@@ -47,13 +47,13 @@ class HorseSnapshot:
     stamina: float              # 残りスタミナ
     # --- 環境・戦略 ---
     lane: float                 # 横位置 (ゲート幅は0.9mで実質1.0mずつズレていく）
-    # --- 記録 ---
-    is_finished: bool = False
-    finish_time: float | None = None
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
     behavior: str               # BehaviorStateのKeyを保存
     strategy: str               # 現在の戦術
+    # --- 記録 ---
+    is_finished: bool = False
+    finish_time: float | None = None
     
     def next_step(self) -> 'HorseSnapshot':
         """ステップだけ更新した新しいStateを返す"""

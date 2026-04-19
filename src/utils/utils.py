@@ -143,3 +143,13 @@ def get_course_by_name(name_input: str) -> Optional[CourseSpec]:
 def is_valid_course_name(name_input: str) -> bool:
     """会場名が有効かどうかのみを判定する"""
     return get_course_by_name(name_input) is not None
+
+def track_name_from(course_name: str, distance: int, surface: str) -> str:
+    """コース構成用の名前取得"""
+    suffix = "" if surface == "ダ" else "_芝"
+    return f"{course_name}_{distance}{suffix}"
+
+def checkpoints_from_sections(sections: list) -> list[float]:
+    """セクション情報から記録地点のリストを返す"""
+    return [s.start_at for s in sections if s.start_at > 0]
+
