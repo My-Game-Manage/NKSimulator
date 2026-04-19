@@ -70,6 +70,7 @@ class CSVRaceFactory(RaceFactory):
     def create_race(self, date: str, course: str, race_num: int) -> RaceInfo:
         raw_data = CSVProvider.get_target_race_raw_data(date, course, race_num)
         profile = self.create_race_profile(raw_data)
+        logger.info(f"profile: {profile}")
         snapshot = self.create_race_snapshot(raw_data.race_id, profile.horses)
         return RaceInfo(
             race_id=raw_data.race_id,
@@ -80,6 +81,7 @@ class CSVRaceFactory(RaceFactory):
     def create_race_profile(self, raw_data: RaceRawData) -> RaceProfile:
         """RaceProfileの作成"""
         base_prof = self._create_base_profile(raw_data)
+        logger.info(f"base_prof: {base_prof}")
         prof_param = self._create_profile_param(base_prof[RaceProfField.COURSE.value],
                                                 base_prof[RaceProfField.DISTANCE.value],
                                                 base_prof[RaceProfField.SURFACE.value])
@@ -87,7 +89,7 @@ class CSVRaceFactory(RaceFactory):
         horses = {}
         for _, row in raw_data.entries.iterrows():
             horse_id = row[RaceCol.HORSE_ID]
-            history_df = raw_data.histories[RaceCol.HORSE_ID == horse_id]
+            history_df = raw_data.histories[raw_data.histories[RaceCol.HORSE_ID].astype(str) == str(horse_id)]
             horses[horse_id] = self.horse_factory.create_horse_profile(distance, row, history_df)
         # 辞書型なので**base_profでフィールド自動入力される
         prof = {**base_prof, **prof_param}
