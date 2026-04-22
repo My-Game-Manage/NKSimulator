@@ -12,6 +12,8 @@ class HorseProfile:
     # 基本情報
     horse_id: str
     name: str
+    # sex: str
+    # age: int
     bracket_num: int
     horse_num: int
     jockey: str                 # ジョッキー名

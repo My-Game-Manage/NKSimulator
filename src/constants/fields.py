@@ -79,7 +79,7 @@ class HorseProfField(Enum):
     MIN_SPEED = "min_speed"
     ACCELERATION= "acceleration"
     # スタミナ
-    TOTAL_STAMIN = "total_stamina"
+    TOTAL_STAMINA = "total_stamina"
     STAMINA_WASTE_RATE = "stamina_waste_rate"
     # 適性・性格
     CORNER_ABILITY = "cornering_ability"
