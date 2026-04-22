@@ -280,7 +280,7 @@ class DebugRaceFactory(RaceFactory):
         """DEMO用のデータ作成"""
         race_id = DEBUG_DEFAULTS[RaceProfField.RACE_ID.value]
         profile = self.create_race_profile(race_id, course, num_horses, distance, surface, condition, weather)
-        snapshot = self.create_race_snapshot(race_id)
+        snapshot = self.create_race_snapshot(race_id, {})
         return RaceInfo(
             race_id=race_id,
             profile=profile,
@@ -443,11 +443,11 @@ class DebugHorseFactory(HorseFactory):
     
     def create_dummy_name(self) -> str:
         """ダミーネームを生成"""
-        return f"ダミー馬{str(self._dummy_id_counter).zfill(2)}"
+        return f"ダミー馬{str(self._dummy_id_counter - 1).zfill(2)}"
     
     def create_dummy_jockey(self) -> str:
         """ダミージョッキー生成"""
-        return f"ダミー機種{str(self._dummy_id_counter).zfill(2)}"
+        return f"ダミー機種{str(self._dummy_id_counter - 1).zfill(2)}"
     
     def create_random_horse_weight(self) -> float:
         return random.uniform(DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.HORSE_WEIGHT.value][0],
@@ -455,7 +455,7 @@ class DebugHorseFactory(HorseFactory):
     
     def create_random_weight_carried(self) -> float:
         weights = [51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0]
-        return weights[random.randint(0, len(weights))]
+        return weights[random.randint(0, len(weights) - 1)]
     
     def create_random_max_speed(self) -> float:
         return random.uniform(DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.MAX_SPEED.value][0],

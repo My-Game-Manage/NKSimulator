@@ -78,6 +78,13 @@ TRACK_DATA = {
         TrackSection(SectionType.CURVE, 400, 900, SectionName.TURN_3RD_4TH),
         TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
     ],
+    "DEMO_1600": [
+        TrackSection(SectionType.STRAIGHT, 200, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 300, 200, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 400, 500, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 400, 900, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
+    ],
     "大井_1200": [
         TrackSection(SectionType.STRAIGHT, 500, 0, SectionName.STARTING),
         TrackSection(SectionType.CURVE, 400, 500, SectionName.TURN_3RD_4TH),
