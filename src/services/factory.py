@@ -63,7 +63,7 @@ class HorseFactory(ABC):
     def create_horse_profile(self, **kwargs) -> HorseProfile:
         pass
 
-    def create_horse_snapshot(self, horse_id: str, stragety: str) -> HorseSnapshot:
+    def create_horse_snapshot(self, horse_id: str, horse_num: int, stamina: float, stragety: str) -> HorseSnapshot:
         """Snapshot（初期値）作成"""
         return HorseSnapshot(
             horse_id=horse_id,
@@ -71,8 +71,8 @@ class HorseFactory(ABC):
             elapsed_time=0.0,
             velocity=0.0,
             distance=0.0,
-            stamina=0.0,
-            lane=0.0,
+            stamina=stamina,
+            lane=float(horse_num),
             behavior=HorseBehaviorType.IN_GATE.value,
             strategy=stragety,
             is_finished=False,
@@ -99,7 +99,7 @@ class CSVRaceFactory(RaceFactory):
         profile = self.create_race_profile(raw_data)
         h_snaps = {}
         for h_id, h_prof in profile.horses.items():
-            h_snaps[h_id] = self.horse_factory.create_horse_snapshot(h_id, h_prof.strategy)
+            h_snaps[h_id] = self.horse_factory.create_horse_snapshot(h_id, h_prof.horse_num, h_prof.total_stamina, h_prof.strategy)
         snapshot = self.create_race_snapshot(raw_data.race_id, h_snaps)
         return RaceInfo(
             race_id=raw_data.race_id,
@@ -324,7 +324,7 @@ class DebugRaceFactory(RaceFactory):
         new_prof = replace(race_info.profile, horses=new_h_profs)
         h_snaps = race_info.snapshot.horses
         h_snaps[horse_prof.horse_id] = self.horse_factory.create_horse_snapshot(
-            horse_prof.horse_id, horse_prof.strategy
+            horse_prof.horse_id, horse_prof.horse_num, horse_prof.total_stamina, horse_prof.strategy
         )
         ranks = race_info.snapshot.ranks
         ranks[horse_prof.horse_id] = 1
@@ -339,7 +339,7 @@ class DebugRaceFactory(RaceFactory):
         h_snaps = {}
         ranks = {}
         for h_id, h_prof in new_h_profs.items():
-            h_snaps[h_id] = self.horse_factory.create_horse_snapshot(h_id, h_prof.strategy)
+            h_snaps[h_id] = self.horse_factory.create_horse_snapshot(h_id, h_prof.horse_num, h_prof.total_stamina, h_prof.strategy)
             ranks[h_id] = 1
         new_snap = replace(race_info.snapshot, horses=h_snaps, ranks=ranks)
         return replace(race_info, profile=new_prof, snapshot=new_snap)

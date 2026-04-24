@@ -9,7 +9,7 @@ from enum import Enum
 # ---------------------------------------------------------
 # Track data
 # ---------------------------------------------------------
-class SectionType(Enum):
+class SectionType(str, Enum):
     STRAIGHT = "straight"
     CURVE = "corner"
 
@@ -25,7 +25,7 @@ class SectionName(Enum):
 # ---------------------------------------------------------
 # Race data
 # ---------------------------------------------------------
-class RaceSurfaceType(Enum):
+class RaceSurfaceType(str, Enum):
     TURF = "turf"           # 芝
     DIRT = "dirt"           # ダート
     JUMP = "jump"           # 障害
@@ -46,16 +46,26 @@ class TrackWeatherType(Enum):
 # ---------------------------------------------------------
 # Horse data
 # ---------------------------------------------------------
-class HorseStrategyType(Enum):
+class HorseStrategyType(str, Enum):
     LEADER = "leader"       # 逃げ
     STALKER = "stalker"     # 先行
     CLOSER = "closer"       # 差し
     REAR = "rear"           # 追い込み
 
-class HorseBehaviorType(Enum):
+class HorseBehaviorType(str, Enum):
     IN_GATE = "in gate"
     STARTING = "starting"
     RACING = "racing"
     BLOCKED = "blocked"
     EXHAUSTED = "exhausted"
     FINISHED = "finished"
+
+# ---------------------------------------------------------
+# Event data
+# ---------------------------------------------------------
+class RaceEvent(str, Enum):
+    PREPARE = "prepare"     # 準備
+    START = "start"         # レース開始
+    GOAL = "goal"           # ゴール
+    FINISH = "finish"       # レース終了
+    SAVE = "save"           # Save

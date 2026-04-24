@@ -8,21 +8,21 @@ from enum import Enum
 # ---------------------------------------------------------
 # Race data
 # ---------------------------------------------------------
-class SectionField(Enum):
+class SectionField(str, Enum):
     TYPE = "type"
     DISTANCE = "distance"
     START_AT = "start_at"
     NAME = "name"
     SLOPE = "slope"
 
-class RaceRawField(Enum):
+class RaceRawField(str, Enum):
     RACE_ID = "race_id"
     COURSE = "course"
     RACE_NUM= "race_num"
     ENTRIES = "entries"
     HISTORIES = "histories"
 
-class RaceProfField(Enum):
+class RaceProfField(str, Enum):
     # 基本情報
     RACE_ID = "race_id"
     COURSE = "course"
@@ -45,7 +45,7 @@ class RaceProfField(Enum):
     # 馬の辞書
     HORSES = "horses"
 
-class RaceSnapField(Enum):
+class RaceSnapField(str, Enum):
     RACE_ID = "race_id"
     STEP = "step"
     ELAPSED_TIME = "elapsed_time"
@@ -54,7 +54,7 @@ class RaceSnapField(Enum):
     # 現在の順位辞書（horse_id: rank）
     RANKS = "ranks"
 
-class RaceInfoField(Enum):
+class RaceInfoField(str, Enum):
     RACE_ID = "race_id"
     PROFILE = "profile"
     SNAPSHOT = "snapshot"
@@ -64,7 +64,7 @@ class RaceInfoField(Enum):
 # ---------------------------------------------------------
 # Horse data
 # ---------------------------------------------------------
-class HorseProfField(Enum):
+class HorseProfField(str, Enum):
     # 基本情報
     HORSE_ID = "horse_id"
     NAME = "name"
@@ -88,7 +88,7 @@ class HorseProfField(Enum):
     STRATEGY = "strategy"
     TARGET_SPURT_DIST = "target_spurt_dist"
 
-class HorseSnapField(Enum):
+class HorseSnapField(str, Enum):
     # 認識用
     HORSE_ID = "horse_id"
     # --- 基本物理量 ---
