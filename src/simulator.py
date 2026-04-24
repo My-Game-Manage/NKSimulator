@@ -13,6 +13,7 @@ from src.services.observer import Subject
 from src.services.factory import RaceFactory
 from src.core.engine import RaceEngine
 from src.models.race_data import RaceInfo, RaceSnapshot
+from src.services.saver import RaceSaver
 
 
 class RaceSimulator(Subject):
@@ -33,6 +34,7 @@ class RaceSimulator(Subject):
         self.results: dict[str, list[RaceSnapshot]] = {}
 
         # Observerのアタッチ
+        self.attach(RaceSaver())
 
     def run(self, **kwargs) -> bool:
         logger.info("実行中...")
@@ -46,6 +48,10 @@ class RaceSimulator(Subject):
         for race_info in race_info_list:
             history = self._run_single_race(race_info)
             self.results[race_info.race_id] = history
+            self.notify(RaceEvent.FINISH, {'data': race_info, 'history': history})
+
+        # レース後処理
+        self.post_process()
 
         return True
     
@@ -63,3 +69,7 @@ class RaceSimulator(Subject):
             return []
         
         return race_info_list
+    
+    def post_process(self):
+        """レース後の処理"""
+        pass

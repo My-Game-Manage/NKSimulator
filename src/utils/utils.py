@@ -60,9 +60,9 @@ def time_to_seconds(time_str):
 # File name
 # ---------------------------------------------------------
 
-def get_save_file_name(date: str, course: str, distance: str, surface: str) -> str:
+def get_save_file_name(race_id: str, course: str, distance: str, surface: str) -> str:
     """保存用のファイル名作成"""
-    return f"{date}_{course}_{surface}{distance}"
+    return f"{race_id}_{course}_{surface}{distance}"
 
 def race_id_from(date: str, course: str, race_num: int) -> str:
     """レースIDを、日付、開催会場、レース番号から作成する"""
