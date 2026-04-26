@@ -14,6 +14,7 @@ from src.services.factory import RaceFactory
 from src.core.engine import RaceEngine
 from src.models.race_data import RaceInfo, RaceSnapshot
 from src.services.saver import RaceSaver
+from src.services.race_analyzer import RaceAnalyer
 
 
 class RaceSimulator(Subject):
@@ -57,7 +58,35 @@ class RaceSimulator(Subject):
     
     def _run_single_race(self, race_info: RaceInfo) -> list[RaceSnapshot]:
         """1レースだけ実行"""
-        return []
+        self.notify(RaceEvent.START, {'data': race_info})
+
+        analyzer = RaceAnalyer()
+
+        # 初期状態の保存
+        race_prof = race_info.profile
+        current_snap = race_info.snapshot
+        history = [current_snap]
+
+        dt = self.DT
+        max_steps = self.MAX_STEPS
+
+        # 全馬がゴールするまでループを回す
+        for _ in range(max_steps):
+            # Engineで1step動かす
+            next_snap = self.engine.step(current_snap, race_prof, dt)
+
+            # 順位の更新
+            next_snap = analyzer.update_ranks(next_snap)
+
+            # 履歴への追加と更新
+            history.append(next_snap)
+            current_snap = next_snap
+
+            # 全馬ゴールしたか判定
+            if analyzer.is_all_goal(current_snap):
+                break
+        
+        return history
     
     def prepare(self, **kwargs) -> list[RaceInfo]:
         """レースの準備"""

@@ -8,21 +8,18 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.models.race_data import RaceInfo, RaceProfile, RaceSnapshot
+from src.models.race_data import RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
-from src.constants.tactics_master import HorseMode, HorseMove
-import src.core.physics as ph
-import src.core.tactics as tac
 
 
 class RaceEngine:
     def __init__(self):
         logger.info("初期化中...")
         
-    def step(self, current_state: RaceSnapshot, race_profile: RaceProfile, dt: float) -> RaceSnapshot:
-        """現在のStateからdt秒後のStateを生成して返す"""
-        new_states = {}
-        for h_id, h_state in current_state.horses.items():
+    def step(self, current_snap: RaceSnapshot, race_profile: RaceProfile, dt: float) -> RaceSnapshot:
+        """現在のSnapshotからdt秒後のSnapshotを生成して返す"""
+        new_snap = {}
+        for h_id, h_snap in current_snap.horses.items():
             new_horse_state = self._update_horse(h_id, race_profile, current_state.horses, dt)
             new_states[h_id] = new_horse_state
 

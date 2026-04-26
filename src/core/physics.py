@@ -21,6 +21,15 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
             return section
     return TrackSection(SectionType.STRAIGHT, 9999, 9999, SectionName.HOME_STRAIGHT) # 予備
 """
+# 時計計算系
+def calc_next_step(current_step: int) -> int:
+    """stepを足して返す"""
+    return current_step + 1
+
+def calc_next_elapsted_time(current_time: float, dt: float) -> float:
+    """elapsted_timeをdt分だけ経過させる"""
+    return round(current_time + dt, 2) # 浮動小数点の誤差防止
+
 # 物理演算系
 def calculate_acceleration(target_v: float, current_v: float, accel_power: float) -> float:
     """速度と加速能力から加速度を算出"""

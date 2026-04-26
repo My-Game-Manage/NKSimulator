@@ -53,12 +53,12 @@ class HorseStrategyType(str, Enum):
     REAR = "rear"           # 追い込み
 
 class HorseBehaviorType(str, Enum):
-    IN_GATE = "in gate"
-    STARTING = "starting"
-    RACING = "racing"
-    BLOCKED = "blocked"
-    EXHAUSTED = "exhausted"
-    FINISHED = "finished"
+    IN_GATE = "in gate"     # スタート前
+    STARTING = "starting"   # スタートフェーズ
+    RACING = "racing"       # レース中（通常時）
+    BLOCKED = "blocked"     # レース中（詰まっている）
+    EXHAUSTED = "exhausted" # レース中（バテている）
+    FINISHED = "finished"   # ゴール後
 
 # ---------------------------------------------------------
 # Event data

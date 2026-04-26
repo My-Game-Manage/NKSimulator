@@ -1,0 +1,199 @@
+"""
+behaivor.py の概要
+
+馬のレース中の動きをStateパターンで実装する
+"""
+from abc import ABC, abstractmethod
+from dataclasses import replace
+
+from src.models.race_data import RaceProfile, RaceSnapshot
+from src.models.horse_data import HorseProfile, HorseSnapshot
+from src.constants.fields import HorseSnapField
+from src.constants.enums import HorseBehaviorType
+from src.core.strategy import RacingStrategy, STRATEGY_MAP
+import src.core.physics as ph
+
+
+# ---------------------------------------------------------
+# Stateパターンの基底クラス
+# ---------------------------------------------------------
+class HorseBehaviorState(ABC):
+    @abstractmethod
+    def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
+        """
+        この状態における馬の物理更新・ステータス更新ロジック。
+        次のHorseSnapshotオブジェクトを返す。
+        """
+        ...
+
+    def get_strategy(self, horse_prof: HorseProfile) -> RacingStrategy:
+        """RacingStrategyを返す"""
+        return STRATEGY_MAP[horse_prof.strategy]
+
+
+# ---------------------------------------------------------
+# 具象Stateクラス：スタート前 (InGate)
+# ---------------------------------------------------------
+class InGateState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt) -> HorseSnapshot:
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # ゲートを出る（laneはそのままで、加速と最初の距離だけ計算）
+        # gate_reactionで距離に補正をかける。高いほど前を取りやすい
+        strategy = self.get_strategy(h_prof)
+        target_v = strategy.get_target_velocity(h_prof, current_snap)
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
+        next_velocity = 1
+        next_distance = 1
+        next_stamina = 1
+        # StateをStartingに変更
+        next_behavior = HorseBehaviorType.STARTING
+        return replace(current_snap,
+                       step=ph.calc_next_step(current_snap.step),
+                       elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time),
+                       velocity=next_velocity,
+                       distance=next_distance,
+                       stamina=next_stamina,
+                       behavior=next_behavior,
+                       )
+
+
+# ---------------------------------------------------------
+# 具象Stateクラス：スタート状態 (Starting)
+# ---------------------------------------------------------
+class StartingState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt):
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # 脚質に応じて各値を算出
+        strategy = self.get_strategy(h_prof)
+        target_v = strategy.get_target_velocity(h_prof, current_snap)
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
+        next_velocity = 1
+        next_distance = 1
+        next_stamina = 1
+        next_lane = 1
+        # スタート区間が終わっていればレース中状態に移行
+        next_behavior = HorseBehaviorType.RACING
+        return replace(current_snap,
+                       step=ph.calc_next_step(current_snap.step),
+                       elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time),
+                       velocity=next_velocity,
+                       distance=next_distance,
+                       stamina=next_stamina,
+                       lane=next_lane,
+                       behavior=next_behavior,
+                       )
+
+
+# ---------------------------------------------------------
+# 具象Stateクラス：ゴール後 (Finished)
+# ---------------------------------------------------------
+class FinishedState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt):
+        # ゴール済みの馬は、物理計算を行わず時間を進めるだけ
+        current_snap = race_snap.horses[horse_id]
+        return current_snap.next_step()
+
+# ---------------------------------------------------------
+# 具象Stateクラス：スパート状態 (Spurting)
+# ---------------------------------------------------------
+class SpurtingState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt):
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # 脚質に応じて各値を算出
+        strategy = self.get_strategy(h_prof)
+        target_v = strategy.get_target_velocity(h_prof, current_snap)
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
+        next_velocity = 1
+        next_distance = 1
+        next_stamina = 1
+        next_lane = 1
+        # ゴール判定　->　ゴールしていたらタイムを計測し状態遷移
+        next_behavior = current_snap.behavior
+        return replace(current_snap,
+                       step=ph.calc_next_step(current_snap.step),
+                       elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time),
+                       velocity=next_velocity,
+                       distance=next_distance,
+                       stamina=next_stamina,
+                       lane=next_lane,
+                       behavior=next_behavior,
+                       )
+
+# ---------------------------------------------------------
+# 具象Stateクラス：走行中 (Racing)
+# ---------------------------------------------------------
+class RacingState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt):
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # 各数値を算出
+        strategy = self.get_strategy(h_prof)
+        target_v = strategy.get_target_velocity(h_prof, current_snap)
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
+        next_velocity = 1
+        next_distance = 1
+        next_stamina = 1
+        next_lane = 1
+        # ゴール判定　->　ゴールしたならフィニッシュタイムを計測し、状態遷移
+        # バテていれば次の状態をバテ状態に
+
+        # 1. 環境認識 (Engineのメソッドを利用)
+        horse_env = engine._perceive_horse_position(current_state, race_profile, horses)
+
+        # 2. 意思決定 (Strategyパターンと組み合わせるのが理想的)
+        horse_tactics = engine._decide_horse_tactics(horse_env)
+        target_v = engine._decide_horse_target_speed(h_prof, horse_env, horse_tactics)
+        
+        # 3. 物理計算 (physicsモジュールを利用)
+        accel = ph.calculate_acceleration(target_v, current_state.current_velocity, h_prof.acceleration)
+        velocity = current_state.current_velocity + accel * dt
+        distance = current_state.current_distance + velocity * dt
+
+        # 4. ゴール判定と状態遷移
+        is_finished = ph.is_horse_finished(distance, race_profile.distance)
+        if is_finished:
+            finish_time = ph.interpolate_goal_time(current_state.current_distance, distance,
+                                                   current_state.elapsed_time, dt, race_profile.distance)
+            # 次のステップからは FinishedState に切り替える
+            new_behavior = FinishedState()
+            return replace(current_state, 
+                           current_distance=distance, current_velocity=0, 
+                           is_finished=True, finish_time=finish_time,
+                           behavior=new_behavior) # 状態を遷移
+
+        # 走行を継続
+        return replace(current_state, 
+                       current_distance=distance, current_velocity=velocity,
+                       target_velocity=target_v, behavior=self)
+
+# ---------------------------------------------------------
+# 具象Stateクラス：バテた状態 (Exhausted)
+# ---------------------------------------------------------
+class ExhaustedState(HorseBehaviorState):
+    def update(self, horse_id, race_prof: RaceProfile, race_snap: RaceSnapshot, dt):
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # 脚質に応じて各値を算出
+        strategy = self.get_strategy(h_prof)
+        target_v = strategy.get_target_velocity(h_prof, current_snap)
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
+        next_velocity = 1
+        next_distance = 1
+        next_stamina = 1
+        next_lane = 1
+        # ゴール判定　->　ゴールしていたらタイムを計測し状態遷移
+        next_behavior = current_snap.behavior
+        return replace(current_snap,
+                       step=ph.calc_next_step(current_snap.step),
+                       elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time),
+                       velocity=next_velocity,
+                       distance=next_distance,
+                       stamina=next_stamina,
+                       lane=next_lane,
+                       behavior=next_behavior,
+                       )
+
+

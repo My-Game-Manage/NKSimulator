@@ -79,6 +79,9 @@ class RaceSnapshot:
 
     def update_ranks(self, new_ranks: dict):
         return replace(self, ranks=new_ranks)
+    
+    def next_step(self):
+        return replace(self, step=self.step + 1)
 
 
 @dataclass(frozen=True)
