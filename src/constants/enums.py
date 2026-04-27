@@ -57,6 +57,7 @@ class HorseBehaviorType(str, Enum):
     STARTING = "starting"   # スタートフェーズ
     RACING = "racing"       # レース中（通常時）
     BLOCKED = "blocked"     # レース中（詰まっている）
+    SPURTING = "spurting"   # レース中（スパートフェーズ）
     EXHAUSTED = "exhausted" # レース中（バテている）
     FINISHED = "finished"   # ゴール後
 

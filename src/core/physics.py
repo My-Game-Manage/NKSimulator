@@ -4,12 +4,22 @@ physics.py の概要
 レースのシミュレートに関する物理演算を行う関数群。
 """
 from src.models.horse_data import HorseProfile
+from src.constants.enums import SectionName
+from src.models.race_data import TrackSection
 
 
 # チェック系
 def is_horse_finished(distance: float, course_length: float) -> bool:
     """コースの距離と現在の距離を比較してゴールしたかどうかを返す"""
     return distance >= course_length
+
+def is_spurt_distance(distance: float, spurt_dist: float) -> bool:
+    """スパート開始距離かどうかの判定"""
+    return distance >= spurt_dist
+
+def is_start_section(distance: float, section: TrackSection) -> bool:
+    """スタートセクションかどうか"""
+    return distance >= section.distance
 
 # 要素取得系
 #def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:
@@ -31,6 +41,47 @@ def calc_next_elapsted_time(current_time: float, dt: float) -> float:
     return round(current_time + dt, 2) # 浮動小数点の誤差防止
 
 # 物理演算系
+def calculate_stamina_consumption(current_speed: float, race_distance: float, total_stamina: float, dt: float) -> float:
+    """レース距離からスタミナ消費量を算出"""
+    # 1. 基準となる「1秒あたりの消費量」を算出
+    # 完走にかかる想定時間 = 距離 / 想定平均速度
+    # 1秒あたりの消費 = 最大スタミナ / 想定時間
+    target_avg_speed = get_target_avg_speed(race_distance)
+    base_consumption_per_sec = total_stamina / (race_distance / target_avg_speed)
+    
+    # 2. 速度による消費倍率（速度の2乗に比例させるのが一般的）
+    # 巡航速度(target_avg_speed)で走っている時は倍率1.0
+    speed_ratio = current_speed / target_avg_speed
+    speed_factor = speed_ratio ** 2 
+    
+    # 3. 基本消費量を返す（ここにFactorをかける）
+    consumption = base_consumption_per_sec * speed_factor * dt
+    
+    return consumption
+
+def get_target_avg_speed(race_distance):
+    """
+    レース距離に基づき、基準となる平均速度を取得する
+    """
+    # 距離ごとの基準速度テーブル
+    # 距離(m): 速度(m/s)
+    race_settings = {
+        800: 17.8,
+        1600: 16.8,
+        2400: 16.0,
+        3000: 15.5
+    }
+
+    # 1. 辞書にピッタリの距離がある場合はそれを返す
+    if race_distance in race_settings:
+        return race_settings[race_distance]
+
+    # 2. ピッタリがない場合、最も近い距離の設定を探す
+    # (例: 1400mなら1600mの設定を採用)
+    closest_distance = min(race_settings.keys(), key=lambda x: abs(x - race_distance))
+    
+    return race_settings[closest_distance]
+
 def calculate_acceleration(target_v: float, current_v: float, accel_power: float) -> float:
     """速度と加速能力から加速度を算出"""
     v_diff = target_v - current_v

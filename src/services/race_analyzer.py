@@ -20,7 +20,7 @@ class RaceAnalyer:
         def sort_key(h: HorseSnapshot):
             if h.is_finished:
                 return (1, 99999 - h.finish_time)
-            return (0, h.current_distance)
+            return (0, h.distance)
 
         # 1. ソートしてゴール済の馬の順位を確定
         sorted_horses = sorted(race_snap.horses.values(), key=sort_key, reverse=True)
