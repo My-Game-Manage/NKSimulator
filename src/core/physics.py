@@ -3,7 +3,7 @@ physics.py の概要
 
 レースのシミュレートに関する物理演算を行う関数群。
 """
-from src.models.horse_data import HorseProfile
+from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.constants.enums import SectionName
 from src.models.race_data import TrackSection
 
@@ -31,6 +31,19 @@ def is_start_section(distance: float, section: TrackSection) -> bool:
             return section
     return TrackSection(SectionType.STRAIGHT, 9999, 9999, SectionName.HOME_STRAIGHT) # 予備
 """
+def get_dist_to_front(horse_id: str, horses: dict[str, HorseSnapshot]) -> float:
+    """前の馬との距離を返す"""
+    min_dist = 999.0
+    current_snap = horses[horse_id]
+    for h_id, other_snap in horses.items():
+        if horse_id == h_id: continue
+        # 16レーンあるため、幅 0.5 程度を「同じ進路」とみなす
+        if abs(current_snap.lane - other_snap.lane) < 0.5:
+            dist = other_snap.distance - current_snap.distance
+            if 0 < dist < min_dist:
+                min_dist = dist
+    return min_dist
+
 # 時計計算系
 def calc_next_step(current_step: int) -> int:
     """stepを足して返す"""

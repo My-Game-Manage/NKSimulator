@@ -111,8 +111,8 @@ class SpurtingState(HorseBehaviorState):
         # 脚質に応じて各値を算出
         strategy = self.get_strategy(h_prof)
         target_v = strategy.get_target_velocity(h_prof, current_snap)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt) * 1.2
+        accel = strategy.get_acceleration(target_v, h_prof, current_snap) * 1.2
+        next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, race_prof.distance, dt)
         next_lane = current_snap.lane
@@ -146,8 +146,13 @@ class RacingState(HorseBehaviorState):
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         h_prof = race_prof.horses[horse_id] 
         current_snap = race_snap.horses[horse_id]
-        # 各数値を算出
+        # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 1. 環境認識
+        dist_to_front = ph.get_dist_to_front(horse_id, race_snap.horses)
+        # TODO: 環境情報の取得をとりあえず整備
+        current_section = ""
+        # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof, current_snap)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap)
         next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
