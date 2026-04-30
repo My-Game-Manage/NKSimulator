@@ -5,8 +5,9 @@ strategy.py の概要
 """
 from typing import Protocol
 
-from src.constants.enums import HorseStrategyType
+from src.constants.enums import HorseStrategyType, SectionType
 from src.models.horse_data import HorseProfile, HorseSnapshot
+from src.models.race_data import TrackSection
 import src.core.physics as ph
 
 
@@ -14,10 +15,10 @@ import src.core.physics as ph
 # Strategy（Protocol）パターンの基底クラス
 # ---------------------------------------------------------
 class RacingStrategy(Protocol):
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, section: TrackSection, corner_penalty: float) -> float:
         ...
 
-    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
         ...
 
     def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
@@ -34,13 +35,24 @@ class RacingStrategy(Protocol):
 # 具象Strategyクラス：逃げ
 # ---------------------------------------------------------
 class LeaderStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, section: TrackSection, corner_penalty: float) -> float:
+        # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.max_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            target_v *= (1.0 - corner_penalty)
         return target_v
 
-    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
-        diff_v = target_v - horse_snap.velocity
-        return diff_v * horse_prof.acceleration
+    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
+        # 芝やダートの上を走る分の係数を引く
+        accel = horse_prof.acceleration - friction
+        if target_v < horse_snap.velocity:
+            # 減速処理: 加速より負荷がかかる
+            return -(accel * 1.1 + friction)
+        else:
+            # 加速処理
+            diff_v = target_v - horse_snap.velocity
+            return diff_v * accel
 
     def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
         return horse_snap.velocity + accel * dt
@@ -57,13 +69,24 @@ class LeaderStrategy:
 # 具象Strategyクラス：先行
 # ---------------------------------------------------------
 class StalkerStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, section: TrackSection, corner_penalty: float) -> float:
+        # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.max_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            target_v *= (1.0 - corner_penalty)
         return target_v
     
-    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
-        diff_v = target_v - horse_snap.velocity
-        return diff_v * horse_prof.acceleration
+    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
+        # 芝やダートの上を走る分の係数を引く
+        accel = horse_prof.acceleration - friction
+        if target_v < horse_snap.velocity:
+            # 減速処理: 加速より負荷がかかる
+            return -(accel * 1.1 + friction)
+        else:
+            # 加速処理
+            diff_v = target_v - horse_snap.velocity
+            return diff_v * accel
 
     def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
         return horse_snap.velocity + accel * dt
@@ -80,13 +103,24 @@ class StalkerStrategy:
 # 具象Strategyクラス：差し
 # ---------------------------------------------------------
 class CloserStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, section: TrackSection, corner_penalty: float) -> float:
+        # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.max_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            target_v *= (1.0 - corner_penalty)
         return target_v
     
-    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
-        diff_v = target_v - horse_snap.velocity
-        return diff_v * horse_prof.acceleration
+    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
+        # 芝やダートの上を走る分の係数を引く
+        accel = horse_prof.acceleration - friction
+        if target_v < horse_snap.velocity:
+            # 減速処理: 加速より負荷がかかる
+            return -(accel * 1.1 + friction)
+        else:
+            # 加速処理
+            diff_v = target_v - horse_snap.velocity
+            return diff_v * accel
 
     def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
         return horse_snap.velocity + accel * dt
@@ -103,13 +137,24 @@ class CloserStrategy:
 # 具象Strategyクラス：追い込み
 # ---------------------------------------------------------
 class RearStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, section: TrackSection, corner_penalty: float) -> float:
+        # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.max_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            target_v *= (1.0 - corner_penalty)
         return target_v
     
-    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot) -> float:
-        diff_v = target_v - horse_snap.velocity
-        return diff_v * horse_prof.acceleration
+    def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
+        # 芝やダートの上を走る分の係数を引く
+        accel = horse_prof.acceleration - friction
+        if target_v < horse_snap.velocity:
+            # 減速処理: 加速より負荷がかかる
+            return -(accel * 1.1 + friction)
+        else:
+            # 加速処理
+            diff_v = target_v - horse_snap.velocity
+            return diff_v * accel
 
     def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
         return horse_snap.velocity + accel * dt

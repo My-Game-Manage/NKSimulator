@@ -44,6 +44,13 @@ def get_dist_to_front(horse_id: str, horses: dict[str, HorseSnapshot]) -> float:
                 min_dist = dist
     return min_dist
 
+def get_current_section(distance: float, sections: list[TrackSection]) -> TrackSection:
+    """現在の距離からセクションを取得"""
+    for section in sections:
+        if section.start_at <= distance < (section.start_at + section.distance):
+            return section
+    return sections[-1]
+
 # 時計計算系
 def calc_next_step(current_step: int) -> int:
     """stepを足して返す"""
