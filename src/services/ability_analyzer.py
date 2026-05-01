@@ -11,12 +11,14 @@ logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
 from src.constants.enums import HorseStrategyType
-
+from src.utils.normalizer import valid_horse_history_df
 
 def calculate_min_max_speed(past_records: pd.DataFrame) -> tuple:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 1. 走破タイム(s)を算出 (タイムが '107.6' などの形式の場合)
     # 2. 全レースの時速(m/s)を計算
-    speeds = past_records[RaceCol.DISTANCE] / past_records[RaceCol.TIME]
+    speeds = valid_records[RaceCol.DISTANCE] / valid_records[RaceCol.TIME]
     
     # 3. 上位3件の平均をとる（1回きりのラッキーパンチを防ぐため）
     top_3_avg = speeds.nlargest(3).mean()
@@ -27,9 +29,51 @@ def calculate_min_max_speed(past_records: pd.DataFrame) -> tuple:
     # 大井の平均的なC3クラスなら 15.0 ~ 16.5 m/s 程度に収束するはずです
     return top_3_avg, worst_3_avg
 
+def calculate_normalized_speed(past_records: pd.DataFrame) -> float:
+    """基本となる速度に補正して返す（レース距離による巡航速度の元になる）"""
+    def _calc_normalized_speed(row):
+        # 実際の巡航速度
+        v = (row[RaceCol.DISTANCE] - 600) / (row[RaceCol.TIME] - row[RaceCol.LAST_3F] - 1.5)
+    
+        # 1600mを基準とした補正 (100mあたり0.15m/sの増減)
+        # 距離が短いほど速く出るので、その分をマイナス補正
+        # 距離が長いほど遅く出るので、その分をプラス補正
+        diff_dist = (row[RaceCol.DISTANCE] - 1600) / 100
+        v_norm = v + (diff_dist * 0.15)
+    
+        return v_norm
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+    
+    valid_records['normalized_speed'] = valid_records.apply(_calc_normalized_speed, axis=1)
+
+    # この「正規化された速度」で上位3件の平均を取る
+    base_ability = valid_records['normalized_speed'].nlargest(3).mean()
+
+    return base_ability
+
+def get_race_cruise_speed(base_ability: float, race_distance: float) -> float:
+    """
+    基準能力値(1600m相当)から、指定された距離の巡航速度を算出する
+    """
+    # 100mあたりの速度変化係数 (分析データより)
+    SPEED_DIFF_PER_100M = 0.15
+    
+    # 1600mからの乖離距離（100m単位）
+    distance_diff_unit = (race_distance - 1600) / 100
+    
+    # 減衰・加速の計算
+    adjustment = distance_diff_unit * SPEED_DIFF_PER_100M
+    
+    return base_ability - adjustment
+
 def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
     """巡航速度を算出して返す"""
-    speeds = (past_records[RaceCol.DISTANCE] - 600) / (past_records[RaceCol.TIME] - past_records[RaceCol.LAST_3F])
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+    # タイムから上り3Fを引いたもので計算
+    starting_loss = 1.0
+    speeds = (valid_records[RaceCol.DISTANCE] - 600) / (valid_records[RaceCol.TIME] - valid_records[RaceCol.LAST_3F] - starting_loss)
 
     # 上位3件の平均を取る
     top_3_avg = speeds.nlargest(3).mean()
@@ -38,54 +82,64 @@ def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
 
 def calculate_last_3f(past_records: pd.DataFrame) -> float:
     """上がり3Fの速度を返す（上位の平均）"""
-    last_3fs = 600 / past_records[RaceCol.LAST_3F]
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+    last_3fs = 600 / valid_records[RaceCol.LAST_3F]
     # 上位3件の平均
     top_3_avg = last_3fs.nlargest(3).mean()
 
     return top_3_avg
 
 def calculate_acceleration(past_records: pd.DataFrame) -> float:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 上がり3F (last_3f) が速いほど高い値を返す
     # 例：平均的な上がりタイムより1秒速ければ +0.1 m/s^2
-    avg_last_3f = past_records[RaceCol.LAST_3F].mean()
+    avg_last_3f = valid_records[RaceCol.LAST_3F].mean()
     
     # 標準的な加速力を 1.0 とした相対評価
     accel_factor = 1.0 + (39.0 - avg_last_3f) * 0.05 
     return max(0.5, accel_factor)
 
 def calculate_stamina_params(past_records: pd.DataFrame) -> tuple:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 1. 過去の最長距離をベースにする
-    max_dist_history = past_records[RaceCol.DISTANCE].max()
-    avg_weight = past_records[RaceCol.HORSE_WEIGHT].mean()
+    max_dist_history = valid_records[RaceCol.DISTANCE].max()
+    avg_weight = valid_records[RaceCol.HORSE_WEIGHT].mean()
     
     # 総スタミナ: 距離適性が高いほど余裕が出るように算出
     total_stamina = max_dist_history * 1.2 + (avg_weight * 0.5)
     
     # 2. 燃費: 過去の上がり3F(last_3f)と走破タイムのバランスを見る
     # 終盤にバテている（上がりタイムが極端に遅い）馬は燃費を悪く設定
-    stamina_efficiency = estimate_efficiency(past_records)
+    stamina_efficiency = estimate_efficiency(valid_records)
     
     return total_stamina, stamina_efficiency
     
 def calculate_gate_reaction(past_records: pd.DataFrame) -> float:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 各レースの最初の通過順位を取り出す
     # 例: "5-4-3-2" -> 5
-    valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
-    first_pos = valid_records[RaceCol.PASSING_ORDER].str.split('-').str[0].astype(float)
+    order_records = valid_records.dropna(subset=RaceCol.PASSING_ORDER)
+    first_pos = order_records[RaceCol.PASSING_ORDER].str.split('-').str[0].astype(float)
     # 頭数に対する比率にする（14頭立ての5位と、8頭立ての5位は意味が違うため）
-    pos_ratio = first_pos / past_records[RaceCol.NUM_HORSES]
+    pos_ratio = first_pos / valid_records[RaceCol.NUM_HORSES]
 
     # 比率が小さい（＝前の方にいる）ほど高い値を返す
     # 標準を1.0とし、逃げ・先行馬なら1.2〜、出遅れがちな馬なら0.8〜
     return 1.2 - pos_ratio.mean()
     
 def calculate_cornering_ability(past_records: pd.DataFrame) -> float:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 3角と4角の順位差の平均を見る
     # "2-2-3-4" のような馬はコーナーで置かれている（適性低め）
     # "8-7-5-3" のような馬はコーナーで加速している（適性高め）
     diffs = []
-    valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
-    for order in valid_records[RaceCol.PASSING_ORDER]:
+    order_records = valid_records.dropna(subset=RaceCol.PASSING_ORDER)
+    for order in order_records[RaceCol.PASSING_ORDER]:
         pts = order.split('-')
         if len(pts) >= 3:
             # 後半2つのセクションの差分（例: 4角順位 - 3角順位）
@@ -96,10 +150,12 @@ def calculate_cornering_ability(past_records: pd.DataFrame) -> float:
     return max(0.2, min(1.0, ability))
 
 def determine_strategy(past_records: pd.DataFrame) -> str:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
     # 最初のコーナー順位の平均比率を算出
     first_pos_ratios = []
-    valid_records = past_records.dropna(subset=RaceCol.PASSING_ORDER)
-    for _, row in valid_records.iterrows():
+    order_records = valid_records.dropna(subset=RaceCol.PASSING_ORDER)
+    for _, row in order_records.iterrows():
         first_pos = int(row[RaceCol.PASSING_ORDER].split('-')[0])
         first_pos_ratios.append(first_pos / row[RaceCol.NUM_HORSES])
 

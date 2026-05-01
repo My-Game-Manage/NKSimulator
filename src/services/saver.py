@@ -81,6 +81,9 @@ class RaceSaver(RaceObserver):
                 HorseProfField.WEIGHT_CARRIED: h_prof.weight_carried,
                 # 基本能力値
                 HorseProfField.MAX_SPEED: h_prof.max_speed,
+                HorseProfField.BASE_SPEED: h_prof.base_speed,
+                HorseProfField.CRUISE_SPEED: h_prof.cruise_speed,
+                HorseProfField.LAST_3F_SPEED: h_prof.last_3f_speed,
                 HorseProfField.MIN_SPEED: h_prof.min_speed,
                 HorseProfField.ACCELERATION: h_prof.acceleration,
                 HorseProfField.TOTAL_STAMINA: h_prof.total_stamina,
@@ -110,10 +113,11 @@ class RaceSaver(RaceObserver):
                 HorseProfField.BRACKET_NUM: h_prof.bracket_num,
                 HorseProfField.HORSE_NUM: h_prof.horse_num,
                 HorseProfField.NAME: h_prof.name,
+                HorseProfField.STRATEGY: h_prof.strategy,
                 # 結果情報
                 'rank': rank,
-                HorseSnapField.FINISH_TIME: round(h_snap.finish_time, 2),
-                HorseSnapField.STAMINA: round(h_snap.stamina, 2),
+                HorseSnapField.FINISH_TIME: round(h_snap.finish_time, 2) if h_snap.finish_time else 0.0,
+                HorseSnapField.STAMINA: round(h_snap.stamina, 2) if h_snap.stamina else 0.0,
             })
         # DataFrameに変換して返す
         return pd.DataFrame(summary_data)

@@ -14,3 +14,7 @@ def valid_race_shutuba_df(df: pd.DataFrame) -> pd.DataFrame:
     df[RaceCol.RACE_NUMBER] = df[RaceCol.RACE_NUMBER].astype(int)
     return df
 
+def valid_horse_history_df(df: pd.DataFrame) -> pd.DataFrame:
+    """0や空欄を除去したDataFrame"""
+    valid_df = df[(df[RaceCol.TIME] > 0) & (df[RaceCol.LAST_3F] > 0)].dropna(subset=[RaceCol.TIME, RaceCol.LAST_3F])
+    return valid_df
