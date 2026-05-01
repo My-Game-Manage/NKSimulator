@@ -118,6 +118,7 @@ class RaceSaver(RaceObserver):
                 'rank': rank,
                 HorseSnapField.FINISH_TIME: round(h_snap.finish_time, 2) if h_snap.finish_time else 0.0,
                 HorseSnapField.STAMINA: round(h_snap.stamina, 2) if h_snap.stamina else 0.0,
+                HorseSnapField.LANE: round(h_snap.lane, 2),
             })
         # DataFrameに変換して返す
         return pd.DataFrame(summary_data)
