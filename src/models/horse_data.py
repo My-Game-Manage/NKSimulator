@@ -22,6 +22,8 @@ class HorseProfile:
     # 能力値
     # スピード
     max_speed: float            # 最高速度
+    cruise_speed: float         # 巡航速度
+    last_3f_speed: float        # スパート時速度
     min_speed: float            # 最低速度
     acceleration: float         # 加速力
     # スタミナ

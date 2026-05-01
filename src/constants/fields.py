@@ -76,6 +76,8 @@ class HorseProfField(str, Enum):
     # 能力値
     # スピード
     MAX_SPEED = "max_speed"
+    CRUISE_SPEED = "cruise_speed"
+    LAST_3F_SPEED = "last_3f_speed"
     MIN_SPEED = "min_speed"
     ACCELERATION= "acceleration"
     # スタミナ

@@ -137,6 +137,7 @@ class SpurtingState(HorseBehaviorState):
         # TODO: カーブ等で減速になった時の場合の処理を追加
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof, current_snap, current_section, corner_penalty)
+        #target_v = h_prof.last_3f_speed
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
         next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)

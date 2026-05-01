@@ -27,6 +27,23 @@ def calculate_min_max_speed(past_records: pd.DataFrame) -> tuple:
     # 大井の平均的なC3クラスなら 15.0 ~ 16.5 m/s 程度に収束するはずです
     return top_3_avg, worst_3_avg
 
+def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
+    """巡航速度を算出して返す"""
+    speeds = (past_records[RaceCol.DISTANCE] - 600) / (past_records[RaceCol.TIME] - past_records[RaceCol.LAST_3F])
+
+    # 上位3件の平均を取る
+    top_3_avg = speeds.nlargest(3).mean()
+
+    return top_3_avg
+
+def calculate_last_3f(past_records: pd.DataFrame) -> float:
+    """上がり3Fの速度を返す（上位の平均）"""
+    last_3fs = 600 / past_records[RaceCol.LAST_3F]
+    # 上位3件の平均
+    top_3_avg = last_3fs.nlargest(3).mean()
+
+    return top_3_avg
+
 def calculate_acceleration(past_records: pd.DataFrame) -> float:
     # 上がり3F (last_3f) が速いほど高い値を返す
     # 例：平均的な上がりタイムより1秒速ければ +0.1 m/s^2
