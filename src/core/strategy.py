@@ -29,7 +29,7 @@ class RacingStrategy(Protocol):
     def get_acceleration(self, target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, friction: float) -> float:
         ...
 
-    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
+    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, limit_velocity: float, dt: float) -> float:
         ...
 
     def get_next_distance(self, horse_snap: HorseSnapshot, next_velocity: float, dt: float) -> float:
@@ -68,8 +68,8 @@ class LeaderStrategy:
             diff_v = target_v - horse_snap.velocity
             return diff_v * accel
 
-    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
-        return horse_snap.velocity + accel * dt
+    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, limit_velocity: float, dt: float) -> float:
+        return min(limit_velocity, horse_snap.velocity + accel * dt)
 
     def get_next_distance(self, horse_snap: HorseSnapshot, next_velocity: float, dt: float) -> float:
         lane_mod = horse_snap.lane * 0.01
@@ -130,8 +130,8 @@ class StalkerStrategy:
             diff_v = target_v - horse_snap.velocity
             return diff_v * accel
 
-    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
-        return horse_snap.velocity + accel * dt
+    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, limit_velocity: float, dt: float) -> float:
+        return min(limit_velocity, horse_snap.velocity + accel * dt)
 
     def get_next_distance(self, horse_snap: HorseSnapshot, next_velocity: float, dt: float) -> float:
         lane_mod = horse_snap.lane * 0.01
@@ -146,7 +146,7 @@ class StalkerStrategy:
             factor += 0.1
         if dist_to_front <= 0.5:
             # 前にいる場合は温存
-            factor -= 0.1
+            factor -= 0.2
         return max(0.0, current_stamina - (base_consumption + friction) * factor)
 
     def get_next_lane(self, horse_snap: HorseSnapshot, section: TrackSection, dist_to_front: float, rank: int) -> float:
@@ -192,8 +192,8 @@ class CloserStrategy:
             diff_v = target_v - horse_snap.velocity
             return diff_v * accel
 
-    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
-        return horse_snap.velocity + accel * dt
+    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, limit_velocity: float, dt: float) -> float:
+        return min(limit_velocity, horse_snap.velocity + accel * dt)
 
     def get_next_distance(self, horse_snap: HorseSnapshot, next_velocity: float, dt: float) -> float:
         lane_mod = horse_snap.lane * 0.01
@@ -254,8 +254,8 @@ class RearStrategy:
             diff_v = target_v - horse_snap.velocity
             return diff_v * accel
 
-    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, dt: float) -> float:
-        return horse_snap.velocity + accel * dt
+    def get_next_velocity(self, horse_snap: HorseSnapshot, accel: float, limit_velocity: float, dt: float) -> float:
+        return min(limit_velocity, horse_snap.velocity + accel * dt)
 
     def get_next_distance(self, horse_snap: HorseSnapshot, next_velocity: float, dt: float) -> float:
         lane_mod = horse_snap.lane * 0.01

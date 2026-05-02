@@ -52,11 +52,13 @@ class InGateState(HorseBehaviorState):
         dist_to_front = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
         current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
         is_spurt = False
+        limit_velocity = h_prof.cruise_speed
         # 各数値を算出
+        # ゲートリアクションで補正
         target_v = strategy.get_target_velocity(h_prof.cruise_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
+        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
+        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt) * h_prof.gate_reaction
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
         next_lane = current_snap.lane
         # StateをStartingに変更
@@ -91,15 +93,18 @@ class StartingState(HorseBehaviorState):
         current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
         # TODO: カーブ等で減速になった時の場合の処理を追加
         is_spurt = False
+        limit_velocity = h_prof.cruise_speed
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof.cruise_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
+        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
         next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
         # スタート区間が終わっていればレース中状態に移行
-        next_behavior = HorseBehaviorType.RACING if ph.is_start_section(next_distance, race_prof.sections[0]) else current_snap.behavior
+        next_behavior = current_snap.behavior
+        if ph.is_start_section(next_distance, race_prof.sections[0]):
+            next_behavior = HorseBehaviorType.RACING
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
@@ -139,11 +144,12 @@ class SpurtingState(HorseBehaviorState):
         # TODO: 環境情報の取得をとりあえず整備
         current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
         # TODO: カーブ等で減速になった時の場合の処理を追加
+        limit_velocity = h_prof.last_3f_speed
         is_spurt = True
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof.last_3f_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
+        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
         next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
@@ -158,6 +164,9 @@ class SpurtingState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
+        elif next_stamina <= 100:
+            # バテたので状態遷移
+            next_behavior = HorseBehaviorType.EXHAUSTED
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
@@ -189,10 +198,11 @@ class RacingState(HorseBehaviorState):
         # TODO: 環境情報の取得をとりあえず整備
         current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
         is_spurt = False
+        limit_velocity = h_prof.cruise_speed
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof.last_3f_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt)
+        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
         next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
@@ -222,6 +232,9 @@ class RacingState(HorseBehaviorState):
         elif ph.is_spurt_distance(next_distance, h_prof.target_spurt_dist):
             # スパート開始
             next_behavior = HorseBehaviorType.SPURTING
+        elif next_stamina <= 100:
+            # バテたので状態遷移
+            next_behavior = HorseBehaviorType.EXHAUSTED
 
         # 走行を継続
         return replace(current_snap,
@@ -256,17 +269,19 @@ class ExhaustedState(HorseBehaviorState):
         current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
         # TODO: カーブ等で減速になった時の場合の処理を追加
         is_spurt = False
+        limit_velocity = h_prof.min_speed
         # 各数値を算出
         # バテているのでtarget_vを下げる
-        target_v = strategy.get_target_velocity(h_prof.min_speed, h_prof, current_snap, current_section, corner_penalty)
+        target_v = strategy.get_target_velocity(h_prof.min_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
         accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, dt) * 0.8
+        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
         next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
         next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
         next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
+
         # 4. ゴール判定と状態遷移
         if ph.is_horse_finished(next_distance, race_prof.distance):
             # ゴールしていれば時間を記録
