@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.services.observer import RaceObserver
-from src.constants.enums import RaceEvent
+from src.constants.enums import RaceEvent, SectionType
 from src.constants.fields import RaceProfField, RaceSnapField, HorseProfField, HorseSnapField
 from src.models.race_data import RaceInfo, RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
@@ -133,6 +133,25 @@ class RaceResultPlotter():
         # 3. グラフの描画
         self.show_plot(title, elm_title, df)
 
+    def plot_race_stamina(self):
+        # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
+        data_log = []
+        for snapshot in self.history:
+            # 各ステップのデータを抽出
+            # ここで「距離」を選択
+            row = {h_id: h_s.stamina for h_id, h_s in snapshot.horses.items()}
+            row[RaceSnapField.STEP] = snapshot.step
+            data_log.append(row)
+
+        # 2. DataFrameを作成し、stepをインデックス（横軸）にする
+        df = pd.DataFrame(data_log).set_index(RaceSnapField.STEP)
+
+        title = "Stamina"
+        elm_title = "Stamina (hp)"
+
+        # 3. グラフの描画
+        self.show_plot(title, elm_title, df)
+
     def plot_race_lane(self):
         # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
         data_log = []
@@ -158,7 +177,7 @@ class RaceResultPlotter():
         horse_names = self.get_horse_names()
 
         # グラフ描写
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(15, 8))
         ranks = self.history[-1].ranks
         for horse_id in ranks.keys():
             plt.plot(df.index, df[horse_id], label=f"H: {horse_names[horse_id]}")
@@ -172,3 +191,58 @@ class RaceResultPlotter():
     
     def get_horse_names(self) -> dict:
         return {h_id: h_prof.name for h_id, h_prof in self.race_prof.horses.items()}
+
+    def plot_race_analysis(self, history: list[RaceSnapshot], profile: RaceProfile, target_field: str = "velocity"):
+        """
+        指定した項目（velocity, stamina, elapsed_time等）を縦軸に表示する
+
+        Args:
+            history: RaceSnapshotのリスト
+            profile: レースの固定データ
+            target_field: HorseSnapshot内の表示したいフィールド名（文字列）
+        """
+        # 1. 馬ごとのデータ抽出
+        horse_data = {}
+        for snapshot in history:
+            for horse_id, h_state in snapshot.horses.items():
+                if horse_id not in horse_data:
+                    horse_data[horse_id] = {"distances": [], "values": []}
+            
+                # 指定されたフィールドの値を動的に取得
+                val = getattr(h_state, target_field, None)
+            
+                horse_data[horse_id]["distances"].append(h_state.distance)
+                horse_data[horse_id]["values"].append(val)
+
+        # 2. グラフ描画
+        fig, ax = plt.subplots(figsize=(14, 7))
+
+        # --- セクション背景の描画 ---
+        for section in profile.sections:
+            color = 'lavender' if section.type == SectionType.STRAIGHT else 'honeydew'
+            start = section.start_at
+            end = start + section.distance
+        
+            ax.axvspan(start, end, color=color, alpha=0.2)
+            ax.axvline(x=start, color='gray', linestyle='--', linewidth=0.8, alpha=0.5)
+        
+            mid_point = start + (section.distance / 2)
+            ax.text(mid_point, ax.get_ylim()[1], section.name.value, 
+                    rotation=45, ha='center', va='bottom', fontsize=9)
+
+        # --- 各馬のプロット ---
+        ranks = history[-1].ranks
+        for horse_id in ranks.keys():
+            data = horse_data[horse_id]
+            label_name = profile.horses[horse_id].name if horse_id in profile.horses else horse_id
+            ax.plot(data["distances"], data["values"], label=label_name, linewidth=1.5)
+
+        # 3. 装飾
+        ax.set_title(f"Race Analysis: {target_field.capitalize()} over Distance", fontsize=14)
+        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel(target_field)
+        ax.grid(True, linestyle=':', alpha=0.5)
+        ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
+    
+        plt.tight_layout()
+        plt.show()
