@@ -246,3 +246,60 @@ class RaceResultPlotter():
     
         plt.tight_layout()
         plt.show()
+
+    def plot_race_rank_history(self, history: list[RaceSnapshot], profile: RaceProfile):
+        """
+        RaceSnapshotのranksデータを使用して、各馬の順位推移をグラフ化する
+        """
+        # 1. 馬ごとの順位データを抽出
+        horse_ranks = {}
+        for snapshot in history:
+            # snapshot.ranks は {horse_id: rank} の辞書
+            for horse_id, rank in snapshot.ranks.items():
+                if horse_id not in horse_ranks:
+                    horse_ranks[horse_id] = {"distances": [], "ranks": []}
+            
+                # 各馬の現在の走行距離を取得するために snapshot.horses を参照[cite: 2]
+                if horse_id in snapshot.horses:
+                    dist = snapshot.horses[horse_id].distance
+                    horse_ranks[horse_id]["distances"].append(dist)
+                    horse_ranks[horse_id]["ranks"].append(rank)
+
+        # 2. グラフ描画設定
+        fig, ax = plt.subplots(figsize=(14, 7))
+
+        # --- セクション背景の描画 ---
+        for section in profile.sections:
+            color = 'lavender' if section.type == SectionType.STRAIGHT else 'honeydew'
+            start = section.start_at
+            end = start + section.distance
+        
+            ax.axvspan(start, end, color=color, alpha=0.2)
+            ax.axvline(x=start, color='gray', linestyle='--', linewidth=0.8, alpha=0.5)
+        
+            mid_point = start + (section.distance / 2)
+            ax.text(mid_point, ax.get_ylim()[1], section.name.value, 
+                    rotation=45, ha='center', va='bottom', fontsize=9)
+
+        # --- 各馬のプロット ---
+        ranks = history[-1].ranks
+        for horse_id in ranks.keys():
+            data = horse_ranks[horse_id]
+            label_name = profile.horses[horse_id].name if horse_id in profile.horses else horse_id
+            ax.plot(data["distances"], data["ranks"], label=label_name, linewidth=1.5, marker='o', markersize=2, alpha=0.8)
+
+        # 3. 順位グラフ用の装飾（ここがポイント）
+        ax.set_title(f"Rank History: {profile.race_name}", fontsize=14)
+        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel("Rank")
+    
+        # 順位なので1位が一番上に来るように軸を反転させる
+        ax.set_ylim(profile.num_horses + 0.5, 0.5) 
+        # y軸のメモリを整数（1位から頭数分）に固定
+        ax.set_yticks(range(1, profile.num_horses + 1))
+    
+        ax.grid(True, axis='y', linestyle=':', alpha=0.7)
+        ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
+    
+        plt.tight_layout()
+        plt.show()
