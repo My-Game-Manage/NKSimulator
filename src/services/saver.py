@@ -80,8 +80,8 @@ class RaceSaver(RaceObserver):
                 HorseProfField.HORSE_WEIGHT: h_prof.horse_weight,
                 HorseProfField.WEIGHT_CARRIED: h_prof.weight_carried,
                 # 基本能力値
-                HorseProfField.MAX_SPEED: h_prof.max_speed,
                 HorseProfField.BASE_SPEED: h_prof.base_speed,
+                HorseProfField.BASE_SPURT_SPEED: h_prof.base_spurt_speed,
                 HorseProfField.CRUISE_SPEED: h_prof.cruise_speed,
                 HorseProfField.LAST_3F_SPEED: h_prof.last_3f_speed,
                 HorseProfField.MIN_SPEED: h_prof.min_speed,
@@ -90,6 +90,7 @@ class RaceSaver(RaceObserver):
                 HorseProfField.STAMINA_WASTE_RATE: h_prof.stamina_waste_rate,
                 HorseProfField.CORNER_ABILITY: h_prof.cornering_ability,
                 HorseProfField.GATE_REACTION: h_prof.gate_reaction,
+                HorseProfField.STABILITY_FACTOR: h_prof.stability_factor,
                 HorseProfField.STRATEGY: h_prof.strategy,
                 HorseProfField.TARGET_SPURT_DIST: h_prof.target_spurt_dist,
             })

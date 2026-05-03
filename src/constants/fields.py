@@ -75,8 +75,8 @@ class HorseProfField(str, Enum):
     WEIGHT_CARRIED = "weight_carried"
     # 能力値
     # スピード
-    MAX_SPEED = "max_speed"
     BASE_SPEED = "base_speed"
+    BASE_SPURT_SPEED = "base_spurt_speed"
     CRUISE_SPEED = "cruise_speed"
     LAST_3F_SPEED = "last_3f_speed"
     MIN_SPEED = "min_speed"
@@ -87,6 +87,7 @@ class HorseProfField(str, Enum):
     # 適性・性格
     CORNER_ABILITY = "cornering_ability"
     GATE_REACTION = "gate_reaction"
+    STABILITY_FACTOR = "stability_factor"
     # 戦略
     STRATEGY = "strategy"
     TARGET_SPURT_DIST = "target_spurt_dist"

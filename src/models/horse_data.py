@@ -21,8 +21,8 @@ class HorseProfile:
     weight_carried: float       # 斤量
     # 能力値
     # スピード
-    max_speed: float            # 最高速度
     base_speed: float           # 基準速度
+    base_spurt_speed: float     # 基準スパート速度
     cruise_speed: float         # 巡航速度
     last_3f_speed: float        # スパート時速度
     min_speed: float            # 最低速度
@@ -33,6 +33,7 @@ class HorseProfile:
     # 適性・性格
     cornering_ability: float    # コーナー能力
     gate_reaction: float        # スタート反応
+    stability_factor: float     # 安定感
     # 戦略
     strategy: str               # 脚質
     target_spurt_dist: float    # スパート開始距離
