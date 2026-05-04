@@ -111,3 +111,17 @@ class HorseSnapField(str, Enum):
     # デフォルトはRacingStateから開始
     BEHAVIOR = "behavior"
     STRATEGY = "strategy"
+
+class HorseEnvField(str, Enum):
+    # 環境情報
+    RACE_DISTANCE = "race_distance"
+    SECTION = "section"
+    DIST_TO_FRONT = "dist_to_front"
+    RANK = "rank"
+    # 補正情報
+    FRICTION = "friction"
+    CORNER_PENALTY = "corner_penalty"
+
+class HorseTacField(str, Enum):
+    # 移動意思
+    TARGET_LANE = "target_lane"

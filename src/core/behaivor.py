@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from src.models.race_data import RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
-from src.constants.fields import HorseSnapField
+from src.constants.fields import HorseSnapField, HorseEnvField, HorseTacField
 from src.constants.enums import HorseBehaviorType
 from src.core.strategy import RacingStrategy, STRATEGY_MAP
 import src.core.physics as ph
@@ -45,22 +45,26 @@ class InGateState(HorseBehaviorState):
         # gate_reactionで距離に補正をかける。高いほど前を取りやすい
         # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 環境情報の設定
+        env = {}
         # 環境情報取得
-        friction = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        corner_penalty = race_prof.corner_penalty
-        # 1. 環境認識
-        dist_to_front = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
-        current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
-        is_spurt = False
-        limit_velocity = h_prof.cruise_speed
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
+        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        # ゲートリアクションで補正
-        target_v = strategy.get_target_velocity(h_prof.cruise_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt) * h_prof.gate_reaction
-        next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
-        next_lane = current_snap.lane
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
         # StateをStartingに変更
         next_behavior = HorseBehaviorType.STARTING
         return replace(current_snap,
@@ -83,24 +87,27 @@ class StartingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 環境情報の設定
+        env = {}
         # 環境情報取得
-        friction = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        corner_penalty = race_prof.corner_penalty
-        # 1. 環境認識
-        dist_to_front = ph.get_dist_to_front(horse_id, race_snap.horses)
-        rank = race_snap.ranks[horse_id]
-        # TODO: 環境情報の取得をとりあえず整備
-        current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
-        # TODO: カーブ等で減速になった時の場合の処理を追加
-        is_spurt = False
-        limit_velocity = h_prof.cruise_speed
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
+        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof.cruise_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
-        next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
-        next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+
         # スタート区間が終わっていればレース中状態に移行
         next_behavior = current_snap.behavior
         if ph.is_start_section(next_distance, race_prof.sections[0]):
@@ -135,24 +142,27 @@ class SpurtingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 環境情報の設定
+        env = {}
         # 環境情報取得
-        friction = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        corner_penalty = race_prof.corner_penalty
-        # 1. 環境認識
-        dist_to_front = ph.get_dist_to_front(horse_id, race_snap.horses)
-        rank = race_snap.ranks[horse_id]
-        # TODO: 環境情報の取得をとりあえず整備
-        current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
-        # TODO: カーブ等で減速になった時の場合の処理を追加
-        limit_velocity = h_prof.last_3f_speed
-        is_spurt = True
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
+        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof.last_3f_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
-        next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
-        next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
@@ -189,38 +199,30 @@ class RacingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 環境情報の設定
+        env = {}
         # 環境情報取得
-        friction = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        corner_penalty = race_prof.corner_penalty
-        # 1. 環境認識
-        dist_to_front = ph.get_dist_to_front(horse_id, race_snap.horses)
-        rank = race_snap.ranks[horse_id]
-        # TODO: 環境情報の取得をとりあえず整備
-        current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
-        is_spurt = False
-        limit_velocity = h_prof.cruise_speed
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
+        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof.last_3f_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
-        next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
-        next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
-
-        # 1. 環境認識 (Engineのメソッドを利用)
-        #horse_env = engine._perceive_horse_position(current_state, race_profile, horses)
-
-        # 2. 意思決定 (Strategyパターンと組み合わせるのが理想的)
-        #horse_tactics = engine._decide_horse_tactics(horse_env)
-        #target_v = engine._decide_horse_target_speed(h_prof, horse_env, horse_tactics)
-        
-        # 3. 物理計算 (physicsモジュールを利用)
-        #accel = ph.calculate_acceleration(target_v, current_state.current_velocity, h_prof.acceleration)
-        #velocity = current_state.current_velocity + accel * dt
-        #distance = current_state.current_distance + velocity * dt
 
         # 4. ゴール判定と状態遷移
         if ph.is_horse_finished(next_distance, race_prof.distance):
@@ -259,25 +261,27 @@ class ExhaustedState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # Strategyの取得
         strategy = self.get_strategy(h_prof)
+        # 環境情報の設定
+        env = {}
         # 環境情報取得
-        friction = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        corner_penalty = race_prof.corner_penalty
-        # 1. 環境認識
-        dist_to_front = ph.get_dist_to_front(horse_id, race_snap.horses)
-        rank = race_snap.ranks[horse_id]
-        # TODO: 環境情報の取得をとりあえず整備
-        current_section = ph.get_current_section(current_snap.distance, race_prof.sections)
-        # TODO: カーブ等で減速になった時の場合の処理を追加
-        is_spurt = False
-        limit_velocity = h_prof.min_speed
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
+        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        # バテているのでtarget_vを下げる
-        target_v = strategy.get_target_velocity(h_prof.min_speed, h_prof, current_snap, current_section, dist_to_front, corner_penalty)
-        accel = strategy.get_acceleration(target_v, h_prof, current_snap, friction)
-        next_velocity = strategy.get_next_velocity(current_snap, accel, limit_velocity, dt)
-        next_distance = strategy.get_next_distance(current_snap, next_velocity, dt)
-        next_stamina = strategy.consume_stamina(h_prof.total_stamina, next_velocity, current_snap, current_section, race_prof.distance, dist_to_front, friction, is_spurt, dt)
-        next_lane = strategy.get_next_lane(current_snap, current_section, dist_to_front, rank)
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
