@@ -112,7 +112,7 @@ class LeaderStrategy:
         #   next_dist = v_avg * dt
         v_avg = (horse_snap.velocity + next_velocity) / 2
         next_distance = v_avg * dt
-        return next_distance
+        return horse_snap.distance + next_distance
 
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
@@ -196,7 +196,7 @@ class StalkerStrategy:
         #   next_dist = v_avg * dt
         v_avg = (horse_snap.velocity + next_velocity) / 2
         next_distance = v_avg * dt
-        return next_distance
+        return horse_snap.distance + next_distance
 
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
@@ -280,7 +280,7 @@ class CloserStrategy:
         #   next_dist = v_avg * dt
         v_avg = (horse_snap.velocity + next_velocity) / 2
         next_distance = v_avg * dt
-        return next_distance
+        return horse_snap.distance + next_distance
 
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
@@ -364,7 +364,7 @@ class RearStrategy:
         #   next_dist = v_avg * dt
         v_avg = (horse_snap.velocity + next_velocity) / 2
         next_distance = v_avg * dt
-        return next_distance
+        return horse_snap.distance + next_distance
 
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
