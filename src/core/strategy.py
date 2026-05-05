@@ -16,6 +16,8 @@ from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.models.race_data import TrackSection
 import src.core.physics as ph
 
+# スタミナ消費調整用の定数
+STAMINA_DRAIN_COEFFICIENT = 0.075
 
 # ---------------------------------------------------------
 # Strategy（Protocol）パターンの基底クラス
@@ -85,7 +87,14 @@ class LeaderStrategy:
 
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
+        # 必要な環境情報取得
+        section = env[HorseEnvField.SECTION]
+        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            spurt_v *= (1.0 - corner_penalty)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -122,8 +131,8 @@ class LeaderStrategy:
         # 斤量による負荷補正（例: 50kgを基準とする）
         weight_load = horse_prof.weight_carried / 50.0
         # ステップあたりの消費量
-        consumption = base_consumption * horse_prof.stamina_waste_rate * weight_load * dt
-        return horse_snap.stamina - consumption
+        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * dt
+        return max(0.0, horse_snap.stamina - consumption)
 
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # とりあえず1で設定
@@ -169,7 +178,14 @@ class StalkerStrategy:
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
+        # 必要な環境情報取得
+        section = env[HorseEnvField.SECTION]
+        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            spurt_v *= (1.0 - corner_penalty)
         return spurt_v
     
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -206,8 +222,8 @@ class StalkerStrategy:
         # 斤量による負荷補正（例: 50kgを基準とする）
         weight_load = horse_prof.weight_carried / 50.0
         # ステップあたりの消費量
-        consumption = base_consumption * horse_prof.stamina_waste_rate * weight_load * dt
-        return horse_snap.stamina - consumption
+        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * dt
+        return max(0.0, horse_snap.stamina - consumption)
     
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # とりあえず1で設定
@@ -253,7 +269,14 @@ class CloserStrategy:
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
+        # 必要な環境情報取得
+        section = env[HorseEnvField.SECTION]
+        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            spurt_v *= (1.0 - corner_penalty)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -290,8 +313,8 @@ class CloserStrategy:
         # 斤量による負荷補正（例: 50kgを基準とする）
         weight_load = horse_prof.weight_carried / 50.0
         # ステップあたりの消費量
-        consumption = base_consumption * horse_prof.stamina_waste_rate * weight_load * dt
-        return horse_snap.stamina - consumption
+        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * dt
+        return max(0.0, horse_snap.stamina - consumption)
     
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # とりあえず1で設定
@@ -337,7 +360,14 @@ class RearStrategy:
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
+        # 必要な環境情報取得
+        section = env[HorseEnvField.SECTION]
+        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            spurt_v *= (1.0 - corner_penalty)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -374,8 +404,8 @@ class RearStrategy:
         # 斤量による負荷補正（例: 50kgを基準とする）
         weight_load = horse_prof.weight_carried / 50.0
         # ステップあたりの消費量
-        consumption = base_consumption * horse_prof.stamina_waste_rate * weight_load * dt
-        return horse_snap.stamina - consumption
+        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * dt
+        return max(0.0, horse_snap.stamina - consumption)
     
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # とりあえず1で設定

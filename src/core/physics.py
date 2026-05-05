@@ -13,13 +13,18 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
     """コースの距離と現在の距離を比較してゴールしたかどうかを返す"""
     return distance >= course_length
 
-def is_spurt_distance(distance: float, spurt_dist: float) -> bool:
+def is_spurt_distance(distance: float, spurt_dist: float, race_distance: float) -> bool:
     """スパート開始距離かどうかの判定"""
-    return distance >= spurt_dist
+    return distance >= (race_distance - spurt_dist)
 
 def is_start_section(distance: float, section: TrackSection) -> bool:
     """スタートセクションかどうか"""
     return distance >= section.distance
+
+def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
+    """バテ状態かどうか判定する"""
+    # 95%をバテの閾値とする
+    return remain_stamina < total_stamina * 0.95 
 
 # 要素取得系
 #def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:

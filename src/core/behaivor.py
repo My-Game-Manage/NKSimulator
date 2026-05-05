@@ -60,7 +60,7 @@ class InGateState(HorseBehaviorState):
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof, current_snap, env)
-        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env) * h_prof.gate_reaction
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
         next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
@@ -102,15 +102,16 @@ class StartingState(HorseBehaviorState):
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        #target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
         accel = strategy.get_acceleration(h_prof, current_snap, env)
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
         next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
         next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
 
-        # スタート区間が終わっていればレース中状態に移行
         next_behavior = current_snap.behavior
-        if ph.is_start_section(next_distance, race_prof.sections[0]):
+        # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
+        if target_v >= h_prof.cruise_speed * 0.9 or ph.is_start_section(next_distance, race_prof.sections[0]) or next_distance >= 100.0:
             next_behavior = HorseBehaviorType.RACING
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
@@ -156,7 +157,7 @@ class SpurtingState(HorseBehaviorState):
         # 戦略情報取得
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
         accel = strategy.get_acceleration(h_prof, current_snap, env)
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
@@ -174,7 +175,7 @@ class SpurtingState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
-        elif next_stamina <= 100:
+        elif ph.is_exhausted(next_stamina, h_prof.total_stamina):
             # バテたので状態遷移
             next_behavior = HorseBehaviorType.EXHAUSTED
         return replace(current_snap,
@@ -231,10 +232,10 @@ class RacingState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
-        elif ph.is_spurt_distance(next_distance, h_prof.target_spurt_dist):
+        elif ph.is_spurt_distance(next_distance, h_prof.target_spurt_dist, race_prof.distance):
             # スパート開始
             next_behavior = HorseBehaviorType.SPURTING
-        elif next_stamina <= 100:
+        elif ph.is_exhausted(next_stamina, h_prof.total_stamina):
             # バテたので状態遷移
             next_behavior = HorseBehaviorType.EXHAUSTED
 
@@ -275,7 +276,7 @@ class ExhaustedState(HorseBehaviorState):
         # 戦略情報取得
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env)
+        target_v = h_prof.min_speed #strategy.get_target_velocity(h_prof, current_snap, env)
         accel = strategy.get_acceleration(h_prof, current_snap, env)
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
