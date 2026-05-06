@@ -73,6 +73,7 @@ class HorseFactory(ABC):
             distance=0.0,
             stamina=stamina,
             lane=float(horse_num),
+            dist_to_front=0.0,
             behavior=HorseBehaviorType.IN_GATE.value,
             strategy=stragety,
             is_finished=False,

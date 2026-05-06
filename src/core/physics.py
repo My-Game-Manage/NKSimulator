@@ -24,7 +24,7 @@ def is_start_section(distance: float, section: TrackSection) -> bool:
 def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
     """バテ状態かどうか判定する"""
     # 95%をバテの閾値とする
-    return remain_stamina < total_stamina * 0.95 
+    return remain_stamina < total_stamina * 0.05
 
 # 要素取得系
 #def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:

@@ -104,6 +104,7 @@ class HorseSnapField(str, Enum):
     STAMINA = "stamina"
     # --- 環境・戦略 ---
     LANE = "lane"
+    DIST_TO_FRONT = "dist_to_front"
     # --- 記録 ---
     IS_FINISHED = "is_finished"
     FINISH_TIME = "finish_time"
@@ -118,6 +119,7 @@ class HorseEnvField(str, Enum):
     SECTION = "section"
     DIST_TO_FRONT = "dist_to_front"
     RANK = "rank"
+    NUM_HORSES = "num_horses"
     # 補正情報
     FRICTION = "friction"
     CORNER_PENALTY = "corner_penalty"

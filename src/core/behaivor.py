@@ -54,6 +54,7 @@ class InGateState(HorseBehaviorState):
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
         env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
@@ -74,6 +75,7 @@ class InGateState(HorseBehaviorState):
                        distance=next_distance,
                        stamina=next_stamina,
                        lane=next_lane,
+                       dist_to_front=env[HorseEnvField.DIST_TO_FRONT],
                        behavior=next_behavior,
                        )
 
@@ -92,10 +94,11 @@ class StartingState(HorseBehaviorState):
         # 環境情報取得
         env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
         env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.DIST_TO_FRONT] = ph.get_dist_to_front(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
         env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
@@ -103,7 +106,7 @@ class StartingState(HorseBehaviorState):
         # 各数値を算出
         target_v = strategy.get_target_velocity(h_prof, current_snap, env)
         #target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
-        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env) * 1.2
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
         next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
@@ -120,6 +123,7 @@ class StartingState(HorseBehaviorState):
                        distance=next_distance,
                        stamina=next_stamina,
                        lane=next_lane,
+                       dist_to_front=env[HorseEnvField.DIST_TO_FRONT],
                        behavior=next_behavior,
                        )
 
@@ -148,17 +152,18 @@ class SpurtingState(HorseBehaviorState):
         # 環境情報取得
         env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
         env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.DIST_TO_FRONT] = ph.get_dist_to_front(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
         env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
         target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
-        accel = strategy.get_acceleration(h_prof, current_snap, env)
+        accel = strategy.get_acceleration(h_prof, current_snap, env) * 1.5
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
         next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
@@ -185,6 +190,7 @@ class SpurtingState(HorseBehaviorState):
                        distance=next_distance,
                        stamina=next_stamina,
                        lane=next_lane,
+                       dist_to_front=env[HorseEnvField.DIST_TO_FRONT],
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,
@@ -205,10 +211,11 @@ class RacingState(HorseBehaviorState):
         # 環境情報取得
         env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
         env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.DIST_TO_FRONT] = ph.get_dist_to_front(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
         env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
@@ -247,6 +254,7 @@ class RacingState(HorseBehaviorState):
                        distance=next_distance,
                        stamina=next_stamina,
                        lane=next_lane,
+                       dist_to_front=env[HorseEnvField.DIST_TO_FRONT],
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,
@@ -267,16 +275,17 @@ class ExhaustedState(HorseBehaviorState):
         # 環境情報取得
         env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
         env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_FRONT] = 999 #ph.get_dist_to_front(horse_id, race_snap.horses)
+        env[HorseEnvField.DIST_TO_FRONT] = ph.get_dist_to_front(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
         env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = h_prof.min_speed #strategy.get_target_velocity(h_prof, current_snap, env)
+        target_v = h_prof.min_speed * 0.8#strategy.get_target_velocity(h_prof, current_snap, env)
         accel = strategy.get_acceleration(h_prof, current_snap, env)
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
@@ -303,6 +312,7 @@ class ExhaustedState(HorseBehaviorState):
                        distance=next_distance,
                        stamina=next_stamina,
                        lane=next_lane,
+                       dist_to_front=env[HorseEnvField.DIST_TO_FRONT],
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,

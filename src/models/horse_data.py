@@ -53,6 +53,7 @@ class HorseSnapshot:
     stamina: float              # 残りスタミナ
     # --- 環境・戦略 ---
     lane: float                 # 横位置 (ゲート幅は0.9mで実質1.0mずつズレていく）
+    dist_to_front: float        # 前までの距離
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
     behavior: str               # BehaviorStateのKeyを保存
