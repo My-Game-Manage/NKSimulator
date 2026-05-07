@@ -34,6 +34,9 @@ class HorseProfile:
     cornering_ability: float    # コーナー能力
     gate_reaction: float        # スタート反応
     stability_factor: float     # 安定感
+    base_agility: float         # 器用さ
+    lane_change_frequency: float# レーン変更頻度
+    prefers_inside: float       # 内枠志向
     # 戦略
     strategy: str               # 脚質
     target_spurt_dist: float    # スパート開始距離

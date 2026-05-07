@@ -88,6 +88,9 @@ class HorseProfField(str, Enum):
     CORNER_ABILITY = "cornering_ability"
     GATE_REACTION = "gate_reaction"
     STABILITY_FACTOR = "stability_factor"
+    BASE_AGILITY = "base_agility"
+    LANE_CHANGE_FREQUENCY = "lane_change_frequency"
+    PREFERS_INSIDE = "prefers_inside"
     # 戦略
     STRATEGY = "strategy"
     TARGET_SPURT_DIST = "target_spurt_dist"
@@ -117,7 +120,12 @@ class HorseEnvField(str, Enum):
     # 環境情報
     RACE_DISTANCE = "race_distance"
     SECTION = "section"
+    DIST_TO_CONTEXT = "dist_to_context"
     DIST_TO_FRONT = "dist_to_front"
+    DIST_TO_FRONT_LEFT = "dist_to_front_left"
+    DIST_TO_FRONT_RIGHT = "dist_to_front_right"
+    DIST_TO_SIDE_LEFT = "dist_to_side_left"
+    DIST_TO_SIDE_RIGHT = "dist_to_side_right"
     RANK = "rank"
     NUM_HORSES = "num_horses"
     # 補正情報

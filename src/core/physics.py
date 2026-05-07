@@ -6,6 +6,7 @@ physics.py の概要
 from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.constants.enums import SectionName
 from src.models.race_data import TrackSection
+from src.constants.fields import HorseEnvField
 
 
 # チェック系
@@ -27,15 +28,6 @@ def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
     return remain_stamina < total_stamina * 0.05
 
 # 要素取得系
-#def current_section_from(position: float, sections: list[TrackSection]) -> TrackSection:
-    """距離から現在のセクションを返す"""
-    """accumulated_dist = 0
-    for section in sections:
-        accumulated_dist +=section.distance
-        if position <= accumulated_dist:
-            return section
-    return TrackSection(SectionType.STRAIGHT, 9999, 9999, SectionName.HOME_STRAIGHT) # 予備
-"""
 def get_dist_to_front(horse_id: str, horses: dict[str, HorseSnapshot]) -> float:
     """前の馬との距離を返す"""
     min_dist = 999.0
@@ -48,6 +40,39 @@ def get_dist_to_front(horse_id: str, horses: dict[str, HorseSnapshot]) -> float:
             if 0 < dist < min_dist:
                 min_dist = dist
     return min_dist
+
+def get_dist_to_front_context(horse_id: str, horses: dict[str, HorseSnapshot]) -> dict:
+    """周囲の馬との距離を返す"""
+    current = horses[horse_id]
+    context = {
+        HorseEnvField.DIST_TO_FRONT: 999.0,
+        HorseEnvField.DIST_TO_FRONT_LEFT: 999.0,
+        HorseEnvField.DIST_TO_FRONT_RIGHT: 999.0,
+        HorseEnvField.DIST_TO_SIDE_LEFT: 999.0,
+        HorseEnvField.DIST_TO_SIDE_RIGHT: 999.0
+    }
+    
+    for h_id, other in horses.items():
+        if horse_id == h_id: continue
+        
+        d_dist = other.distance - current.distance
+        d_lane = other.lane - current.lane
+        
+        # 前方 (距離 10m 以内を対象にするなど)
+        if 0 < d_dist < 10.0:
+            if abs(d_lane) < 0.4: # 真前
+                context[HorseEnvField.DIST_TO_FRONT] = min(context[HorseEnvField.DIST_TO_FRONT], d_dist)
+            elif -1.2 < d_lane <= -0.4: # 左斜め前
+                context[HorseEnvField.DIST_TO_FRONT_LEFT] = min(context[HorseEnvField.DIST_TO_FRONT_LEFT], d_dist)
+            elif 0.4 <= d_lane < 1.2: # 右斜め前
+                context[HorseEnvField.DIST_TO_FRONT_RIGHT] = min(context[HorseEnvField.DIST_TO_FRONT_RIGHT], d_dist)
+        
+        # 真横 (並走状態の検知)
+        if abs(d_dist) < 1.0:
+            if -1.0 < d_lane < 0: context[HorseEnvField.DIST_TO_SIDE_LEFT] = min(context[HorseEnvField.DIST_TO_SIDE_LEFT], abs(d_lane))
+            if 0 < d_lane < 1.0: context[HorseEnvField.DIST_TO_SIDE_RIGHT] = min(context[HorseEnvField.DIST_TO_SIDE_RIGHT], abs(d_lane))
+            
+    return context
 
 def get_current_section(distance: float, sections: list[TrackSection]) -> TrackSection:
     """現在の距離からセクションを取得"""

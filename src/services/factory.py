@@ -236,6 +236,10 @@ class CSVHorseFactory(HorseFactory):
         last_3f_speed = abi.get_race_spurt_speed(base_spurt_speed, distance)
         min_speed = base_speed * stability_factor
         total_stamina, stamina_waste_rate = abi.calculate_stamina_params(history)
+        agi_params = abi.analyze_horse_agility(history)
+        base_agility = agi_params[HorseProfField.BASE_AGILITY]
+        lane_change_frequency = agi_params[HorseProfField.LANE_CHANGE_FREQUENCY]
+        prefers_inside = agi_params[HorseProfField.PREFERS_INSIDE]
         strategy = abi.determine_strategy(history)
         return {
             HorseProfField.BASE_SPEED: base_speed,
@@ -249,6 +253,9 @@ class CSVHorseFactory(HorseFactory):
             HorseProfField.CORNER_ABILITY: abi.calculate_cornering_ability(history),
             HorseProfField.GATE_REACTION: abi.calculate_gate_reaction(history),
             HorseProfField.STABILITY_FACTOR: stability_factor,
+            HorseProfField.BASE_AGILITY: base_agility,
+            HorseProfField.LANE_CHANGE_FREQUENCY: lane_change_frequency,
+            HorseProfField.PREFERS_INSIDE: prefers_inside,
             HorseProfField.STRATEGY: strategy,
             HorseProfField.TARGET_SPURT_DIST: abi.calculate_spurt_dist(strategy, history),
         }    
@@ -376,6 +383,9 @@ DEBUG_HORSE_DEFAULTS = {
     HorseProfField.CORNER_ABILITY.value: 1.0,
     HorseProfField.GATE_REACTION.value: 1.0,
     HorseProfField.STABILITY_FACTOR: 0.9,
+    HorseProfField.BASE_AGILITY: 1.0,
+    HorseProfField.LANE_CHANGE_FREQUENCY: 1.0,
+    HorseProfField.PREFERS_INSIDE: 1.0,
     HorseProfField.STRATEGY.value: HorseStrategyType.CLOSER.value,
     HorseProfField.TARGET_SPURT_DIST.value: 600.0,
 }
@@ -393,6 +403,9 @@ DEBUG_HORSE_ABILITY_MIN_MAX = {
     HorseProfField.CORNER_ABILITY.value: (0.4, 0.6),
     HorseProfField.GATE_REACTION.value: (0.3, 1.0),
     HorseProfField.STABILITY_FACTOR: (0.8, 0.95),
+    HorseProfField.BASE_AGILITY: (0.8, 1.0),
+    HorseProfField.LANE_CHANGE_FREQUENCY: (0.5, 1.0),
+    HorseProfField.PREFERS_INSIDE: (0.1, 1.0),
     HorseProfField.TARGET_SPURT_DIST.value: (500.0, 700.0),
 }
 
@@ -415,6 +428,9 @@ class DebugHorseFactory(HorseFactory):
                              corner_ability: float=DEBUG_HORSE_DEFAULTS[HorseProfField.CORNER_ABILITY.value],
                              gate_reaction: float=DEBUG_HORSE_DEFAULTS[HorseProfField.GATE_REACTION.value],
                              stability_factor: float=DEBUG_HORSE_DEFAULTS[HorseProfField.STABILITY_FACTOR],
+                             base_agility: float=DEBUG_HORSE_DEFAULTS[HorseProfField.BASE_AGILITY],
+                             lane_change_frequency: float=DEBUG_HORSE_DEFAULTS[HorseProfField.LANE_CHANGE_FREQUENCY],
+                             prefers_inside: float=DEBUG_HORSE_DEFAULTS[HorseProfField.PREFERS_INSIDE],
                              strategy: str=DEBUG_HORSE_DEFAULTS[HorseProfField.STRATEGY.value],
                              target_spurt_dist: float=DEBUG_HORSE_DEFAULTS[HorseProfField.TARGET_SPURT_DIST.value]) -> HorseProfile:
         return HorseProfile(
@@ -436,6 +452,9 @@ class DebugHorseFactory(HorseFactory):
             cornering_ability=corner_ability,
             gate_reaction=gate_reaction,
             stability_factor=stability_factor,
+            base_agility=base_agility,
+            lane_change_frequency=lane_change_frequency,
+            prefers_inside=prefers_inside,
             strategy=strategy,
             target_spurt_dist=target_spurt_dist,
         )
@@ -461,6 +480,9 @@ class DebugHorseFactory(HorseFactory):
             cornering_ability=self.create_random_corner_ability(),
             gate_reaction=self.create_random_gate_reaction(),
             stability_factor=self.create_random_stability_factor(),
+            base_agility=1.0,
+            lane_change_frequency=1.0,
+            prefers_inside=1.0,
             strategy=self.create_random_strategy(),
             target_spurt_dist=self.create_random_target_spurt_dist(),
         )

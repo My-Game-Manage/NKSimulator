@@ -91,6 +91,9 @@ class RaceSaver(RaceObserver):
                 HorseProfField.CORNER_ABILITY: h_prof.cornering_ability,
                 HorseProfField.GATE_REACTION: h_prof.gate_reaction,
                 HorseProfField.STABILITY_FACTOR: h_prof.stability_factor,
+                HorseProfField.BASE_AGILITY: h_prof.base_agility,
+                HorseProfField.LANE_CHANGE_FREQUENCY: h_prof.lane_change_frequency,
+                HorseProfField.PREFERS_INSIDE: h_prof.prefers_inside,
                 HorseProfField.STRATEGY: h_prof.strategy,
                 HorseProfField.TARGET_SPURT_DIST: h_prof.target_spurt_dist,
             })

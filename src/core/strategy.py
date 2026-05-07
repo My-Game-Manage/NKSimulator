@@ -23,7 +23,7 @@ STAMINA_DRAIN_COEFFICIENT = 0.075
 # Strategy（Protocol）パターンの基底クラス
 # ---------------------------------------------------------
 class RacingStrategy(Protocol):
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 基本： target_v = cruise_speed * factor
         ...
 
@@ -74,18 +74,22 @@ class RacingStrategy(Protocol):
 # 具象Strategyクラス：逃げ
 # ---------------------------------------------------------
 class LeaderStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         race_distance = env[HorseEnvField.RACE_DISTANCE]
+        # 必要な戦略情報取得
+        target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.cruise_speed
-        if section.type is SectionType.CURVE:
-            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            target_v *= (1.0 - corner_penalty)
-        elif dist_to_front <= 0.5:
+        if target_lane == horse_snap.lane:
+            # レーン移動しない場合は前の馬に馬がいれば維持
+            if dist_to_front <= 0.5:
+                target_v = horse_snap.velocity
+        if dist_to_front <= 0.5:
             # 前にいる場合はー＞追い抜こうとする
             return target_v
         return target_v
@@ -94,7 +98,8 @@ class LeaderStrategy:
         # 基本： spurt_v = spurt_speed * factor
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
@@ -135,7 +140,8 @@ class LeaderStrategy:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         #環境情報
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -149,12 +155,29 @@ class LeaderStrategy:
         return max(0.0, horse_snap.stamina - consumption)
 
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
-        # とりあえず1で設定
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
-        target_lane = 1.0
-        if dist_to_front < 0.5:
-            # 前にいたら抜く
-            target_lane = horse_snap.lane + 1.0
+        # 環境情報
+        section = env[HorseEnvField.SECTION]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
+        rank = env[HorseEnvField.RANK]
+        num_horses = env[HorseEnvField.NUM_HORSES]
+        # 評価スコア：低いほど良い（走りやすい）
+        lane_scores = {}
+        current_lane = horse_snap.lane
+        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
+            if lane < 1.0: continue # ラチより内側は除外
+            score = 0
+            # 1. 内側ほど基本スコアが良い（最短距離）
+            score += lane * 0.5
+            # 2. 前方に馬がいるか？
+            if dist_to_front < 2.0:# 非常に近い
+                score += 10.0 # 衝突リスク大
+            elif dist_to_front < 5.0: # ドラフティング圏内
+                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
+                score -= horse_prof.lane_change_frequency
+            lane_scores[lane] = score
+        # 最もスコアの低い（有利な）レーンをターゲットにする
+        target_lane = min(lane_scores, key=lane_scores.get)
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -166,7 +189,7 @@ class LeaderStrategy:
         #       move_dir = 1 if diff > 0 else -1
         #       return current_lane + (move_dir * max_move)
         target_lane = tac[HorseTacField.TARGET_LANE]
-        base_lane_speed = 2.0 * horse_prof.cornering_ability
+        base_lane_speed = 2.0 * horse_prof.cornering_ability * horse_prof.base_agility
         max_move = base_lane_speed * dt
         diff = target_lane - horse_snap.lane
         if abs(diff) <= max_move:
@@ -179,31 +202,33 @@ class LeaderStrategy:
 # 具象Strategyクラス：先行
 # ---------------------------------------------------------
 class StalkerStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
+        # 必要な戦略情報取得
+        target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.cruise_speed
+        if target_lane == horse_snap.lane:
+            # レーン移動しない場合は前の馬に馬がいれば維持
+            if dist_to_front <= 0.5:
+                target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
             target_v *= (1.0 - corner_penalty)
-        elif dist_to_front <= 0.5:
-            # 前にいる場合は先団なら維持、それ以外は抜こうとする
-            if rank <= (num_horses / 3):
-                return horse_snap.velocity
-            else:
-                return target_v
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
@@ -243,7 +268,8 @@ class StalkerStrategy:
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -259,15 +285,27 @@ class StalkerStrategy:
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 環境情報
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        target_lane = 1.0
-        # 先団
-        if dist_to_front <= 0.5:
-            # 前にいる場合は先団なら維持、それ以外は抜こうとする
-            if rank > (num_horses / 3) or section.name is SectionName.HOMESTRETCH:
-                target_lane = horse_snap.lane + 1.0
+        # 評価スコア：低いほど良い（走りやすい）
+        lane_scores = {}
+        current_lane = horse_snap.lane
+        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
+            if lane < 1.0: continue # ラチより内側は除外
+            score = 0
+            # 1. 内側ほど基本スコアが良い（最短距離）
+            score += lane * 0.5
+            # 2. 前方に馬がいるか？
+            if dist_to_front < 2.0:# 非常に近い
+                score += 10.0 # 衝突リスク大
+            elif dist_to_front < 5.0: # ドラフティング圏内
+                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
+                score -= horse_prof.lane_change_frequency
+            lane_scores[lane] = score
+        # 最もスコアの低い（有利な）レーンをターゲットにする
+        target_lane = min(lane_scores, key=lane_scores.get)
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -279,7 +317,7 @@ class StalkerStrategy:
         #       move_dir = 1 if diff > 0 else -1
         #       return current_lane + (move_dir * max_move)
         target_lane = tac[HorseTacField.TARGET_LANE]
-        base_lane_speed = 2.0 * horse_prof.cornering_ability
+        base_lane_speed = 2.0 * horse_prof.cornering_ability * horse_prof.base_agility
         max_move = base_lane_speed * dt
         diff = target_lane - horse_snap.lane
         if abs(diff) <= max_move:
@@ -292,31 +330,33 @@ class StalkerStrategy:
 # 具象Strategyクラス：差し
 # ---------------------------------------------------------
 class CloserStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
+        # 必要な戦略情報取得
+        target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.cruise_speed
+        if target_lane == horse_snap.lane:
+            # レーン移動しない場合は前の馬に馬がいれば維持
+            if dist_to_front <= 0.5:
+                target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
             target_v *= (1.0 - corner_penalty)
-        elif dist_to_front <= 0.5:
-            # 前にいる場合は中団なら維持、それ以外は抜こうとする
-            if rank <= (num_horses / 2):
-                return horse_snap.velocity
-            else:
-                return target_v
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
@@ -357,7 +397,8 @@ class CloserStrategy:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         # 環境情報
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -373,15 +414,27 @@ class CloserStrategy:
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 環境情報
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        target_lane = 1.0
-        # 先団
-        if dist_to_front <= 0.5:
-            # 前にいる場合は中団なら維持、それ以外は抜こうとする
-            if rank > (num_horses / 2) or section.name is SectionName.HOMESTRETCH:
-                target_lane = horse_snap.lane + 1.0
+        # 評価スコア：低いほど良い（走りやすい）
+        lane_scores = {}
+        current_lane = horse_snap.lane
+        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
+            if lane < 1.0: continue # ラチより内側は除外
+            score = 0
+            # 1. 内側ほど基本スコアが良い（最短距離）
+            score += lane * 0.5
+            # 2. 前方に馬がいるか？
+            if dist_to_front < 2.0:# 非常に近い
+                score += 10.0 # 衝突リスク大
+            elif dist_to_front < 5.0: # ドラフティング圏内
+                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
+                score -= horse_prof.lane_change_frequency
+            lane_scores[lane] = score
+        # 最もスコアの低い（有利な）レーンをターゲットにする
+        target_lane = min(lane_scores, key=lane_scores.get)
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -393,7 +446,7 @@ class CloserStrategy:
         #       move_dir = 1 if diff > 0 else -1
         #       return current_lane + (move_dir * max_move)
         target_lane = tac[HorseTacField.TARGET_LANE]
-        base_lane_speed = 2.0 * horse_prof.cornering_ability
+        base_lane_speed = 2.0 * horse_prof.cornering_ability * horse_prof.base_agility
         max_move = base_lane_speed * dt
         diff = target_lane - horse_snap.lane
         if abs(diff) <= max_move:
@@ -406,26 +459,31 @@ class CloserStrategy:
 # 具象Strategyクラス：追い込み
 # ---------------------------------------------------------
 class RearStrategy:
-    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
+    def get_target_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        # 必要な戦略情報取得
+        target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = horse_prof.cruise_speed
+        if target_lane == horse_snap.lane:
+            # レーン移動しない場合は前の馬に馬がいれば維持
+            if dist_to_front <= 0.5:
+                target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
             target_v *= (1.0 - corner_penalty)
-        elif dist_to_front <= 0.5:
-            # 前にいる場合は維持
-            return horse_snap.velocity
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： spurt_v = spurt_speed * factor
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         corner_penalty = env[HorseEnvField.CORNER_PENALTY]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
@@ -466,7 +524,8 @@ class RearStrategy:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         # 環境情報
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -482,12 +541,27 @@ class RearStrategy:
     def get_target_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 環境情報
         section = env[HorseEnvField.SECTION]
-        dist_to_front = env[HorseEnvField.DIST_TO_FRONT]
+        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        target_lane = 1.0
-        if dist_to_front < 0.5 and section.type is SectionName.HOMESTRETCH:
-            target_lane = horse_snap.lane + 1.0
+        # 評価スコア：低いほど良い（走りやすい）
+        lane_scores = {}
+        current_lane = horse_snap.lane
+        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
+            if lane < 1.0: continue # ラチより内側は除外
+            score = 0
+            # 1. 内側ほど基本スコアが良い（最短距離）
+            score += lane * 0.5
+            # 2. 前方に馬がいるか？
+            if dist_to_front < 2.0:# 非常に近い
+                score += 10.0 # 衝突リスク大
+            elif dist_to_front < 5.0: # ドラフティング圏内
+                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
+                score -= horse_prof.lane_change_frequency
+            lane_scores[lane] = score
+        # 最もスコアの低い（有利な）レーンをターゲットにする
+        target_lane = min(lane_scores, key=lane_scores.get)
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -499,7 +573,7 @@ class RearStrategy:
         #       move_dir = 1 if diff > 0 else -1
         #       return current_lane + (move_dir * max_move)
         target_lane = tac[HorseTacField.TARGET_LANE]
-        base_lane_speed = 2.0 * horse_prof.cornering_ability
+        base_lane_speed = 2.0 * horse_prof.cornering_ability * horse_prof.base_agility
         max_move = base_lane_speed * dt
         diff = target_lane - horse_snap.lane
         if abs(diff) <= max_move:

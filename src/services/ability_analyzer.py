@@ -4,6 +4,7 @@ ability_analyzer.py の概要
 馬の能力に関する計算を行う。
 """
 import pandas as pd
+import numpy as np
 import logging
 
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
@@ -185,6 +186,34 @@ def calculate_stamina_params(past_records: pd.DataFrame) -> tuple:
     
     return total_stamina, stamina_efficiency
     
+def analyze_horse_agility(past_records: pd.DataFrame) -> dict:
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+
+    # 1. 外枠時（7, 8枠）の「内への潜り込み」性能を算出
+    outer_starts = valid_records[valid_records[RaceCol.BRACKET_NUM] >= 7]
+    def get_start_pos(order):
+        try: return int(str(order).split('-')[0])
+        except: return 10 # 不明な場合は平均的な値を仮定
+    
+    # (枠番 - 初手順位) が大きいほど、外から内へ鋭く切り込んでいる
+    cut_in_scores = outer_starts.apply(
+        lambda x: x[RaceCol.BRACKET_NUM] * 1.5 - get_start_pos(x[RaceCol.PASSING_ORDER]), axis=1
+    )
+    
+    # 2. 道中の位置変化（機動力）
+    def get_position_variance(order):
+        positions = [int(p) for p in str(order).split('-') if p.isdigit()]
+        return np.std(positions) if len(positions) > 1 else 0
+    
+    mobility_scores = valid_records[RaceCol.PASSING_ORDER].apply(get_position_variance)
+
+    return {
+        "base_agility": 1.0 + (cut_in_scores.mean() * 0.05 if not cut_in_scores.empty else 0),
+        "lane_change_frequency": mobility_scores.mean() * 0.2,
+        "prefers_inside": (valid_records[RaceCol.BRACKET_NUM] <= 2).mean() # 内枠を引いた時の先行率
+    }
+
 def calculate_gate_reaction(past_records: pd.DataFrame) -> float:
     # 不要な値を除去
     valid_records = valid_horse_history_df(past_records)
