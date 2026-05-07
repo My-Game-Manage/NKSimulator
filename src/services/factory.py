@@ -150,6 +150,7 @@ class CSVRaceFactory(RaceFactory):
         return {
             RaceProfField.TRACK_WIDTH.value: course_spec.track_width,
             RaceProfField.CORNER_PENALTY.value: course_spec.corner_penalty,
+            RaceProfField.CORNER_RADIUS: course_spec.corner_radius,
             RaceProfField.TURF_FRICTION.value: course_spec.turf_friction,
             RaceProfField.SURFACE_FRICTION.value: course_spec.surface_friction,
             RaceProfField.SECTIONS.value: sections,
@@ -322,6 +323,7 @@ class DebugRaceFactory(RaceFactory):
             weather=weather,
             track_width=course_spec.track_width,
             corner_penalty=course_spec.corner_penalty,
+            corner_radius=course_spec.corner_radius,
             turf_friction=course_spec.turf_friction,
             surface_friction=course_spec.surface_friction,
             sections=sections,

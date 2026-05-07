@@ -37,6 +37,7 @@ class RaceProfField(str, Enum):
     # コースデータ
     TRACK_WIDTH = "track_width"
     CORNER_PENALTY = "corner_penalty"
+    CORNER_RADIUS = "corner_radius"
     TURF_FRICTION = "turf_friction"
     SURFACE_FRICTION = "surface_friction"
     SECTIONS = "sections"
@@ -131,6 +132,7 @@ class HorseEnvField(str, Enum):
     # 補正情報
     FRICTION = "friction"
     CORNER_PENALTY = "corner_penalty"
+    CORNER_RADIUS = "corner_radius"
 
 class HorseTacField(str, Enum):
     # 移動意思

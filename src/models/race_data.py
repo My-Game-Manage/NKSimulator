@@ -17,6 +17,7 @@ class CourseSpec:
     is_excluded: bool           # 除外判定
     track_width: int            # トラック幅
     corner_penalty: float       # コーナー係数
+    corner_radius: float        # コーナー半径
     turf_friction: float        # 芝係数
     surface_friction: float     # ダート係数
 
@@ -57,6 +58,7 @@ class RaceProfile:
     # コースデータ
     track_width: float          # コース幅
     corner_penalty: float       # コーナー係数
+    corner_radius: float        # コーナー半径
     turf_friction: float        # 芝摩擦係数
     surface_friction: float     # ダート摩擦係数
     sections: list[TrackSection] = field(default_factory=list)

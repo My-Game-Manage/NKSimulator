@@ -79,8 +79,9 @@ class LeaderStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
-        race_distance = env[HorseEnvField.RACE_DISTANCE]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
+        rank = env[HorseEnvField.RANK]
+        num_horses = env[HorseEnvField.NUM_HORSES]
         # 必要な戦略情報取得
         target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
@@ -89,9 +90,9 @@ class LeaderStrategy:
             # レーン移動しない場合は前の馬に馬がいれば維持
             if dist_to_front <= 0.5:
                 target_v = horse_snap.velocity
-        if dist_to_front <= 0.5:
-            # 前にいる場合はー＞追い抜こうとする
-            return target_v
+        if section.type is SectionType.CURVE:
+            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
+            target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v
 
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -100,11 +101,11 @@ class LeaderStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v *= (1.0 - corner_penalty)
+            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -140,8 +141,10 @@ class LeaderStrategy:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         #環境情報
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
+        ctx = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = ctx[HorseEnvField.DIST_TO_FRONT]
+        side_left = ctx[HorseEnvField.DIST_TO_SIDE_LEFT]
+        side_right = ctx[HorseEnvField.DIST_TO_SIDE_RIGHT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -149,7 +152,13 @@ class LeaderStrategy:
         # 加速中なら消費量を増やす
         accel_factor = 1.5 if next_velocity < horse_snap.velocity else 1.0
         # レーンの先頭なら風圧で消費量を増やす
-        wind_factor = 1.1 if dist_to_front >= 999 else 1.0
+        wind_factor = 1.0
+        if dist_to_front >= 999:
+            wind_factor = 1.1
+        elif 2.0 < dist_to_front < 5.0:
+            wind_factor = 0.9
+        elif side_left < 0.5 or side_right < 0.5:
+            wind_factor = 1.1
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * accel_factor *  wind_factor * dt
         return max(0.0, horse_snap.stamina - consumption)
@@ -233,7 +242,7 @@ class StalkerStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
         # 必要な戦略情報取得
@@ -246,7 +255,7 @@ class StalkerStrategy:
                 target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            target_v *= (1.0 - corner_penalty)
+            target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -255,11 +264,11 @@ class StalkerStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v *= (1.0 - corner_penalty)
+            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return spurt_v
     
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -294,8 +303,11 @@ class StalkerStrategy:
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
+        #環境情報
+        ctx = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = ctx[HorseEnvField.DIST_TO_FRONT]
+        side_left = ctx[HorseEnvField.DIST_TO_SIDE_LEFT]
+        side_right = ctx[HorseEnvField.DIST_TO_SIDE_RIGHT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -303,7 +315,13 @@ class StalkerStrategy:
         # 加速中なら消費量を増やす
         accel_factor = 1.5 if next_velocity < horse_snap.velocity else 1.0
         # レーンの先頭なら風圧で消費量を増やす
-        wind_factor = 1.1 if dist_to_front >= 999 else 1.0
+        wind_factor = 1.0
+        if dist_to_front >= 999:
+            wind_factor = 1.1
+        elif 2.0 < dist_to_front < 5.0:
+            wind_factor = 0.9
+        elif side_left < 0.5 or side_right < 0.5:
+            wind_factor = 1.1
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * accel_factor *  wind_factor * dt
         return max(0.0, horse_snap.stamina - consumption)
@@ -387,7 +405,7 @@ class CloserStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
         # 必要な戦略情報取得
@@ -400,7 +418,7 @@ class CloserStrategy:
                 target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            target_v *= (1.0 - corner_penalty)
+            target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -409,11 +427,11 @@ class CloserStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v *= (1.0 - corner_penalty)
+            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -448,9 +466,11 @@ class CloserStrategy:
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
-        # 環境情報
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
+        #環境情報
+        ctx = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = ctx[HorseEnvField.DIST_TO_FRONT]
+        side_left = ctx[HorseEnvField.DIST_TO_SIDE_LEFT]
+        side_right = ctx[HorseEnvField.DIST_TO_SIDE_RIGHT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -458,7 +478,13 @@ class CloserStrategy:
         # 加速中なら消費量を増やす
         accel_factor = 1.5 if next_velocity < horse_snap.velocity else 1.0
         # レーンの先頭なら風圧で消費量を増やす
-        wind_factor = 1.1 if dist_to_front >= 999 else 1.0
+        wind_factor = 1.0
+        if dist_to_front >= 999:
+            wind_factor = 1.1
+        elif 2.0 < dist_to_front < 5.0:
+            wind_factor = 0.9
+        elif side_left < 0.5 or side_right < 0.5:
+            wind_factor = 1.1
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * accel_factor *  wind_factor * dt
         return max(0.0, horse_snap.stamina - consumption)
@@ -542,7 +568,9 @@ class RearStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
+        rank = env[HorseEnvField.RANK]
+        num_horses = env[HorseEnvField.NUM_HORSES]
         # 必要な戦略情報取得
         target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
@@ -553,7 +581,7 @@ class RearStrategy:
                 target_v = horse_snap.velocity
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            target_v *= (1.0 - corner_penalty)
+            target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v
     
     def get_spurt_velocity(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -562,11 +590,11 @@ class RearStrategy:
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
         dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_penalty = env[HorseEnvField.CORNER_PENALTY]
+        corner_radius = env[HorseEnvField.CORNER_RADIUS]
         spurt_v = horse_prof.last_3f_speed
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v *= (1.0 - corner_penalty)
+            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return spurt_v
 
     def get_acceleration(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -601,9 +629,11 @@ class RearStrategy:
     def consume_stamina(self, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
-        # 環境情報
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
+        #環境情報
+        ctx = env[HorseEnvField.DIST_TO_CONTEXT]
+        dist_to_front = ctx[HorseEnvField.DIST_TO_FRONT]
+        side_left = ctx[HorseEnvField.DIST_TO_SIDE_LEFT]
+        side_right = ctx[HorseEnvField.DIST_TO_SIDE_RIGHT]
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -611,7 +641,13 @@ class RearStrategy:
         # 加速中なら消費量を増やす
         accel_factor = 1.5 if next_velocity < horse_snap.velocity else 1.0
         # レーンの先頭なら風圧で消費量を増やす
-        wind_factor = 1.1 if dist_to_front >= 999 else 1.0
+        wind_factor = 1.0
+        if dist_to_front >= 999:
+            wind_factor = 1.1
+        elif 2.0 < dist_to_front < 5.0:
+            wind_factor = 0.9
+        elif side_left < 0.5 or side_right < 0.5:
+            wind_factor = 1.1
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * accel_factor *  wind_factor * dt
         return max(0.0, horse_snap.stamina - consumption)

@@ -53,7 +53,7 @@ class InGateState(HorseBehaviorState):
         env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
         env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
@@ -97,7 +97,7 @@ class StartingState(HorseBehaviorState):
         env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
         env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
@@ -155,7 +155,7 @@ class SpurtingState(HorseBehaviorState):
         env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
         env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
@@ -214,7 +214,7 @@ class RacingState(HorseBehaviorState):
         env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
         env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}
@@ -278,7 +278,7 @@ class ExhaustedState(HorseBehaviorState):
         env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
         env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
         env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_PENALTY] = race_prof.corner_penalty
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
         env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
         # 戦略情報決定
         tac = {}

@@ -91,6 +91,24 @@ def calc_next_elapsted_time(current_time: float, dt: float) -> float:
     return round(current_time + dt, 2) # 浮動小数点の誤差防止
 
 # 物理演算系
+def calculate_target_velocity_at_corner(target_v: float, radius: float, lane: float, agility: float) -> float:
+    # laneが外に行くほど半径が大きくなる = 遠心力が弱まる
+    effective_radius = radius + (lane * 1.0) # 1レーン1mと仮定
+    
+    # 馬の器用さ(agility)に基づいた、耐えられる最大横G
+    # 例: agility 1.0 の馬は 3.0 m/s^2 まで耐えられるとする
+    max_lateral_accel = 3.0 * agility 
+    
+    # 遠心力に耐えられる限界速度を算出 (v = sqrt(a * r))
+    limit_velocity = (max_lateral_accel * effective_radius) ** 0.5
+    
+    # 現在の target_velocity が限界を超えていれば制限する
+    # 一気に下げず、現在の速度から徐々に近づける（慣性の表現）
+    if target_v > limit_velocity:
+        target_v = max(limit_velocity, target_v * 0.98)
+
+    return target_v
+
 def calculate_stamina_consumption(current_speed: float, race_distance: float, total_stamina: float, dt: float) -> float:
     """レース距離からスタミナ消費量を算出"""
     # 1. 基準となる「1秒あたりの消費量」を算出
