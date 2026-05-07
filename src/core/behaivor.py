@@ -114,7 +114,7 @@ class StartingState(HorseBehaviorState):
 
         next_behavior = current_snap.behavior
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
-        if target_v >= h_prof.cruise_speed * 0.9 or ph.is_start_section(next_distance, race_prof.sections[0]) or next_distance >= 100.0:
+        if target_v >= h_prof.cruise_speed * 0.9 or ph.is_start_section(next_distance, race_prof.sections[0]):
             next_behavior = HorseBehaviorType.RACING
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
@@ -285,7 +285,7 @@ class ExhaustedState(HorseBehaviorState):
         # 戦略情報取得
         tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = h_prof.min_speed * 0.8#strategy.get_target_velocity(h_prof, current_snap, env)
+        target_v = strategy.get_target_velocity(h_prof, current_snap, env, tac) * 0.9
         accel = strategy.get_acceleration(h_prof, current_snap, env)
         next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
         next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)

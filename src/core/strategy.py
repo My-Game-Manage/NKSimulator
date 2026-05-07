@@ -158,26 +158,52 @@ class LeaderStrategy:
         # 環境情報
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        # 評価スコア：低いほど良い（走りやすい）
+        ctx = dist_to_context
+    
+        # 候補となるレーン: [現在のレーン, 左に移動, 右に移動]
+        # 0.5刻みなどで計算するとよりスムーズ
+        options = [horse_snap.lane - 0.5, horse_snap.lane, horse_snap.lane + 0.5]
         lane_scores = {}
-        current_lane = horse_snap.lane
-        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
-            if lane < 1.0: continue # ラチより内側は除外
-            score = 0
-            # 1. 内側ほど基本スコアが良い（最短距離）
-            score += lane * 0.5
-            # 2. 前方に馬がいるか？
-            if dist_to_front < 2.0:# 非常に近い
-                score += 10.0 # 衝突リスク大
-            elif dist_to_front < 5.0: # ドラフティング圏内
-                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
-                score -= horse_prof.lane_change_frequency
-            lane_scores[lane] = score
-        # 最もスコアの低い（有利な）レーンをターゲットにする
+
+        for opt in options:
+            if opt < 1.0 or opt > 16.0: continue # コース外
+        
+            score = 0.0
+        
+            # 1. 基本コスト: 内側ほどわずかに有利
+            score += opt * 0.1
+        
+            # 2. 前方の詰まりによるペナルティ
+            # そのレーンの「前方」に馬がいる場合
+            d_lane_opt = opt - horse_snap.lane
+        
+            relevant_dist = 999.0
+            if abs(d_lane_opt) < 0.2: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -0.2:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > 0.2:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+        
+            if relevant_dist < 3.0:
+                score += 20.0 # 衝突回避（最優先）
+            elif relevant_dist < 8.0:
+                score += 5.0  # 少し詰まっている
+            
+            # 3. 横に馬がいる場合の移動制限
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < 0.8:
+                score += 15.0 # 左に馬がいるので移動しにくい
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < 0.8:
+                score += 15.0 # 右に馬がいるので移動しにくい
+            
+            # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
+            if horse_prof.strategy == HorseStrategyType.LEADER and opt > 2.0:
+                score += 10.0 # 逃げ馬は外に行きたがらない
+            
+            lane_scores[opt] = score
+
+        # 最もスコアの低い（快適な）レーンをターゲットにする
         target_lane = min(lane_scores, key=lane_scores.get)
+
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -286,26 +312,52 @@ class StalkerStrategy:
         # 環境情報
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        # 評価スコア：低いほど良い（走りやすい）
+        ctx = dist_to_context
+    
+        # 候補となるレーン: [現在のレーン, 左に移動, 右に移動]
+        # 0.5刻みなどで計算するとよりスムーズ
+        options = [horse_snap.lane - 0.5, horse_snap.lane, horse_snap.lane + 0.5]
         lane_scores = {}
-        current_lane = horse_snap.lane
-        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
-            if lane < 1.0: continue # ラチより内側は除外
-            score = 0
-            # 1. 内側ほど基本スコアが良い（最短距離）
-            score += lane * 0.5
-            # 2. 前方に馬がいるか？
-            if dist_to_front < 2.0:# 非常に近い
-                score += 10.0 # 衝突リスク大
-            elif dist_to_front < 5.0: # ドラフティング圏内
-                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
-                score -= horse_prof.lane_change_frequency
-            lane_scores[lane] = score
-        # 最もスコアの低い（有利な）レーンをターゲットにする
+
+        for opt in options:
+            if opt < 1.0 or opt > 16.0: continue # コース外
+        
+            score = 0.0
+        
+            # 1. 基本コスト: 内側ほどわずかに有利
+            score += opt * 0.1
+        
+            # 2. 前方の詰まりによるペナルティ
+            # そのレーンの「前方」に馬がいる場合
+            d_lane_opt = opt - horse_snap.lane
+        
+            relevant_dist = 999.0
+            if abs(d_lane_opt) < 0.2: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -0.2:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > 0.2:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+        
+            if relevant_dist < 3.0:
+                score += 20.0 # 衝突回避（最優先）
+            elif relevant_dist < 8.0:
+                score += 5.0  # 少し詰まっている
+            
+            # 3. 横に馬がいる場合の移動制限
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < 0.8:
+                score += 15.0 # 左に馬がいるので移動しにくい
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < 0.8:
+                score += 15.0 # 右に馬がいるので移動しにくい
+            
+            # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
+            if horse_prof.strategy == HorseStrategyType.LEADER and opt > 2.0:
+                score += 10.0 # 逃げ馬は外に行きたがらない
+            
+            lane_scores[opt] = score
+
+        # 最もスコアの低い（快適な）レーンをターゲットにする
         target_lane = min(lane_scores, key=lane_scores.get)
+
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -415,26 +467,52 @@ class CloserStrategy:
         # 環境情報
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        # 評価スコア：低いほど良い（走りやすい）
+        ctx = dist_to_context
+    
+        # 候補となるレーン: [現在のレーン, 左に移動, 右に移動]
+        # 0.5刻みなどで計算するとよりスムーズ
+        options = [horse_snap.lane - 0.5, horse_snap.lane, horse_snap.lane + 0.5]
         lane_scores = {}
-        current_lane = horse_snap.lane
-        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
-            if lane < 1.0: continue # ラチより内側は除外
-            score = 0
-            # 1. 内側ほど基本スコアが良い（最短距離）
-            score += lane * 0.5
-            # 2. 前方に馬がいるか？
-            if dist_to_front < 2.0:# 非常に近い
-                score += 10.0 # 衝突リスク大
-            elif dist_to_front < 5.0: # ドラフティング圏内
-                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
-                score -= horse_prof.lane_change_frequency
-            lane_scores[lane] = score
-        # 最もスコアの低い（有利な）レーンをターゲットにする
+
+        for opt in options:
+            if opt < 1.0 or opt > 16.0: continue # コース外
+        
+            score = 0.0
+        
+            # 1. 基本コスト: 内側ほどわずかに有利
+            score += opt * 0.1
+        
+            # 2. 前方の詰まりによるペナルティ
+            # そのレーンの「前方」に馬がいる場合
+            d_lane_opt = opt - horse_snap.lane
+        
+            relevant_dist = 999.0
+            if abs(d_lane_opt) < 0.2: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -0.2:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > 0.2:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+        
+            if relevant_dist < 3.0:
+                score += 20.0 # 衝突回避（最優先）
+            elif relevant_dist < 8.0:
+                score += 5.0  # 少し詰まっている
+            
+            # 3. 横に馬がいる場合の移動制限
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < 0.8:
+                score += 15.0 # 左に馬がいるので移動しにくい
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < 0.8:
+                score += 15.0 # 右に馬がいるので移動しにくい
+            
+            # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
+            if horse_prof.strategy == HorseStrategyType.LEADER and opt > 2.0:
+                score += 10.0 # 逃げ馬は外に行きたがらない
+            
+            lane_scores[opt] = score
+
+        # 最もスコアの低い（快適な）レーンをターゲットにする
         target_lane = min(lane_scores, key=lane_scores.get)
+
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
@@ -542,26 +620,52 @@ class RearStrategy:
         # 環境情報
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
-        # 評価スコア：低いほど良い（走りやすい）
+        ctx = dist_to_context
+    
+        # 候補となるレーン: [現在のレーン, 左に移動, 右に移動]
+        # 0.5刻みなどで計算するとよりスムーズ
+        options = [horse_snap.lane - 0.5, horse_snap.lane, horse_snap.lane + 0.5]
         lane_scores = {}
-        current_lane = horse_snap.lane
-        for lane in [current_lane - 1.0, current_lane, current_lane + 1.0]:
-            if lane < 1.0: continue # ラチより内側は除外
-            score = 0
-            # 1. 内側ほど基本スコアが良い（最短距離）
-            score += lane * 0.5
-            # 2. 前方に馬がいるか？
-            if dist_to_front < 2.0:# 非常に近い
-                score += 10.0 # 衝突リスク大
-            elif dist_to_front < 5.0: # ドラフティング圏内
-                # 逃げ馬なら「邪魔」なので避ける、差し馬なら「温存」のため残る
-                score -= horse_prof.lane_change_frequency
-            lane_scores[lane] = score
-        # 最もスコアの低い（有利な）レーンをターゲットにする
+
+        for opt in options:
+            if opt < 1.0 or opt > 16.0: continue # コース外
+        
+            score = 0.0
+        
+            # 1. 基本コスト: 内側ほどわずかに有利
+            score += opt * 0.1
+        
+            # 2. 前方の詰まりによるペナルティ
+            # そのレーンの「前方」に馬がいる場合
+            d_lane_opt = opt - horse_snap.lane
+        
+            relevant_dist = 999.0
+            if abs(d_lane_opt) < 0.2: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -0.2:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > 0.2:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+        
+            if relevant_dist < 3.0:
+                score += 20.0 # 衝突回避（最優先）
+            elif relevant_dist < 8.0:
+                score += 5.0  # 少し詰まっている
+            
+            # 3. 横に馬がいる場合の移動制限
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < 0.8:
+                score += 15.0 # 左に馬がいるので移動しにくい
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < 0.8:
+                score += 15.0 # 右に馬がいるので移動しにくい
+            
+            # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
+            if horse_prof.strategy == HorseStrategyType.LEADER and opt > 2.0:
+                score += 10.0 # 逃げ馬は外に行きたがらない
+            
+            lane_scores[opt] = score
+
+        # 最もスコアの低い（快適な）レーンをターゲットにする
         target_lane = min(lane_scores, key=lane_scores.get)
+
         return target_lane
 
     def get_next_lane(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
