@@ -16,6 +16,7 @@ from src.constants.fields import HorseSnapField, HorseEnvField, HorseTacField
 from src.constants.enums import HorseBehaviorType
 from src.core.strategy import RacingStrategy, STRATEGY_MAP
 import src.core.physics as ph
+from src.core.race_processor import RaceProcessor as proc
 
 
 # ---------------------------------------------------------
@@ -43,8 +44,6 @@ class InGateState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # ゲートを出る（laneはそのままで、加速と最初の距離だけ計算）
         # gate_reactionで距離に補正をかける。高いほど前を取りやすい
-        # Strategyの取得
-        strategy = self.get_strategy(h_prof)
         # 環境情報の設定
         env = {}
         # 環境情報取得
@@ -58,14 +57,14 @@ class InGateState(HorseBehaviorState):
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env, tac)
-        accel = strategy.get_acceleration(h_prof, current_snap, env) * h_prof.gate_reaction
-        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
-        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
-        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        target_v = proc.get_target_velocity(h_prof, current_snap, env, tac)
+        accel = proc.get_acceleration(h_prof, current_snap, env) * h_prof.gate_reaction
+        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
         # StateをStartingに変更
         next_behavior = HorseBehaviorType.STARTING
         return replace(current_snap,
@@ -87,8 +86,6 @@ class StartingState(HorseBehaviorState):
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         h_prof = race_prof.horses[horse_id] 
         current_snap = race_snap.horses[horse_id]
-        # Strategyの取得
-        strategy = self.get_strategy(h_prof)
         # 環境情報の設定
         env = {}
         # 環境情報取得
@@ -102,15 +99,15 @@ class StartingState(HorseBehaviorState):
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env, tac)
-        #target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
-        accel = strategy.get_acceleration(h_prof, current_snap, env) * 1.2
-        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
-        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
-        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        target_v = proc.get_target_velocity(h_prof, current_snap, env, tac)
+        #target_v = proc.get_spurt_velocity(h_prof, current_snap, env)
+        accel = proc.get_acceleration(h_prof, current_snap, env) * 1.2
+        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
 
         next_behavior = current_snap.behavior
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
@@ -145,8 +142,6 @@ class SpurtingState(HorseBehaviorState):
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         h_prof = race_prof.horses[horse_id] 
         current_snap = race_snap.horses[horse_id]
-        # Strategyの取得
-        strategy = self.get_strategy(h_prof)
         # 環境情報の設定
         env = {}
         # 環境情報取得
@@ -160,14 +155,14 @@ class SpurtingState(HorseBehaviorState):
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_spurt_velocity(h_prof, current_snap, env)
-        accel = strategy.get_acceleration(h_prof, current_snap, env) * 1.5
-        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
-        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
-        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        target_v = proc.get_spurt_velocity(h_prof, current_snap, env)
+        accel = proc.get_acceleration(h_prof, current_snap, env) * 1.5
+        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
 
         next_behavior = current_snap.behavior
         is_finished = False
@@ -204,8 +199,6 @@ class RacingState(HorseBehaviorState):
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         h_prof = race_prof.horses[horse_id] 
         current_snap = race_snap.horses[horse_id]
-        # Strategyの取得
-        strategy = self.get_strategy(h_prof)
         # 環境情報の設定
         env = {}
         # 環境情報取得
@@ -219,14 +212,14 @@ class RacingState(HorseBehaviorState):
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env, tac)
-        accel = strategy.get_acceleration(h_prof, current_snap, env)
-        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
-        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
-        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        target_v = proc.get_target_velocity(h_prof, current_snap, env, tac)
+        accel = proc.get_acceleration(h_prof, current_snap, env)
+        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
 
         next_behavior = current_snap.behavior
         is_finished = False
@@ -268,8 +261,6 @@ class ExhaustedState(HorseBehaviorState):
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         h_prof = race_prof.horses[horse_id] 
         current_snap = race_snap.horses[horse_id]
-        # Strategyの取得
-        strategy = self.get_strategy(h_prof)
         # 環境情報の設定
         env = {}
         # 環境情報取得
@@ -283,14 +274,14 @@ class ExhaustedState(HorseBehaviorState):
         # 戦略情報決定
         tac = {}
         # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = strategy.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
         # 各数値を算出
-        target_v = strategy.get_target_velocity(h_prof, current_snap, env, tac) * 0.9
-        accel = strategy.get_acceleration(h_prof, current_snap, env)
-        next_velocity = strategy.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
-        next_distance = strategy.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = strategy.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
-        next_lane = strategy.get_next_lane(h_prof, current_snap, env, tac, dt)
+        target_v = proc.get_target_velocity(h_prof, current_snap, env, tac) * 0.9
+        accel = proc.get_acceleration(h_prof, current_snap, env)
+        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, dt)
+        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
+        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, dt)
+        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
         
         next_behavior = current_snap.behavior
         is_finished = False
