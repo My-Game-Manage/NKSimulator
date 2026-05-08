@@ -64,6 +64,7 @@ class HorseSnapshot:
     # --- 記録 ---
     is_finished: bool = False
     finish_time: float | None = None
+    time_at_600m: float | None = None
     
     def next_step(self) -> 'HorseSnapshot':
         """ステップだけ更新した新しいStateを返す"""

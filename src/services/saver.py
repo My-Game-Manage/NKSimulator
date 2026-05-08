@@ -121,6 +121,7 @@ class RaceSaver(RaceObserver):
                 # 結果情報
                 'rank': rank,
                 HorseSnapField.FINISH_TIME: round(h_snap.finish_time, 2) if h_snap.finish_time else 0.0,
+                HorseSnapField.TIME_AT_600M: round(h_snap.time_at_600m, 2) if h_snap.time_at_600m else 0.0,
                 HorseSnapField.STAMINA: round(h_snap.stamina, 2) if h_snap.stamina else 0.0,
                 HorseSnapField.LANE: round(h_snap.lane, 2),
             })

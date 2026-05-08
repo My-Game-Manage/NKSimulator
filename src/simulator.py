@@ -78,6 +78,9 @@ class RaceSimulator(Subject):
             # 順位の更新
             next_snap = analyzer.update_ranks(next_snap)
 
+            # 残り600m地点のタイム取得
+            next_snap = analyzer.update_time_at_600m(race_prof.distance, next_snap)
+
             # 履歴への追加と更新
             history.append(next_snap)
             current_snap = next_snap

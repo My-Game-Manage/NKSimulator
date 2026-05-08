@@ -18,7 +18,7 @@ from src.constants.constants import STAMINA_DRAIN_COEFFICIENT
 
 class RaceProcessor:
     @staticmethod
-    def get_target_velocity(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
+    def get_target_velocity(base_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 必要な環境情報取得
         section = env[HorseEnvField.SECTION]
         dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
@@ -29,7 +29,7 @@ class RaceProcessor:
         # 必要な戦略情報取得
         target_lane = tac[HorseTacField.TARGET_LANE]
         # 基本はmax_speed（ベストな巡航速度）を目指す
-        target_v = horse_prof.cruise_speed
+        target_v = base_velocity
         if target_lane == horse_snap.lane:
             # レーン移動しない場合は前の馬に馬がいれば維持
             if dist_to_front <= 0.5:
@@ -38,20 +38,6 @@ class RaceProcessor:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
             target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v
-
-    @staticmethod
-    def get_spurt_velocity(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
-        # 基本： spurt_v = spurt_speed * factor
-        # 必要な環境情報取得
-        section = env[HorseEnvField.SECTION]
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_radius = env[HorseEnvField.CORNER_RADIUS]
-        spurt_v = horse_prof.last_3f_speed
-        if section.type is SectionType.CURVE:
-            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
-        return spurt_v
 
     @staticmethod
     def get_spurt_velocity(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:

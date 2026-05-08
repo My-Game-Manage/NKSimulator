@@ -3,6 +3,7 @@ race_analyzer.py の概要
 
 レースの分析をして結果等を追加するヘルパー
 """
+from dataclasses import replace
 import logging
 
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
@@ -40,3 +41,19 @@ class RaceAnalyer:
             if not race_snap.horses[h_id].is_finished:
                 return False
         return True
+    
+    @staticmethod
+    def update_time_at_600m(distance: float, race_snap: RaceSnapshot) -> RaceSnapshot:
+        """残り600mを切ったところで時間を記録する"""
+        horses = race_snap.horses
+        is_updated = False
+        for h_id, h_snap in horses.items():
+            if h_snap.distance >= (distance - 600) and h_snap.time_at_600m is None:
+                # ゴール前600m地点のタイムを記録しておく
+                update_snap = replace(h_snap, time_at_600m=h_snap.elapsed_time)
+                horses[h_id] = update_snap
+                is_updated = True
+        if is_updated:
+            return replace(race_snap, horses=horses)
+        else:
+            return race_snap

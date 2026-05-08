@@ -112,6 +112,7 @@ class HorseSnapField(str, Enum):
     # --- 記録 ---
     IS_FINISHED = "is_finished"
     FINISH_TIME = "finish_time"
+    TIME_AT_600M = "time_at_600m"
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
     BEHAVIOR = "behavior"

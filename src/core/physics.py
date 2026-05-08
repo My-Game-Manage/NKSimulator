@@ -194,13 +194,6 @@ def interpolate_goal_time(pre_dist: float, post_dist: float, pre_time: float, dt
     # 推定タイム
     return pre_time + (dt * ratio)
 
-#def get_current_section(distance: float, sections: list[TrackSection]) -> TrackSection:
-#    """現在位置から該当するセクションを返す"""
-#    for section in sections:
-#        if section.start_at <= distance < (section.start_at + section.distance):
-#            return section
-#    return sections[-1] # ゴール後は最後の直線扱い
-
 def get_condition_modifier(condition) -> float:
     """コンディションによる補正数値を返す"""
     # TODO：とりあえず現状は1.0を返す
