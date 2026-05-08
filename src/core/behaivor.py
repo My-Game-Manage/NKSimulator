@@ -111,8 +111,9 @@ class StartingState(HorseBehaviorState):
         next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
 
         next_behavior = current_snap.behavior
+
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
-        if target_v >= h_prof.cruise_speed * 0.9 or ph.is_start_section(next_distance, race_prof.sections[0]):
+        if next_velocity >= base_velocity or ph.is_start_section(next_distance, race_prof.sections[1]):
             next_behavior = HorseBehaviorType.RACING
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
