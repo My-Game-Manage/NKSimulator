@@ -103,6 +103,7 @@ class HorseSnapField(str, Enum):
     STEP = "step"
     ELAPSED_TIME = "elapsed_time"
     ACCEL = "accel"
+    TARGET_VELOCITY = "target_velocity"
     VELOCITY = "velocity"
     DISTANCE = "distance"
     # --- 内部状態・意思決定 ---
@@ -115,6 +116,7 @@ class HorseSnapField(str, Enum):
     IS_FINISHED = "is_finished"
     FINISH_TIME = "finish_time"
     TIME_AT_600M = "time_at_600m"
+    CHECKPOINTS_TIME = "checkpoints_time"
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
     BEHAVIOR = "behavior"
@@ -140,4 +142,11 @@ class HorseEnvField(str, Enum):
 class HorseTacField(str, Enum):
     # 移動意思
     TARGET_LANE = "target_lane"
-    IS_BOOST = "is_boost"
+    ACCEL_BOOST = "accel_boost"
+    OVERTAKE_DECISION = "overtake_decision"
+
+class HorseOvertake(str, Enum):
+    # 追い抜き判断
+    OVERTAKE = "overtake"       # 追い抜き
+    SORROUNDED = "sorrounded"   # 囲まれている
+    STAY = "stay"               # 現状維持

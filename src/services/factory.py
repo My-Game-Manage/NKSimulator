@@ -70,6 +70,7 @@ class HorseFactory(ABC):
             step=0,
             elapsed_time=0.0,
             accel=0.0,
+            target_velocity=0.0,
             velocity=0.0,
             distance=0.0,
             stamina=stamina,

@@ -199,30 +199,6 @@ def get_condition_modifier(condition) -> float:
     # TODO：とりあえず現状は1.0を返す
     return 1.0
 
-#def calculate_target_speed(param: HorseProfile, state: HorseState, section: TrackSection, condition: TrackCondition) -> float:
-    """
-    目標速度の決定ロジック
-    1. ベース速度: max_speed（基本能力）に、馬場状態（TrackCondition）の補正を掛けます
-    2. フェーズ補正: レース序盤・中盤・終盤（スパート）で倍率を変えます
-    3. セクション補正: コーナー（CURVE）では、遠心力による減速（cornering_ability）を適用します
-    
-    # 1. 馬場による基本速度の減衰 (良=1.0, 不良=0.95 など)
-    condition_mod = get_condition_modifier(condition)
-    base_speed = param.max_speed * condition_mod
-    
-    # 2. セクションによる補正 (コーナーなら能力に応じて減速)
-    section_mod = 1.0
-    if section.type == SectionType.CURVE:
-        # コーナー適性が高いほど減速しにくい
-        section_mod = 0.9 + (param.cornering_ability * 0.1)
-    
-    # 3. フェーズによる戦略的目標速度
-    # スパート距離に入っていれば100%、そうでなければスタミナ温存で90%など
-    phase_mod = 1.0 if state.is_spurting else 0.9
-    
-    return base_speed * section_mod * phase_mod
-    """
-
 def calculate_next_velocity(current_v: float, target_v: float, param: HorseProfile, has_stamina: bool, dt: float) -> float:
     """
     加速・減速ロジック

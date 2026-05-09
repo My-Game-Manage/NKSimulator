@@ -57,3 +57,23 @@ class RaceAnalyer:
             return replace(race_snap, horses=horses)
         else:
             return race_snap
+
+    @staticmethod
+    def update_time_at_checkpoints(race_snap :RaceSnapshot) -> RaceSnapshot:
+        """チェックポイント（100m）毎のラップタイムを記録する"""
+        horses = race_snap.horses
+        is_updated = False
+        for h_id, h_snap in horses.items():
+            current_distance = int(h_snap.distance // 100)
+            if current_distance <= 0: continue
+            if h_snap.distance >= current_distance * 100 and h_snap.checkpoints_time[current_distance - 1] <= 0.0:
+                # その地点のラップライムを記録する
+                checkpoints = h_snap.checkpoints_time
+                checkpoints[current_distance - 1] = h_snap.elapsed_time
+                update_snap = replace(h_snap, checkpoints_time=checkpoints)
+                horses[h_id] = update_snap
+                is_updated = True
+        if is_updated:
+            return replace(race_snap, horses=horses)
+        else:
+            return race_snap

@@ -3,7 +3,7 @@ horse_info.py の概要
 
 馬の情報を保持し、管理するデータクラス。
 """
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace, field
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,7 @@ class HorseSnapshot:
     step: int                   # step数
     elapsed_time: float         # 経過時間
     accel: float                # 加速度
+    target_velocity: float      # 目標速度
     velocity: float             # 現在の速度
     distance: float             # 進んだ距離
     # --- 内部状態・意思決定 ---
@@ -67,6 +68,7 @@ class HorseSnapshot:
     is_finished: bool = False
     finish_time: float | None = None
     time_at_600m: float | None = None
+    checkpoints_time: list[float] = field(default_factory=list)
     
     def next_step(self) -> 'HorseSnapshot':
         """ステップだけ更新した新しいStateを返す"""

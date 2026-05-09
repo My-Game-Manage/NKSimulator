@@ -108,7 +108,7 @@ class RaceSaver(RaceObserver):
         for h_id, rank in race_snap.ranks.items():
             h_prof = race_prof.horses[h_id]
             h_snap = race_snap.horses[h_id]
-            summary_data.append({
+            base_field = {
                 # レース情報
                 RaceProfField.COURSE: race_prof.course,
                 RaceProfField.RACE_NUM: race_prof.race_num,
@@ -124,6 +124,12 @@ class RaceSaver(RaceObserver):
                 HorseSnapField.TIME_AT_600M: round(h_snap.time_at_600m, 2) if h_snap.time_at_600m else 0.0,
                 HorseSnapField.STAMINA: round(h_snap.stamina, 2) if h_snap.stamina else 0.0,
                 HorseSnapField.LANE: round(h_snap.lane, 2),
-            })
+            }
+            index = 1
+            checkpoints = {}
+            for time in h_snap.checkpoints_time:
+                checkpoints[f"time_at_{index * 100}m"] = round(time, 2) if time else 0.0
+                index += 1
+            summary_data.append({**base_field, **checkpoints})
         # DataFrameに変換して返す
         return pd.DataFrame(summary_data)
