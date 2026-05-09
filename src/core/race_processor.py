@@ -40,20 +40,6 @@ class RaceProcessor:
         return target_v
 
     @staticmethod
-    def get_spurt_velocity(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
-        # 基本： spurt_v = spurt_speed * factor
-        # 必要な環境情報取得
-        section = env[HorseEnvField.SECTION]
-        dist_to_context = env[HorseEnvField.DIST_TO_CONTEXT]
-        dist_to_front = dist_to_context[HorseEnvField.DIST_TO_FRONT]
-        corner_radius = env[HorseEnvField.CORNER_RADIUS]
-        spurt_v = horse_prof.last_3f_speed
-        if section.type is SectionType.CURVE:
-            # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
-            spurt_v = ph.calculate_target_velocity_at_corner(spurt_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
-        return spurt_v
-
-    @staticmethod
     def get_acceleration(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
         # 基本： accel = acceleration * factor
         friction = env[HorseEnvField.FRICTION]
@@ -65,17 +51,39 @@ class RaceProcessor:
         return max(0.5, accel)
 
     @staticmethod
-    def get_next_velocity(target_v: float, accel: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
+    def get_next_velocity(target_v: float, accel: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
         # 基本： current_v と target_v の差で加速／減速になる 
         #   if current_v < target_v: return min(current_v + accel * dt, target_v)
         #   elif current_v > target_v: return max(current_v - accel * dt, target_v)
         #   else: return target_v
-        if horse_snap.velocity < target_v:
-            return min(horse_snap.velocity + accel * dt, target_v)
-        elif horse_snap.velocity > target_v:
-            return max(horse_snap.velocity - accel * dt, target_v)
+        # 環境変数を取得
+        is_boost = tac[HorseTacField.IS_BOOST]
+        current_v = horse_snap.velocity
+
+        # 1. 速度差による加速減衰（目標に近いほど加速を鈍くする）
+        diff_ratio = max(0, (target_v - current_v) / target_v) if target_v > 0 else 0
+
+        # 2. 速度域によるブースト（低速時は強く）
+        boost = 2.0 if is_boost else 1.0
+
+        # 実際の加速度を算出
+        actual_acc = accel * diff_ratio * boost
+
+        if current_v < target_v:
+            return min(current_v + actual_acc * dt, target_v)
+        elif current_v > target_v:
+            # 減速時は今のところ一定、あるいは同様に減衰させても良い
+            return max(current_v - accel * dt, target_v)
         else:
             return target_v
+
+    @staticmethod
+    def get_is_boost(horse_snap: HorseSnapshot) -> bool:
+        """ブーストするかどうか"""
+        if horse_snap.velocity < 10.0:
+            return True
+        else:
+            return False
 
     @staticmethod
     def get_next_distance(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
@@ -87,6 +95,13 @@ class RaceProcessor:
 
     @staticmethod
     def consume_stamina(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
+        # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
+        #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
+        consumption = RaceProcessor.get_consumption_stamina(next_velocity, horse_prof, horse_snap, env, dt)
+        return max(0.0, horse_snap.stamina - consumption)
+    
+    @staticmethod
+    def get_consumption_stamina(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： base_consumption = v_next ** 2 ※速度の2乗にするとリアリティが出る
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         #環境情報
@@ -110,7 +125,7 @@ class RaceProcessor:
             wind_factor = 1.1
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * weight_load * accel_factor *  wind_factor * dt
-        return max(0.0, horse_snap.stamina - consumption)
+        return consumption
 
     @staticmethod
     def get_target_lane(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> float:
@@ -183,3 +198,20 @@ class RaceProcessor:
         else:
             move_dir = 1 if diff > 0 else -1
             return horse_snap.lane + (move_dir * max_move)
+        
+    @staticmethod
+    def should_start_spurt(next_distance: float, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> bool:
+        # 環境情報
+        total_dist = env[HorseEnvField.RACE_DISTANCE]
+        remaining_dist = total_dist - next_distance
+    
+        # 物理的な限界点（このままの速度でゴールまでスタミナが持つか？）を計算
+        estimated_consumtion_at_spurt = RaceProcessor.get_consumption_stamina(next_velocity, horse_prof, horse_snap, env, dt)
+        can_run_dist = horse_snap.stamina / (estimated_consumtion_at_spurt / horse_prof.last_3f_speed)
+    
+        # 残り距離が「全力で走れる距離」以下になったら強制スパート
+        #if remaining_dist <= can_run_dist:
+        #    return True
+        
+        # それ以外は、脚質ごとの理想地点まで待機
+        return remaining_dist <= horse_prof.target_spurt_dist

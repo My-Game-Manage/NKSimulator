@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 import random
 
-from src.constants.enums import HorseBehaviorType, HorseStrategyType
+from src.constants.enums import HorseBehaviorType, HorseStrategyType, SectionName
 from src.constants.fields import RaceProfField, HorseProfField, HorseSnapField
 from src.constants.schema import RaceCol
 from src.models.race_data import RaceInfo, RaceRawData, RaceProfile, RaceSnapshot
@@ -69,11 +69,13 @@ class HorseFactory(ABC):
             horse_id=horse_id,
             step=0,
             elapsed_time=0.0,
+            accel=0.0,
             velocity=0.0,
             distance=0.0,
             stamina=stamina,
             lane=float(horse_num),
             dist_to_front=0.0,
+            section=SectionName.IN_GATE,
             behavior=HorseBehaviorType.IN_GATE.value,
             strategy=stragety,
             is_finished=False,
@@ -258,7 +260,7 @@ class CSVHorseFactory(HorseFactory):
             HorseProfField.LANE_CHANGE_FREQUENCY: lane_change_frequency,
             HorseProfField.PREFERS_INSIDE: prefers_inside,
             HorseProfField.STRATEGY: strategy,
-            HorseProfField.TARGET_SPURT_DIST: abi.calculate_spurt_dist(strategy, history),
+            HorseProfField.TARGET_SPURT_DIST: abi.calculate_spurt_dist(distance, strategy),
         }    
     
 # ---------------------------------------------------------

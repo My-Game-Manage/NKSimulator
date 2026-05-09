@@ -14,6 +14,8 @@ from src.constants.schema import RaceCol
 from src.constants.enums import HorseStrategyType
 from src.utils.normalizer import valid_horse_history_df
 
+
+
 def calculate_min_max_speed(past_records: pd.DataFrame) -> tuple:
     # 不要な値を除去
     valid_records = valid_horse_history_df(past_records)
@@ -264,21 +266,23 @@ def determine_strategy(past_records: pd.DataFrame) -> str:
     if avg_ratio <= 0.70: return HorseStrategyType.CLOSER.value  # 差し (中団)
     return HorseStrategyType.REAR.value                         # 追込 (後方)
     
-def calculate_spurt_dist(strategy: str, history: pd.DataFrame) -> float:
-    # 基本値は 600m (上がり3F)
-    base_dist = 600.0
-
-    # 脚質による調整
-    # 逃げ・先行は早めに踏ん張る必要があるため長めにする傾向
-    if strategy in (HorseStrategyType.LEADER.value, HorseStrategyType.STALKER.value):
-        base_dist += 100.0
-
-    # 過去の「マクリ」傾向（コーナーでの順位押し上げ）があれば加算
-    # （前の回答の cornering_ability と連動させると効果的）
-    # TODO: 履歴から算出
-
-    return base_dist
+def calculate_spurt_dist(course_dist: float, strategy: str) -> float:
+    # 1. 物理的な最大持続の目安（コースの1/3〜1/4程度）
+    # 1600mなら 400m, 2400mなら 600m くらいがベース
+    base_dist = course_dist * 0.25
     
+    # 2. 脚質による「追い出し」のタイミング補正
+    # 正の値は早仕掛け、負の値は待機を意味する
+    strategy_offsets = {
+        HorseStrategyType.LEADER: 100,    # 逃げ：残り500m (400+100)
+        HorseStrategyType.STALKER: 50,  # 先行：残り450m (400+50)
+        HorseStrategyType.CLOSER: 0,    # 差し：残り400m
+        HorseStrategyType.REAR: -100    # 追込：残り300m
+    }
+    
+    offset = strategy_offsets.get(strategy, 0)
+    return base_dist + offset
+
 def estimate_efficiency(past_records: pd.DataFrame) -> float:
     """
     過去データからスタミナ消費効率（燃費）を推定する。

@@ -102,6 +102,7 @@ class HorseSnapField(str, Enum):
     # --- 基本物理量 ---
     STEP = "step"
     ELAPSED_TIME = "elapsed_time"
+    ACCEL = "accel"
     VELOCITY = "velocity"
     DISTANCE = "distance"
     # --- 内部状態・意思決定 ---
@@ -109,6 +110,7 @@ class HorseSnapField(str, Enum):
     # --- 環境・戦略 ---
     LANE = "lane"
     DIST_TO_FRONT = "dist_to_front"
+    SECTION = "section"
     # --- 記録 ---
     IS_FINISHED = "is_finished"
     FINISH_TIME = "finish_time"
@@ -138,3 +140,4 @@ class HorseEnvField(str, Enum):
 class HorseTacField(str, Enum):
     # 移動意思
     TARGET_LANE = "target_lane"
+    IS_BOOST = "is_boost"

@@ -50,6 +50,7 @@ class HorseSnapshot:
     # --- 基本物理量 ---
     step: int                   # step数
     elapsed_time: float         # 経過時間
+    accel: float                # 加速度
     velocity: float             # 現在の速度
     distance: float             # 進んだ距離
     # --- 内部状態・意思決定 ---
@@ -57,6 +58,7 @@ class HorseSnapshot:
     # --- 環境・戦略 ---
     lane: float                 # 横位置 (ゲート幅は0.9mで実質1.0mずつズレていく）
     dist_to_front: float        # 前までの距離
+    section: str                # セクション名
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
     behavior: str               # BehaviorStateのKeyを保存
