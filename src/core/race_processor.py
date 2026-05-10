@@ -13,7 +13,9 @@ from src.constants.fields import HorseEnvField, HorseTacField, HorseOvertake
 from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.models.race_data import TrackSection, RaceProfile
 import src.core.physics as ph
-from src.constants.constants import STAMINA_DRAIN_COEFFICIENT
+from src.constants.constants import (
+    STAMINA_DRAIN_COEFFICIENT, TURF_CONDITION_ACCEL_FACTOR_MAP, TURF_CONDITION_STAMINA_FACTOR_MAP, DIRT_CONDITION_ACCEL_FACTOR_MAP, DIRT_CONDITION_STAMINA_FACTOR_MAP,
+)
 
 
 class RaceProcessor:
@@ -47,8 +49,16 @@ class RaceProcessor:
         # 基本： accel = acceleration * factor
         # 環境変数を取得
         accel_boost = tac[HorseTacField.ACCEL_BOOST]
+        surface = env[HorseEnvField.SURFACE]
         friction = env[HorseEnvField.FRICTION]
+        condition = env[HorseEnvField.CONDITION]
         current_v = horse_snap.velocity
+
+        # 馬場状態による補正
+        if surface is RaceSurfaceType.DIRT:
+            condition_factor = DIRT_CONDITION_ACCEL_FACTOR_MAP[condition]
+        else:
+            condition_factor = TURF_CONDITION_ACCEL_FACTOR_MAP[condition]
 
         # 2. 速度域によるブースト（低速時は強く）
         boost = 1.0
@@ -63,7 +73,7 @@ class RaceProcessor:
         # 斤量補正：50kgを基準とし、1kgあたり 0.5% 加速度を低下させる
         penalty_rate = (horse_prof.weight_carried - 50) * 0.005
         # 芝やダートの上を走る分の係数を引く
-        accel = horse_prof.acceleration * (1.0 - penalty_rate) * (1.0 - friction)
+        accel = horse_prof.acceleration * (1.0 - penalty_rate) * (1.0 - friction) * condition_factor
 
         # 実際の加速度を算出
         actual_acc = accel * max(0.2, adjusted_ratio) * boost
@@ -152,9 +162,19 @@ class RaceProcessor:
         front_right = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
         side_left = ctx[HorseEnvField.DIST_TO_SIDE_LEFT]
         side_right = ctx[HorseEnvField.DIST_TO_SIDE_RIGHT]
+        surface = env[HorseEnvField.SURFACE]
         friction = env[HorseEnvField.FRICTION]
+        condition = env[HorseEnvField.CONDITION]
+
         # 戦略情報
         overtake = tac[HorseTacField.OVERTAKE_DECISION]
+
+        # 馬場状態による補正
+        if surface is RaceSurfaceType.DIRT:
+            condition_factor = DIRT_CONDITION_STAMINA_FACTOR_MAP[condition]
+        else:
+            condition_factor = TURF_CONDITION_STAMINA_FACTOR_MAP[condition]
+
         # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
         base_consumption = next_velocity ** 2
         # 斤量による負荷補正（例: 50kgを基準とする）
@@ -172,8 +192,10 @@ class RaceProcessor:
             wind_factor = 0.9
         elif side_left < 0.5 or side_right < 0.5:
             wind_factor = 1.1
+
         # ステップあたりの消費量
-        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * (1.0 + friction) * weight_load * accel_factor *  sorrounded_factor * wind_factor * dt
+        consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * (1.0 + friction) * condition_factor * weight_load * accel_factor *  sorrounded_factor * wind_factor * dt
+        
         return consumption
 
     @staticmethod

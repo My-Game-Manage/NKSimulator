@@ -33,10 +33,10 @@ class RaceSurfaceType(str, Enum):
     UNKNOWN = "unknown"     # 未定
 
 class TrackConditionType(Enum):
-    STANDARD = "standard"   # 良
+    FIRM = "firm"           # 良
     GOOD = "good"           # 稍良
-    MUDDY = "muddy"         # 重
-    HEAVY = "heavy"         # 不良
+    HEAVY = "heavy"         # 重
+    MUDDY = "muddy"         # 不良
     UNKNOWN = "unknown"     # 未定
 
 class TrackWeatherType(Enum):

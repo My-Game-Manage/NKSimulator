@@ -4,6 +4,7 @@ simulator.py の概要
 レースをシミュレートするための準備（会場データ、馬データ生成）と、Engineを使った実際のシミュレートを行う。
 """
 import logging
+from dataclasses import replace
 
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
@@ -55,6 +56,12 @@ class RaceSimulator(Subject):
         self.post_process()
 
         return True
+    
+    def set_source_race_info(self, race_info: RaceInfo, **conds) -> RaceInfo:
+        """レースの設定を上書きする"""
+        race_prof = race_info.profile
+        update_prof = replace(race_prof, ** conds)
+        return replace(race_info, profile=update_prof)
     
     def _run_single_race(self, race_info: RaceInfo) -> list[RaceSnapshot]:
         """1レースだけ実行"""

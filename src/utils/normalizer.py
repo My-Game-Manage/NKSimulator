@@ -21,12 +21,12 @@ SURFACE_MAP = {
 }
 
 CONDITION_MAP = {
-    "良": TrackConditionType.STANDARD,
+    "良": TrackConditionType.FIRM,
     "稍": TrackConditionType.GOOD,
     "稍重": TrackConditionType.GOOD,
-    "重": TrackConditionType.MUDDY,
-    "不": TrackConditionType.HEAVY,
-    "不良": TrackConditionType.HEAVY,
+    "重": TrackConditionType.HEAVY,
+    "不": TrackConditionType.MUDDY,
+    "不良": TrackConditionType.MUDDY,
     "": TrackConditionType.UNKNOWN,
 }
 
