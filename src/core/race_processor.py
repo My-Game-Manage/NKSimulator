@@ -8,10 +8,10 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.constants.enums import HorseStrategyType, SectionType, SectionName
+from src.constants.enums import HorseStrategyType, SectionType, SectionName, RaceSurfaceType
 from src.constants.fields import HorseEnvField, HorseTacField, HorseOvertake
 from src.models.horse_data import HorseProfile, HorseSnapshot
-from src.models.race_data import TrackSection
+from src.models.race_data import TrackSection, RaceProfile
 import src.core.physics as ph
 from src.constants.constants import STAMINA_DRAIN_COEFFICIENT
 
@@ -184,6 +184,9 @@ class RaceProcessor:
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
         ctx = dist_to_context
+
+        # スタートから5秒まではレーン移動しない
+        if horse_snap.elapsed_time < 5.0: return horse_snap.lane
     
         # 候補となるレーン: [現在のレーン, 左に移動, 右に移動]
         # 0.5刻みなどで計算するとよりスムーズ
@@ -264,3 +267,8 @@ class RaceProcessor:
         
         # それ以外は、脚質ごとの理想地点まで待機
         return remaining_dist <= horse_prof.target_spurt_dist
+
+    @staticmethod
+    def get_friction_factor(race_prof: RaceProfile) -> float:
+        """馬場の基本係数を取得"""
+        return race_prof.surface_friction if race_prof.surface == RaceSurfaceType.DIRT else race_prof.turf_friction

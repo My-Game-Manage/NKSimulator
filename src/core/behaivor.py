@@ -34,6 +34,37 @@ class HorseBehaviorState(ABC):
     def get_strategy(self, horse_prof: HorseProfile) -> RacingStrategy:
         """RacingStrategyを返す"""
         return STRATEGY_MAP[horse_prof.strategy]
+    
+    def get_horse_environment(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot) -> dict:
+        """環境情報の取得"""
+        current_snap = race_snap.horses[horse_id]
+        env = {}
+        # 各情報の取得
+        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
+        env[HorseEnvField.SURFACE] = race_prof.surface
+        env[HorseEnvField.CONDITION] = race_prof.condition
+        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
+        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
+        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
+        env[HorseEnvField.FRICTION] = proc.get_friction_factor(race_prof)
+        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
+        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
+
+        return env
+
+    def get_horse_tactics(self, horse_id: str, strategy: RacingStrategy, race_prof: RaceProfile, race_snap: RaceSnapshot, env: dict) -> dict:
+        """戦略情報の取得"""
+        h_prof = race_prof.horses[horse_id] 
+        current_snap = race_snap.horses[horse_id]
+        # 戦略情報決定
+        tac = {}
+        # 戦略情報取得
+        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
+        tac[HorseTacField.ACCEL_BOOST] = proc.get_start_accel_boost(current_snap)
+        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        return tac
+
 
 # ---------------------------------------------------------
 # 具象Stateクラス：スタート前 (InGate)
@@ -46,22 +77,12 @@ class InGateState(HorseBehaviorState):
         # gate_reactionで距離に補正をかける。高いほど前を取りやすい
         # 脚質取得
         strategy = self.get_strategy(h_prof)
-        # 環境情報の設定
-        env = {}
-        # 環境情報取得
-        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
-        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
-        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
-        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
-        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
-        # 戦略情報決定
-        tac = {}
-        # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = current_snap.lane # proc.get_target_lane(h_prof, current_snap, env)
-        tac[HorseTacField.ACCEL_BOOST] = proc.get_start_accel_boost(current_snap)
-        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        # 環境情報の取得
+        env = self.get_horse_environment(horse_id, race_prof, race_snap)
+        # 戦略情報の取得
+        tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
+
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
@@ -72,8 +93,10 @@ class InGateState(HorseBehaviorState):
         next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
         # StateをStartingに変更
         next_behavior = HorseBehaviorType.STARTING
+
         # 記録用チェックポイントを作成
         checkpoints_time = [0.0 for i in range(race_prof.distance // 100)]
+
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
@@ -99,22 +122,12 @@ class StartingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # 脚質取得
         strategy = self.get_strategy(h_prof)
-        # 環境情報の設定
-        env = {}
-        # 環境情報取得
-        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
-        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
-        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
-        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
-        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
-        # 戦略情報決定
-        tac = {}
-        # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env) if race_snap.elapsed_time > 5.0 else current_snap.lane
-        tac[HorseTacField.ACCEL_BOOST] = proc.get_start_accel_boost(current_snap)
-        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        # 環境情報の取得
+        env = self.get_horse_environment(horse_id, race_prof, race_snap)
+        # 戦略情報の取得
+        tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
+
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
@@ -163,22 +176,12 @@ class SpurtingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # 脚質取得
         strategy = self.get_strategy(h_prof)
-        # 環境情報の設定
-        env = {}
-        # 環境情報取得
-        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
-        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
-        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
-        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
-        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
-        # 戦略情報決定
-        tac = {}
-        # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
-        tac[HorseTacField.ACCEL_BOOST] = proc.get_accel_boost(current_snap)
-        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        # 環境情報の取得
+        env = self.get_horse_environment(horse_id, race_prof, race_snap)
+        # 戦略情報の取得
+        tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
+
         # 各数値を算出
         base_velocity = strategy.get_spurt_speed(h_prof)
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
@@ -234,22 +237,12 @@ class RacingState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # 脚質取得
         strategy = self.get_strategy(h_prof)
-        # 環境情報の設定
-        env = {}
-        # 環境情報取得
-        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
-        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
-        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
-        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
-        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
-        # 戦略情報決定
-        tac = {}
-        # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
-        tac[HorseTacField.ACCEL_BOOST] = proc.get_accel_boost(current_snap)
-        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        # 環境情報の取得
+        env = self.get_horse_environment(horse_id, race_prof, race_snap)
+        # 戦略情報の取得
+        tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
+
         # 各数値を算出
         base_velocity = strategy.get_cruise_speed(h_prof)
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
@@ -310,22 +303,12 @@ class ExhaustedState(HorseBehaviorState):
         current_snap = race_snap.horses[horse_id]
         # 脚質取得
         strategy = self.get_strategy(h_prof)
-        # 環境情報の設定
-        env = {}
-        # 環境情報取得
-        env[HorseEnvField.RACE_DISTANCE] = race_prof.distance
-        env[HorseEnvField.SECTION] = ph.get_current_section(current_snap.distance, race_prof.sections)
-        env[HorseEnvField.DIST_TO_CONTEXT] = ph.get_dist_to_front_context(horse_id, race_snap.horses)
-        env[HorseEnvField.RANK] = race_snap.ranks[horse_id]
-        env[HorseEnvField.FRICTION] = race_prof.surface_friction if race_prof.surface == "ダ" else race_prof.turf_friction
-        env[HorseEnvField.CORNER_RADIUS] = race_prof.corner_radius
-        env[HorseEnvField.NUM_HORSES] = len(race_snap.ranks)
-        # 戦略情報決定
-        tac = {}
-        # 戦略情報取得
-        tac[HorseTacField.TARGET_LANE] = proc.get_target_lane(h_prof, current_snap, env)
-        tac[HorseTacField.ACCEL_BOOST] = proc.get_accel_boost(current_snap)
-        tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
+
+        # 環境情報の取得
+        env = self.get_horse_environment(horse_id, race_prof, race_snap)
+        # 戦略情報の取得
+        tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
+
         # 各数値を算出
         base_velocity = h_prof.min_speed
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)

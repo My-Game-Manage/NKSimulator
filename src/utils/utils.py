@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from src.constants.course_master import CourseSpec, COURSE_MASTER, NAME_TO_COURSE
 from src.constants.course_master import NAME_TO_CODE
+from src.constants.enums import RaceSurfaceType
 
 
 # ---------------------------------------------------------
@@ -146,7 +147,7 @@ def is_valid_course_name(name_input: str) -> bool:
 
 def track_name_from(course_name: str, distance: int, surface: str) -> str:
     """コース構成用の名前取得"""
-    suffix = "" if surface == "ダ" else "_芝"
+    suffix = "" if surface == RaceSurfaceType.DIRT else "_芝"
     return f"{course_name}_{distance}{suffix}"
 
 def checkpoints_from_sections(sections: list) -> list[float]:

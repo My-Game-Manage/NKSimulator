@@ -14,19 +14,18 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 import random
 
-from src.constants.enums import HorseBehaviorType, HorseStrategyType, SectionName
+from src.constants.enums import HorseBehaviorType, HorseStrategyType, SectionName, TrackConditionType, TrackWeatherType, RaceSurfaceType
 from src.constants.fields import RaceProfField, HorseProfField, HorseSnapField
 from src.constants.schema import RaceCol
 from src.models.race_data import RaceInfo, RaceRawData, RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.utils.utils import full_races_csv_filename_from, horse_history_csv_filename_from, race_id_from, track_name_from, checkpoints_from_sections
-from src.utils.normalizer import valid_race_shutuba_df
+from src.utils.normalizer import valid_race_shutuba_df, valid_surface_str, valid_track_condition_str, valid_track_weather_str
 from src.constants.course_master import NAME_TO_COURSE, DEFAULT_COURSE_SPEC_KEY, TRACK_DATA, DEFAULT_TRACK_DATA_KEY, TrackSection
 import src.services.ability_analyzer as abi
 
 
 _DATA_DIR = "data"
-
 
 # ---------------------------------------------------------
 # 基底クラス
@@ -117,7 +116,7 @@ class CSVRaceFactory(RaceFactory):
         logger.info(f"base_prof: {base_prof}")
         prof_param = self._create_profile_param(base_prof[RaceProfField.COURSE.value],
                                                 base_prof[RaceProfField.DISTANCE.value],
-                                                base_prof[RaceProfField.SURFACE.value])
+                                                valid_surface_str(base_prof[RaceProfField.SURFACE.value]))
         distance = base_prof[RaceProfField.DISTANCE.value]
         horses = {}
         for _, row in raw_data.entries.iterrows():
@@ -139,9 +138,9 @@ class CSVRaceFactory(RaceFactory):
             RaceProfField.RACE_NUM.value: raw_data.race_num,
             RaceProfField.NUM_HORSES.value: first_row[RaceCol.NUM_HORSES],
             RaceProfField.DISTANCE.value: first_row[RaceCol.DISTANCE],
-            RaceProfField.SURFACE.value: first_row[RaceCol.SURFACE],
-            RaceProfField.CONDITION.value: first_row[RaceCol.TRACK_CONDITION],
-            RaceProfField.WEATHER.value: first_row[RaceCol.WEATHER],
+            RaceProfField.SURFACE.value: valid_surface_str(first_row[RaceCol.SURFACE]),
+            RaceProfField.CONDITION.value: valid_track_condition_str(first_row[RaceCol.TRACK_CONDITION]),
+            RaceProfField.WEATHER.value: valid_track_weather_str(first_row[RaceCol.WEATHER]),
         }
     
     def _create_profile_param(self, course: str, distance: int, surface: str) -> dict:
@@ -321,9 +320,9 @@ class DebugRaceFactory(RaceFactory):
             race_num=DEBUG_DEFAULTS[RaceProfField.RACE_NUM.value],
             num_horses=num_horses,
             distance=distance,
-            surface=surface,
-            condition=condition,
-            weather=weather,
+            surface=valid_surface_str(surface),
+            condition=valid_track_condition_str(condition),
+            weather=valid_track_weather_str(weather),
             track_width=course_spec.track_width,
             corner_penalty=course_spec.corner_penalty,
             corner_radius=course_spec.corner_radius,

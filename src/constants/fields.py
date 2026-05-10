@@ -125,6 +125,8 @@ class HorseSnapField(str, Enum):
 class HorseEnvField(str, Enum):
     # 環境情報
     RACE_DISTANCE = "race_distance"
+    SURFACE = "surface"
+    CONDITION = "condition"
     SECTION = "section"
     DIST_TO_CONTEXT = "dist_to_context"
     DIST_TO_FRONT = "dist_to_front"

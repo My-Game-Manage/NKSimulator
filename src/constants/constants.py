@@ -6,3 +6,5 @@ constants.py の概要
 
 # スタミナ消費調整用の定数
 STAMINA_DRAIN_COEFFICIENT = 0.075
+
+# 馬場コンディションの係数

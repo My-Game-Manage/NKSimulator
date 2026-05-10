@@ -30,18 +30,21 @@ class RaceSurfaceType(str, Enum):
     DIRT = "dirt"           # ダート
     JUMP = "jump"           # 障害
     DRAFT = "draft"         # ばんえい
+    UNKNOWN = "unknown"     # 未定
 
 class TrackConditionType(Enum):
     STANDARD = "standard"   # 良
     GOOD = "good"           # 稍良
     MUDDY = "muddy"         # 重
     HEAVY = "heavy"         # 不良
+    UNKNOWN = "unknown"     # 未定
 
 class TrackWeatherType(Enum):
     SKY = "sky"             # 晴れ
     CLOUDY = "cloudy"       # 曇り
     RAINY = "rainy"         # 雨
     SNOW = "snow"           # 雪
+    UNKNOWN = "unknown"     # 未定
 
 # ---------------------------------------------------------
 # Horse data
