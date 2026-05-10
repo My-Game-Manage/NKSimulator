@@ -28,9 +28,15 @@ class RaceProcessor:
         corner_radius = env[HorseEnvField.CORNER_RADIUS]
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
+        remain_stamina = horse_snap.stamina
+
         # 必要な戦略情報取得
         target_lane = tac[HorseTacField.TARGET_LANE]
         overtake = tac[HorseTacField.OVERTAKE_DECISION]
+
+        # バテていたら補正
+        stamina_factor = 0.9 if remain_stamina <= 0 else 1.0
+
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = base_velocity
         if overtake is HorseOvertake.OVERTAKE:
@@ -42,7 +48,7 @@ class RaceProcessor:
             # コーナー時は95%にtarget_vを95%にダウン
             target_v *= 0.95
             target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
-        return target_v
+        return target_v * stamina_factor
 
     @staticmethod
     def get_acceleration(target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
@@ -140,7 +146,13 @@ class RaceProcessor:
     def get_next_distance(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, dt: float) -> float:
         # 基本： v_avg = (current_v + next_v) / 2 ※台形近似式
         #   next_dist = v_avg * dt
-        v_avg = (horse_snap.velocity + next_velocity) / 2
+        # 環境情報
+        current_lane = horse_snap.lane
+
+        # レーン補正
+        lane_factor = current_lane * 0.1
+
+        v_avg = (horse_snap.velocity + next_velocity - lane_factor) / 2
         next_distance = v_avg * dt
         return horse_snap.distance + next_distance
 
@@ -187,7 +199,7 @@ class RaceProcessor:
         wind_factor = 1.0
         relevant_dist = min(dist_to_front, front_left, front_right)
         if relevant_dist >= 999:
-            wind_factor = 1.1
+            wind_factor = 1.2
         elif 2.0 < relevant_dist < 5.0:
             wind_factor = 0.9
         elif side_left < 0.5 or side_right < 0.5:
@@ -195,7 +207,7 @@ class RaceProcessor:
 
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * (1.0 + friction) * condition_factor * weight_load * accel_factor *  sorrounded_factor * wind_factor * dt
-        
+
         return consumption
 
     @staticmethod
@@ -277,11 +289,16 @@ class RaceProcessor:
     def should_start_spurt(next_distance: float, next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> bool:
         # 環境情報
         total_dist = env[HorseEnvField.RACE_DISTANCE]
+        section = env[HorseEnvField.SECTION]
         remaining_dist = total_dist - next_distance
+
+        # 最後の直線ならスパート
+        if section is SectionName.HOMESTRETCH:
+            return True
     
         # 物理的な限界点（このままの速度でゴールまでスタミナが持つか？）を計算
         estimated_consumtion_at_spurt = RaceProcessor.get_consumption_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
-        can_run_dist = horse_snap.stamina / (estimated_consumtion_at_spurt / horse_prof.last_3f_speed)
+        can_run_dist = horse_snap.stamina / (estimated_consumtion_at_spurt / (horse_prof.last_3f_speed * 1.2))
     
         # 残り距離が「全力で走れる距離」以下になったら強制スパート
         #if remaining_dist <= can_run_dist:
