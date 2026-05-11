@@ -87,16 +87,37 @@ TRACK_DATA = {
         TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
     ],
     "大井_1200": [
-        TrackSection(SectionType.STRAIGHT, 500, 0, SectionName.STARTING),
-        TrackSection(SectionType.CURVE, 400, 500, SectionName.TURN_3RD_4TH),
-        TrackSection(SectionType.STRAIGHT, 300, 900, SectionName.HOMESTRETCH)
+        # 外回りを使用。最初の直線が長く、3-4角を経て386mの直線へ。
+        TrackSection(SectionType.STRAIGHT, 414, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 400, 414, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 386, 814, SectionName.HOMESTRETCH)
+    ],
+    "大井_1400": [
+        TrackSection(SectionType.STRAIGHT, 712, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 402, 712, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 286, 1114, SectionName.HOMESTRETCH)
     ],
     "大井_1600": [
+        # 内回りを使用。スタート後すぐに1角があるため最初の直線は短い。
         TrackSection(SectionType.STRAIGHT, 200, 0, SectionName.STARTING),
-        TrackSection(SectionType.CURVE, 300, 200, SectionName.TURN_1ST_2ND),
-        TrackSection(SectionType.STRAIGHT, 400, 500, SectionName.BACKSTRETCH),
-        TrackSection(SectionType.CURVE, 400, 900, SectionName.TURN_3RD_4TH),
-        TrackSection(SectionType.STRAIGHT, 300, 1300, SectionName.HOMESTRETCH)
+        TrackSection(SectionType.CURVE, 350, 200, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 414, 550, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 350, 964, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 286, 1314, SectionName.HOMESTRETCH)
+    ],
+    "大井_1800": [
+        TrackSection(SectionType.STRAIGHT, 300, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 312, 300, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 500, 612, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 402, 1112, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 286, 1514, SectionName.HOMESTRETCH)
+    ],
+    "大井_2000": [
+        TrackSection(SectionType.STRAIGHT, 500, 0, SectionName.STARTING),
+        TrackSection(SectionType.CURVE, 312, 500, SectionName.TURN_1ST_2ND),
+        TrackSection(SectionType.STRAIGHT, 500, 812, SectionName.BACKSTRETCH),
+        TrackSection(SectionType.CURVE, 402, 1312, SectionName.TURN_3RD_4TH),
+        TrackSection(SectionType.STRAIGHT, 286, 1714, SectionName.HOMESTRETCH)
     ],
 }
 
