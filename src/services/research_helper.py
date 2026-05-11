@@ -97,108 +97,8 @@ matplotlib.rcParams['font.family'] = 'MS Gothic' # Windowsの場合の例
 
 
 class RaceResultPlotter():
-    def __init__(self, race_profile: RaceProfile, history: list[RaceSnapshot]):
-        self.race_prof = race_profile
-        self.history = history
-
-    def plot_race_distance(self):
-        # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
-        data_log = []
-        for snapshot in self.history:
-            # 各ステップのデータを抽出
-            # ここで「距離」を選択
-            row = {h_id: h_s.distance for h_id, h_s in snapshot.horses.items()}
-            row[RaceSnapField.STEP] = snapshot.step
-            data_log.append(row)
-
-        # 2. DataFrameを作成し、stepをインデックス（横軸）にする
-        df = pd.DataFrame(data_log).set_index(RaceSnapField.STEP)
-
-        title = "Distance"
-        elm_title = "Distance (m)"
-
-        # 3. グラフの描画
-        self.show_plot(title, elm_title, df)
-
-    def plot_race_velocity(self):
-        # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
-        data_log = []
-        for snapshot in self.history:
-            # 各ステップのデータを抽出
-            # ここで「距離」を選択
-            row = {h_id: h_s.velocity for h_id, h_s in snapshot.horses.items()}
-            row[RaceSnapField.STEP] = snapshot.step
-            data_log.append(row)
-
-        # 2. DataFrameを作成し、stepをインデックス（横軸）にする
-        df = pd.DataFrame(data_log).set_index(RaceSnapField.STEP)
-
-        title = "Velocity"
-        elm_title = "Velocity (m/s)"
-
-        # 3. グラフの描画
-        self.show_plot(title, elm_title, df)
-
-    def plot_race_stamina(self):
-        # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
-        data_log = []
-        for snapshot in self.history:
-            # 各ステップのデータを抽出
-            # ここで「距離」を選択
-            row = {h_id: h_s.stamina for h_id, h_s in snapshot.horses.items()}
-            row[RaceSnapField.STEP] = snapshot.step
-            data_log.append(row)
-
-        # 2. DataFrameを作成し、stepをインデックス（横軸）にする
-        df = pd.DataFrame(data_log).set_index(RaceSnapField.STEP)
-
-        title = "Stamina"
-        elm_title = "Stamina (hp)"
-
-        # 3. グラフの描画
-        self.show_plot(title, elm_title, df)
-
-    def plot_race_lane(self):
-        # 1. 履歴リストを、Pandasが扱いやすい「辞書のリスト」に変換
-        data_log = []
-        for snapshot in self.history:
-            # 各ステップのデータを抽出
-            # ここで「距離」を選択
-            row = {h_id: h_s.lane for h_id, h_s in snapshot.horses.items()}
-            row[RaceSnapField.STEP] = snapshot.step
-            data_log.append(row)
-
-        # 2. DataFrameを作成し、stepをインデックス（横軸）にする
-        df = pd.DataFrame(data_log).set_index(RaceSnapField.STEP)
-
-        title = "Lane"
-        elm_title = "Lane (m)"
-
-        # 3. グラフの描画
-        self.show_plot(title, elm_title, df)
-
-    def show_plot(self, title: str, elem_title: str, df: pd.DataFrame):
-        """グラフを描画する"""
-        # 馬名辞書取得
-        horse_names = self.get_horse_names()
-
-        # グラフ描写
-        plt.figure(figsize=(15, 8))
-        ranks = self.history[-1].ranks
-        for horse_id in ranks.keys():
-            plt.plot(df.index, df[horse_id], label=f"H: {horse_names[horse_id]}")
-        
-        plt.title(f"Race Progress ({title})")
-        plt.xlabel("Time Step (dt=0.1)")
-        plt.ylabel(f"{elem_title}")
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left') # 凡例を外側に
-        plt.show()
-    
-    def get_horse_names(self) -> dict:
-        return {h_id: h_prof.name for h_id, h_prof in self.race_prof.horses.items()}
-
-    def plot_race_analysis(self, history: list[RaceSnapshot], profile: RaceProfile, target_field: str = "velocity"):
+    @staticmethod
+    def plot_race_analysis(history: list[RaceSnapshot], profile: RaceProfile, target_field: str = "velocity"):
         """
         指定した項目（velocity, stamina, elapsed_time等）を縦軸に表示する
 
@@ -253,7 +153,8 @@ class RaceResultPlotter():
         plt.tight_layout()
         plt.show()
 
-    def plot_race_rank_history(self, history: list[RaceSnapshot], profile: RaceProfile):
+    @staticmethod
+    def plot_race_rank_history(history: list[RaceSnapshot], profile: RaceProfile):
         """
         RaceSnapshotのranksデータを使用して、各馬の順位推移をグラフ化する
         """

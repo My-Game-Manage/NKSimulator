@@ -94,7 +94,8 @@ class CSVRaceFactory(RaceFactory):
 
     def create_races(self, date: str, course: str, race_nums: list[int]) -> list[RaceInfo]:
         """目的のレース群のRaceInfoリストを作成して取得"""
-        return [self.create_race(date, course, num) for num in race_nums]
+        valid_race_nums = race_nums if race_nums else [i for i in range(1, 13)]
+        return [self.create_race(date, course, num) for num in valid_race_nums]
     
     def create_race(self, date: str, course: str, race_num: int) -> RaceInfo:
         """CSVデータを取得し、Profileを作成する（Snapshotはレース直前に作成するのでここは空）"""
