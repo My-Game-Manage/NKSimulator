@@ -59,21 +59,43 @@ class RaceAnalyer:
             return race_snap
 
     @staticmethod
-    def update_time_at_checkpoints(race_snap :RaceSnapshot) -> RaceSnapshot:
-        """チェックポイント（100m）毎のラップタイムを記録する"""
+    def update_laptime_at_furlong(race_snap :RaceSnapshot) -> RaceSnapshot:
+        """1F（200m）毎のラップタイムを記録する"""
         horses = race_snap.horses
         is_updated = False
         for h_id, h_snap in horses.items():
-            current_distance = int(h_snap.distance // 100)
+            current_distance = int(h_snap.distance // 200)
             if current_distance <= 0: continue
-            if h_snap.distance >= current_distance * 100 and h_snap.checkpoints_time[current_distance - 1] <= 0.0:
+            if h_snap.distance >= current_distance * 200 and h_snap.laptimes[current_distance - 1] <= 0.0:
                 # その地点のラップライムを記録する
-                checkpoints = h_snap.checkpoints_time
-                checkpoints[current_distance - 1] = h_snap.elapsed_time
-                update_snap = replace(h_snap, checkpoints_time=checkpoints)
+                laptimes = h_snap.laptimes
+                laptimes[current_distance - 1] = h_snap.elapsed_time
+                update_snap = replace(h_snap, laptimes=laptimes)
                 horses[h_id] = update_snap
                 is_updated = True
         if is_updated:
             return replace(race_snap, horses=horses)
         else:
             return race_snap
+        
+    @staticmethod
+    def update_checkpoint_rank(checkpoints: list, race_snap: RaceSnapshot) -> RaceSnapshot:
+        """チェックポイント（コーナー）での順位を記録する"""
+        horses = race_snap.horses
+        is_updated = True
+        for h_id, h_snap in horses.items():
+            for idx in range(len(checkpoints)):
+                check_dist = checkpoints[idx]
+                if h_snap.distance >= check_dist and h_snap.checkpoint_ranks[idx] <= 0:
+                    # その地点での順位を記録する
+                    checkpoint_ranks = h_snap.checkpoint_ranks
+                    checkpoint_ranks[idx] = race_snap.ranks[h_id]
+                    update_snap = replace(h_snap, checkpoint_ranks=checkpoint_ranks)
+                    horses[h_id] = update_snap
+                    is_updated = True
+        if is_updated:
+            return replace(race_snap, horses=horses)
+        else:
+            return race_snap
+
+

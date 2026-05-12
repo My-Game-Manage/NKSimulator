@@ -121,15 +121,18 @@ class RaceSaver(RaceObserver):
                 # 結果情報
                 'rank': rank,
                 HorseSnapField.FINISH_TIME: round(h_snap.finish_time, 2) if h_snap.finish_time else 0.0,
-                HorseSnapField.TIME_AT_600M: round(h_snap.time_at_600m, 2) if h_snap.time_at_600m else 0.0,
+                HorseSnapField.LAST_3F: round(h_snap.last_3f, 2) if h_snap.last_3f else 0.0,
                 HorseSnapField.STAMINA: round(h_snap.stamina, 2) if h_snap.stamina else 0.0,
                 HorseSnapField.LANE: round(h_snap.lane, 2),
             }
+            # 通過順位
+            ranks = {'passing_order': "-".join(str(i) for i in h_snap.checkpoint_ranks)}
+            # ラップタイム
             index = 1
-            checkpoints = {}
-            for time in h_snap.checkpoints_time:
-                checkpoints[f"time_at_{index * 100}m"] = round(time, 2) if time else 0.0
+            laptimes = {}
+            for time in h_snap.laptimes:
+                laptimes[f"time_at_{index * 200}m"] = round(time, 2) if time else 0.0
                 index += 1
-            summary_data.append({**base_field, **checkpoints})
+            summary_data.append({**base_field, **ranks, **laptimes})
         # DataFrameに変換して返す
         return pd.DataFrame(summary_data)

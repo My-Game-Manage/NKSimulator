@@ -36,6 +36,7 @@ MANIFEST
 results/
 prepared/
 researchs/
+compared/
 
 # Installer logs
 pip-log.txt

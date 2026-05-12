@@ -94,8 +94,11 @@ class InGateState(HorseBehaviorState):
         # StateをStartingに変更
         next_behavior = HorseBehaviorType.STARTING
 
-        # 記録用チェックポイントを作成
-        checkpoints_time = [0.0 for i in range(race_prof.distance // 100)]
+        # 1F毎のラップタイム用リストを作成
+        laptimes = [0.0 for i in range(race_prof.distance // 200)]
+
+        # チェックポイント通過順位リストを作成
+        checkpoint_ranks = [0 for i in range(len(race_prof.checkpoints))]
 
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
@@ -109,7 +112,8 @@ class InGateState(HorseBehaviorState):
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,
-                       checkpoints_time=checkpoints_time,
+                       laptimes=laptimes,
+                       checkpoint_ranks=checkpoint_ranks,
                        )
 
 
@@ -194,7 +198,7 @@ class SpurtingState(HorseBehaviorState):
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
-        time_at_600m = current_snap.time_at_600m
+        last_3f = None
 
         # ゴール判定　->　ゴールしていたらタイムを計測し状態遷移
         if ph.is_horse_finished(next_distance, race_prof.distance):
@@ -203,7 +207,7 @@ class SpurtingState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
-                time_at_600m = finish_time - current_snap.time_at_600m
+                last_3f = finish_time - current_snap.time_at_600m
             # フラグを調整
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
@@ -224,7 +228,7 @@ class SpurtingState(HorseBehaviorState):
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,
-                       time_at_600m=time_at_600m,
+                       last_3f=last_3f,
                        )
 
 
@@ -255,7 +259,7 @@ class RacingState(HorseBehaviorState):
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
-        time_at_600m = current_snap.time_at_600m
+        last_3f = None
 
         # 4. ゴール判定と状態遷移
         if ph.is_horse_finished(next_distance, race_prof.distance):
@@ -264,7 +268,7 @@ class RacingState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
-                time_at_600m = finish_time - current_snap.time_at_600m
+                last_3f = finish_time - current_snap.time_at_600m
             # フラグを調整
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
@@ -290,7 +294,7 @@ class RacingState(HorseBehaviorState):
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,
-                       time_at_600m=time_at_600m,
+                       last_3f=last_3f,
                        )
 
 
@@ -321,7 +325,7 @@ class ExhaustedState(HorseBehaviorState):
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
-        time_at_600m = current_snap.time_at_600m
+        last_3f = None
 
         # 4. ゴール判定と状態遷移
         if ph.is_horse_finished(next_distance, race_prof.distance):
@@ -330,7 +334,7 @@ class ExhaustedState(HorseBehaviorState):
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
-                time_at_600m = finish_time - current_snap.time_at_600m
+                last_3f = finish_time - current_snap.time_at_600m
             # フラグを調整
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
@@ -350,7 +354,7 @@ class ExhaustedState(HorseBehaviorState):
                        behavior=next_behavior,
                        is_finished=is_finished,
                        finish_time=finish_time,
-                       time_at_600m=time_at_600m,
+                       last_3f=last_3f,
                        )
 
 

@@ -192,18 +192,18 @@ class RaceProcessor:
         # 斤量による負荷補正（例: 50kgを基準とする）
         weight_load = horse_prof.weight_carried / 50.0
         # 加速中なら消費量を増やす
-        accel_factor = 1.3 if next_velocity < horse_snap.velocity else 1.0
+        accel_factor = 1.1 if next_velocity < horse_snap.velocity else 1.0
         # 囲まれていれば消費量を増やす
-        sorrounded_factor = 1.1 if overtake is HorseOvertake.SORROUNDED else 1.0
+        sorrounded_factor = 1.05 if overtake is HorseOvertake.SORROUNDED else 1.0
         # レーンの先頭なら風圧で消費量を増やす
         wind_factor = 1.0
         relevant_dist = min(dist_to_front, front_left, front_right)
         if relevant_dist >= 999:
-            wind_factor = 1.2
+            wind_factor = 1.1
         elif 2.0 < relevant_dist < 5.0:
             wind_factor = 0.9
         elif side_left < 0.5 or side_right < 0.5:
-            wind_factor = 1.1
+            wind_factor = 1.05
 
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * (1.0 + friction) * condition_factor * weight_load * accel_factor *  sorrounded_factor * wind_factor * dt

@@ -80,6 +80,8 @@ class HorseFactory(ABC):
             strategy=stragety,
             is_finished=False,
             finish_time=None,
+            last_3f=None,
+            time_at_600m=None,
         )
 
 

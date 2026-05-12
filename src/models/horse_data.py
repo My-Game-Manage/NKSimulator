@@ -67,8 +67,10 @@ class HorseSnapshot:
     # --- 記録 ---
     is_finished: bool = False
     finish_time: float | None = None
-    time_at_600m: float | None = None
-    checkpoints_time: list[float] = field(default_factory=list)
+    last_3f: float | None = None
+    time_at_600m: float | None = None                           # ゴール前600m地点のタイムを記録＝上り3F用
+    laptimes: list[float] = field(default_factory=list)         # ラップタイム。1F（200m）毎のタイムを記録
+    checkpoint_ranks: list[int] = field(default_factory=list)   # コーナー毎の通過順位を記録
     
     def next_step(self) -> 'HorseSnapshot':
         """ステップだけ更新した新しいStateを返す"""
