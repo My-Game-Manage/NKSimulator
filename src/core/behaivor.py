@@ -187,9 +187,10 @@ class SpurtingState(HorseBehaviorState):
         tac = self.get_horse_tactics(horse_id, strategy, race_prof, race_snap, env)
 
         # 各数値を算出
+        # TODO: accelに1.5をかけているので、そこを別のロジックに
         base_velocity = strategy.get_spurt_speed(h_prof)
         target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac) * 1.5
+        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac)
         next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
         next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
         next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)

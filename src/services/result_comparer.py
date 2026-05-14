@@ -4,6 +4,7 @@ result_comparer.py の概要
 シミュレーション結果と現実の結果を比較する
 """
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 import logging
@@ -52,6 +53,7 @@ class RaceResultComparer:
 
         # 5. 必要なカラムだけ抽出して保存
         result_columns = [
+            'course_sim', 'race_num',
             'horse_id', 'horse_name', 'strategy',
             'rank_actual', 'rank_sim', 'rank_diff',
             'time', 'finish_time', 'time_diff',
@@ -65,3 +67,54 @@ class RaceResultComparer:
     
         comparison_df.to_csv(save_path, index=False, encoding='utf-8-sig')
         logger.info(f"比較結果を {output_csv} に保存しました。")
+
+    @staticmethod
+    def calculate_hybrid_score(compared_csv: str) -> dict:
+        # CSVからDataFrameに変換
+        df = pd.read_csv(RaceResultComparer._RESULT_DIR / compared_csv)
+
+        # 1. 順位相関 (Spearman's rank correlation)
+        #   （相関）が低い場合: 馬の「基礎能力（スピード・スタミナの初期値）」の設定、
+        #   または脚質による有利不利の計算が壊れています
+        # 実際の着順とシミュレーション着順の相関を計算
+        correlation = df['rank_actual'].corr(df['rank_sim'], method='spearman')
+        # -1~1 を 0~40点に変換
+        rank_correlation_score = ((correlation + 1) / 2) * 40
+
+        # 2. 3着以内一致ボーナス
+        #   ここだけが高い場合: 偶然の可能性もありますが、能力上位馬のピックアップはできている状態です
+        top3_actual = set(df.nsmallest(3, 'rank_actual')['horse_id'])
+        top3_sim = set(df.nsmallest(3, 'rank_sim')['horse_id'])
+        match_count = len(top3_actual & top3_sim)
+        betting_score = match_count * 10 # 最大30点
+
+        # 3. タイム乖離ペナルティ (上位5頭の平均誤差で判定)
+        #   （タイム）が低い場合: 物理エンジン（摩擦、スタミナ消費率、中だるみロジックの欠如）に問題があります。
+        # 1秒のズレにつき5点減点（6秒ズレると0点）
+        top5_time_diff = df.nsmallest(5, 'rank_actual')['time_diff'].abs().mean()
+        time_penalty_score = max(0, 30 - (top5_time_diff * 5))
+
+        total_score = rank_correlation_score + betting_score + time_penalty_score
+
+        first_row = df.iloc[0]
+    
+        return {
+            'race_id': Path(compared_csv).stem,
+            'course': first_row['course_sim'],
+            'race_num': first_row['race_num'],
+            'total': round(total_score, 1),
+            'rank_corr': round(rank_correlation_score, 1),
+            'top3_match': betting_score,
+            'time_validity': round(time_penalty_score, 1)
+        }
+    
+    @staticmethod
+    def save_compared_score_csv(output_csv: str, scores: list[dict]):
+        """スコア結果をCSVで保存する"""
+        score_df = pd.DataFrame(scores)
+
+        # ファイル名作成
+        save_path = RaceResultComparer._RESULT_DIR / output_csv
+
+        score_df.to_csv(save_path, index=False, encoding='utf-8-sig')
+        logger.info(f"比較スコアを {output_csv} に保存しました")

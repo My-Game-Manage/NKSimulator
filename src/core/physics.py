@@ -3,10 +3,20 @@ physics.py の概要
 
 レースのシミュレートに関する物理演算を行う関数群。
 """
+import math
+
 from src.models.horse_data import HorseProfile, HorseSnapshot
-from src.constants.enums import SectionName
+from src.constants.enums import SectionName, RaceSurfaceType
 from src.models.race_data import TrackSection
 from src.constants.fields import HorseEnvField
+
+from src.constants.constants import (
+    EXHAUSTED_LIMIT_PERCENT,
+    SAME_LANE_WIDTH, LANE_WIDTH,
+    DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE,
+    RESIST_CORNER_GRAVITY, CORNER_SLOWDOWN_PERCENT,
+    RACE_TIME_AVERAGE_MAP, TURF_TIME_ADJUST, DIRT_TIME_ADJUST,
+)
 
 
 # チェック系
@@ -25,17 +35,18 @@ def is_start_section(distance: float, section: TrackSection) -> bool:
 def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
     """バテ状態かどうか判定する"""
     # 95%をバテの閾値とする
-    return remain_stamina < total_stamina * 0.05
+    return remain_stamina < total_stamina * EXHAUSTED_LIMIT_PERCENT
+
 
 # 要素取得系
 def get_dist_to_front(horse_id: str, horses: dict[str, HorseSnapshot]) -> float:
     """前の馬との距離を返す"""
-    min_dist = 999.0
+    min_dist = DIST_TO_FRONT_MAX
     current_snap = horses[horse_id]
     for h_id, other_snap in horses.items():
         if horse_id == h_id: continue
         # 16レーンあるため、幅 0.5 程度を「同じ進路」とみなす
-        if abs(current_snap.lane - other_snap.lane) < 0.5:
+        if abs(current_snap.lane - other_snap.lane) < SAME_LANE_WIDTH:
             dist = other_snap.distance - current_snap.distance
             if 0 < dist < min_dist:
                 min_dist = dist
@@ -45,11 +56,11 @@ def get_dist_to_front_context(horse_id: str, horses: dict[str, HorseSnapshot]) -
     """周囲の馬との距離を返す"""
     current = horses[horse_id]
     context = {
-        HorseEnvField.DIST_TO_FRONT: 999.0,
-        HorseEnvField.DIST_TO_FRONT_LEFT: 999.0,
-        HorseEnvField.DIST_TO_FRONT_RIGHT: 999.0,
-        HorseEnvField.DIST_TO_SIDE_LEFT: 999.0,
-        HorseEnvField.DIST_TO_SIDE_RIGHT: 999.0
+        HorseEnvField.DIST_TO_FRONT: DIST_TO_FRONT_MAX,
+        HorseEnvField.DIST_TO_FRONT_LEFT: DIST_TO_FRONT_MAX,
+        HorseEnvField.DIST_TO_FRONT_RIGHT: DIST_TO_FRONT_MAX,
+        HorseEnvField.DIST_TO_SIDE_LEFT: DIST_TO_FRONT_MAX,
+        HorseEnvField.DIST_TO_SIDE_RIGHT: DIST_TO_FRONT_MAX,
     }
     
     for h_id, other in horses.items():
@@ -59,18 +70,18 @@ def get_dist_to_front_context(horse_id: str, horses: dict[str, HorseSnapshot]) -
         d_lane = other.lane - current.lane
         
         # 前方 (距離 10m 以内を対象にするなど)
-        if 0 < d_dist < 10.0:
-            if abs(d_lane) < 0.4: # 真前
+        if 0 < d_dist < DIST_FRONT_RANGE:
+            if abs(d_lane) < DIST_RIGHT_IN_FRONT: # 真前
                 context[HorseEnvField.DIST_TO_FRONT] = min(context[HorseEnvField.DIST_TO_FRONT], d_dist)
-            elif -1.2 < d_lane <= -0.4: # 左斜め前
+            elif -DIST_DIAGONALLY_IN_FRONT < d_lane <= -DIST_RIGHT_IN_FRONT: # 左斜め前
                 context[HorseEnvField.DIST_TO_FRONT_LEFT] = min(context[HorseEnvField.DIST_TO_FRONT_LEFT], d_dist)
-            elif 0.4 <= d_lane < 1.2: # 右斜め前
+            elif DIST_RIGHT_IN_FRONT <= d_lane < DIST_DIAGONALLY_IN_FRONT: # 右斜め前
                 context[HorseEnvField.DIST_TO_FRONT_RIGHT] = min(context[HorseEnvField.DIST_TO_FRONT_RIGHT], d_dist)
         
         # 真横 (並走状態の検知)
-        if abs(d_dist) < 1.0:
-            if -1.0 < d_lane < 0: context[HorseEnvField.DIST_TO_SIDE_LEFT] = min(context[HorseEnvField.DIST_TO_SIDE_LEFT], abs(d_lane))
-            if 0 < d_lane < 1.0: context[HorseEnvField.DIST_TO_SIDE_RIGHT] = min(context[HorseEnvField.DIST_TO_SIDE_RIGHT], abs(d_lane))
+        if abs(d_dist) < DIST_BESIDE_RANGE:
+            if -DIST_BESIDE_RANGE < d_lane < 0: context[HorseEnvField.DIST_TO_SIDE_LEFT] = min(context[HorseEnvField.DIST_TO_SIDE_LEFT], abs(d_lane))
+            if 0 < d_lane < DIST_BESIDE_RANGE: context[HorseEnvField.DIST_TO_SIDE_RIGHT] = min(context[HorseEnvField.DIST_TO_SIDE_RIGHT], abs(d_lane))
             
     return context
 
@@ -93,62 +104,58 @@ def calc_next_elapsted_time(current_time: float, dt: float) -> float:
 # 物理演算系
 def calculate_target_velocity_at_corner(target_v: float, radius: float, lane: float, agility: float) -> float:
     # laneが外に行くほど半径が大きくなる = 遠心力が弱まる
-    effective_radius = radius + (lane * 1.0) # 1レーン1mと仮定
+    effective_radius = radius + (lane * LANE_WIDTH) # 1レーン1mと仮定
     
     # 馬の器用さ(agility)に基づいた、耐えられる最大横G
     # 例: agility 1.0 の馬は 3.0 m/s^2 まで耐えられるとする
-    max_lateral_accel = 3.0 * agility 
+    max_lateral_accel = RESIST_CORNER_GRAVITY * agility 
     
     # 遠心力に耐えられる限界速度を算出 (v = sqrt(a * r))
-    limit_velocity = (max_lateral_accel * effective_radius) ** 0.5
+    limit_velocity = math.sqrt(max_lateral_accel * effective_radius)
     
     # 現在の target_velocity が限界を超えていれば制限する
     # 一気に下げず、現在の速度から徐々に近づける（慣性の表現）
     if target_v > limit_velocity:
-        target_v = max(limit_velocity, target_v * 0.98)
+        target_v = max(limit_velocity, target_v * CORNER_SLOWDOWN_PERCENT)
 
     return target_v
 
-def calculate_stamina_consumption(current_speed: float, race_distance: float, total_stamina: float, dt: float) -> float:
+def calculate_stamina_consumption(current_speed: float, race_distance: float, surface: str, total_stamina: float, dt: float) -> float:
     """レース距離からスタミナ消費量を算出"""
     # 1. 基準となる「1秒あたりの消費量」を算出
     # 完走にかかる想定時間 = 距離 / 想定平均速度
     # 1秒あたりの消費 = 最大スタミナ / 想定時間
-    target_avg_speed = get_target_avg_speed(race_distance)
+    target_avg_speed = get_target_avg_speed(race_distance, surface)
     base_consumption_per_sec = total_stamina / (race_distance / target_avg_speed)
     
     # 2. 速度による消費倍率（速度の2乗に比例させるのが一般的）
     # 巡航速度(target_avg_speed)で走っている時は倍率1.0
     speed_ratio = current_speed / target_avg_speed
-    speed_factor = speed_ratio ** 2 
+    speed_factor = math.pow(speed_ratio)
     
     # 3. 基本消費量を返す（ここにFactorをかける）
     consumption = base_consumption_per_sec * speed_factor * dt
     
     return consumption
 
-def get_target_avg_speed(race_distance):
+def get_target_avg_speed(race_distance: float, surface: str):
     """
     レース距離に基づき、基準となる平均速度を取得する
+    TODO: これは今は使われていないが基準平均速度を何かに利用するよう調整
     """
-    # 距離ごとの基準速度テーブル
-    # 距離(m): 速度(m/s)
-    race_settings = {
-        800: 17.8,
-        1600: 16.8,
-        2400: 16.0,
-        3000: 15.5
-    }
+
+    # 芝かダートで補正
+    surface_adjust = DIRT_TIME_ADJUST if surface == RaceSurfaceType.DIRT else TURF_TIME_ADJUST
 
     # 1. 辞書にピッタリの距離がある場合はそれを返す
-    if race_distance in race_settings:
-        return race_settings[race_distance]
+    if race_distance in RACE_TIME_AVERAGE_MAP:
+        return RACE_TIME_AVERAGE_MAP[race_distance] + surface_adjust
 
     # 2. ピッタリがない場合、最も近い距離の設定を探す
     # (例: 1400mなら1600mの設定を採用)
-    closest_distance = min(race_settings.keys(), key=lambda x: abs(x - race_distance))
+    closest_distance = min(RACE_TIME_AVERAGE_MAP.keys(), key=lambda x: abs(x - race_distance))
     
-    return race_settings[closest_distance]
+    return RACE_TIME_AVERAGE_MAP[closest_distance] + surface_adjust
 
 def calculate_acceleration(target_v: float, current_v: float, accel_power: float) -> float:
     """速度と加速能力から加速度を算出"""
@@ -199,8 +206,9 @@ def get_condition_modifier(condition) -> float:
     # TODO：とりあえず現状は1.0を返す
     return 1.0
 
-def calculate_next_velocity(current_v: float, target_v: float, param: HorseProfile, has_stamina: bool, dt: float) -> float:
+def calculate_next_velocity(current_v: float, target_v: float, horse_prof: HorseProfile, has_stamina: bool, dt: float) -> float:
     """
+    TODO: これは古いロジックで今は使われていない。これも取り込むように修正
     加速・減速ロジック
     1. 加速時: 目標速度より遅い場合、acceleration パラメータを使って速度を上げます
     2. 減速時: 目標速度より速い場合（オーバーペースやコーナー進入）、自然減速またはブレーキをかけます
@@ -210,7 +218,7 @@ def calculate_next_velocity(current_v: float, target_v: float, param: HorseProfi
     
     if diff > 0:
         # 加速プロセス
-        accel = param.acceleration
+        accel = horse_prof.acceleration
         if not has_stamina:
             accel *= 0.3  # スタミナ切れなら加速力激減
         next_v = current_v + (accel * dt)

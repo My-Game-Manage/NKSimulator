@@ -4,6 +4,7 @@ race_processor.py の概要
 レース中の各馬の値の処理を行う。
 """
 import logging
+import math
 
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
@@ -15,6 +16,11 @@ from src.models.race_data import TrackSection, RaceProfile
 import src.core.physics as ph
 from src.constants.constants import (
     STAMINA_DRAIN_COEFFICIENT, TURF_CONDITION_ACCEL_FACTOR_MAP, TURF_CONDITION_STAMINA_FACTOR_MAP, DIRT_CONDITION_ACCEL_FACTOR_MAP, DIRT_CONDITION_STAMINA_FACTOR_MAP,
+    TARGET_V_STAMINA_FACTOR, TARGET_V_IN_CORNER_FACTOR, TARGET_V_OVERTAKE_PERCENT, TARGET_V_SORROUNDED_PERCENT,
+    ACCEL_WEIGHT_CARRIED_FACTOR,
+    DISTANCE_LANE_FACTOR,
+    DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE,
+    BASE_LANE_MOVE_SPEED,
 )
 
 
@@ -29,24 +35,25 @@ class RaceProcessor:
         rank = env[HorseEnvField.RANK]
         num_horses = env[HorseEnvField.NUM_HORSES]
         remain_stamina = horse_snap.stamina
+        total_stamina = horse_prof.total_stamina
 
         # 必要な戦略情報取得
         target_lane = tac[HorseTacField.TARGET_LANE]
         overtake = tac[HorseTacField.OVERTAKE_DECISION]
 
         # バテていたら補正
-        stamina_factor = 0.9 if remain_stamina <= 0 else 1.0
+        stamina_factor = TARGET_V_STAMINA_FACTOR if ph.is_exhausted(remain_stamina, total_stamina) else 1.0
 
         # 基本はmax_speed（ベストな巡航速度）を目指す
         target_v = base_velocity
         if overtake is HorseOvertake.OVERTAKE:
-            target_v *= 1.02
+            target_v *= TARGET_V_OVERTAKE_PERCENT
         elif overtake is HorseOvertake.SORROUNDED:
-            target_v *= 0.98
+            target_v *= TARGET_V_SORROUNDED_PERCENT
         if section.type is SectionType.CURVE:
             # コーナーでは係数の分だけ目標速度を減らす->減れば自然と減速
             # コーナー時は95%にtarget_vを95%にダウン
-            target_v *= 0.95
+            target_v *= TARGET_V_IN_CORNER_FACTOR
             target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
         return target_v * stamina_factor
 
@@ -74,10 +81,10 @@ class RaceProcessor:
         # 1. 速度差による加速減衰（目標に近いほど加速を鈍くする）
         diff_ratio = max(0, (target_v - current_v) / (target_v * 0.5)) if target_v > 0 else 0
         # 0.5乗することで、速度差が小さくなっても比率が大きく保たれる
-        adjusted_ratio = diff_ratio ** 0.5
+        adjusted_ratio = math.sqrt(diff_ratio)
 
         # 斤量補正：50kgを基準とし、1kgあたり 0.5% 加速度を低下させる
-        penalty_rate = (horse_prof.weight_carried - 50) * 0.005
+        penalty_rate = (horse_prof.weight_carried - 50) * ACCEL_WEIGHT_CARRIED_FACTOR
         # 芝やダートの上を走る分の係数を引く
         accel = horse_prof.acceleration * (1.0 - penalty_rate) * (1.0 - friction) * condition_factor
 
@@ -150,7 +157,7 @@ class RaceProcessor:
         current_lane = horse_snap.lane
 
         # レーン補正
-        lane_factor = current_lane * 0.1
+        lane_factor = current_lane * DISTANCE_LANE_FACTOR
 
         v_avg = (horse_snap.velocity + next_velocity - lane_factor) / 2
         next_distance = v_avg * dt
@@ -240,19 +247,19 @@ class RaceProcessor:
             d_lane_opt = opt - horse_snap.lane
         
             relevant_dist = 999.0
-            if abs(d_lane_opt) < 0.2: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
-            elif d_lane_opt < -0.2:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
-            elif d_lane_opt > 0.2:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+            if abs(d_lane_opt) < DIST_DIAGONALLY_IN_FRONT: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -DIST_DIAGONALLY_IN_FRONT:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > DIST_DIAGONALLY_IN_FRONT:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
         
-            if relevant_dist < 3.0:
+            if relevant_dist < DIST_RIGHT_IN_FRONT:
                 score += 20.0 # 衝突回避（最優先）
-            elif relevant_dist < 8.0:
+            elif relevant_dist < DIST_FRONT_RANGE:
                 score += 5.0  # 少し詰まっている
             
             # 3. 横に馬がいる場合の移動制限
-            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < 0.8:
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < DIST_BESIDE_RANGE:
                 score += 15.0 # 左に馬がいるので移動しにくい
-            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < 0.8:
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < DIST_BESIDE_RANGE:
                 score += 15.0 # 右に馬がいるので移動しにくい
             
             # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
@@ -276,7 +283,7 @@ class RaceProcessor:
         #       move_dir = 1 if diff > 0 else -1
         #       return current_lane + (move_dir * max_move)
         target_lane = tac[HorseTacField.TARGET_LANE]
-        base_lane_speed = 2.0 * horse_prof.cornering_ability * horse_prof.base_agility
+        base_lane_speed = BASE_LANE_MOVE_SPEED * horse_prof.cornering_ability * horse_prof.base_agility
         max_move = base_lane_speed * dt
         diff = target_lane - horse_snap.lane
         if abs(diff) <= max_move:

@@ -13,7 +13,11 @@ logger = logging.getLogger(__name__)
 from src.constants.schema import RaceCol
 from src.constants.enums import HorseStrategyType
 from src.utils.normalizer import valid_horse_history_df
-
+from src.constants.constants import (
+    DEFAULT_STABILITY, STABILITY_FACTOR_BASE, MIN_STABILITY_FACTOR,
+    SPEED_DIFF_PER_100M, STARTING_TIME_LOSS,
+    SPURT_DIFF_PER_100M,
+)
 
 
 def calculate_min_max_speed(past_records: pd.DataFrame) -> tuple:
@@ -50,7 +54,7 @@ def calculate_stability_factor(past_records: pd.DataFrame) -> float:
     speeds = valid_df['normalized_speed']
     
     if len(speeds) < 3:
-        return 0.90 # データが少ない場合は標準的な値を返す
+        return DEFAULT_STABILITY # データが少ない場合は標準的な値を返す
     
     # 2. 変動係数(CV)の計算
     mean_v = speeds.mean()
@@ -60,10 +64,10 @@ def calculate_stability_factor(past_records: pd.DataFrame) -> float:
     # 3. 係数へのマッピング
     # CVが小さいほど(安定) 0.95 に近く、大きいほど(不安定) 0.85 に近づくよう調整
     # 日本の競馬データだと CV は概ね 0.02〜0.08 程度に収まることが多いです
-    stability_factor = 0.96 - (cv * 1.0) 
+    stability_factor = STABILITY_FACTOR_BASE - (cv * 1.0) 
     
     # 念のため上下限をクリップ
-    return max(0.85, min(0.96, stability_factor))
+    return max(MIN_STABILITY_FACTOR, min(STABILITY_FACTOR_BASE, stability_factor))
 
 def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     """正規化された巡航速度のDataFrameを返す"""
@@ -75,7 +79,7 @@ def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
         # 距離が短いほど速く出るので、その分をマイナス補正
         # 距離が長いほど遅く出るので、その分をプラス補正
         diff_dist = (row[RaceCol.DISTANCE] - 1600) / 100
-        v_norm = v + (diff_dist * 0.15)
+        v_norm = v + (diff_dist * SPEED_DIFF_PER_100M)
     
         return v_norm
     # 不要な値を除去
@@ -88,9 +92,6 @@ def get_race_cruise_speed(base_ability: float, race_distance: float) -> float:
     """
     基準能力値(1600m相当)から、指定された距離の巡航速度を算出する
     """
-    # 100mあたりの速度変化係数 (分析データより)
-    SPEED_DIFF_PER_100M = 0.15
-    
     # 1600mからの乖離距離（100m単位）
     distance_diff_unit = (race_distance - 1600) / 100
     
@@ -103,10 +104,6 @@ def get_race_spurt_speed(base_spurt_ability: float, race_distance: float) -> flo
     """
     基準スパート能力値(1600m相当)から、指定された距離のスパート速度を算出する
     """
-    # 100mあたりのスパート速度変化係数 (分析データより 0.016〜0.02)
-    # 巡航速度(0.15)に比べて、スパート速度は距離の影響を受けにくい
-    SPURT_DIFF_PER_100M = 0.02
-    
     # 1600mからの乖離距離（100m単位）
     distance_diff_unit = (race_distance - 1600) / 100
     
@@ -121,8 +118,7 @@ def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
     # 不要な値を除去
     valid_records = valid_horse_history_df(past_records)
     # タイムから上り3Fを引いたもので計算
-    starting_loss = 1.0
-    speeds = (valid_records[RaceCol.DISTANCE] - 600) / (valid_records[RaceCol.TIME] - valid_records[RaceCol.LAST_3F] - starting_loss)
+    speeds = (valid_records[RaceCol.DISTANCE] - 600) / (valid_records[RaceCol.TIME] - valid_records[RaceCol.LAST_3F] - STARTING_TIME_LOSS)
 
     # 上位3件の平均を取る
     top_3_avg = speeds.nlargest(3).mean()
@@ -132,13 +128,9 @@ def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
 def calculate_normalized_spurt_speed(past_records: pd.DataFrame) -> float:
     def _calc_normalized_spurt_speed(row):
         # 実際のスパート速度 (600m / 上り3Fタイム)
-        v_spurt = 600 / row['last_3f']
+        v_spurt = 600 / row[RaceCol.LAST_3F]
     
-        # 1600mを基準とした補正
-        # スパート速度の減衰係数は巡航速度より小さく、0.02 程度が妥当 (データ分析結果より)
-        SPURT_DIFF_PER_100M = 0.02
-    
-        diff_dist = (row['distance'] - 1600) / 100
+        diff_dist = (row[RaceCol.DISTANCE] - 1600) / 100
         # 短い距離ほど速いタイムが出やすいので、その分をマイナス補正して1600m相当に直す
         v_norm = v_spurt + (diff_dist * SPURT_DIFF_PER_100M)
     
@@ -149,6 +141,7 @@ def calculate_normalized_spurt_speed(past_records: pd.DataFrame) -> float:
     # ベース能力の抽出
     valid_records['norm_spurt_speed'] = valid_records.apply(_calc_normalized_spurt_speed, axis=1)
     base_spurt_ability = valid_records['norm_spurt_speed'].nlargest(3).mean()
+    
     return base_spurt_ability
 
 def calculate_last_3f(past_records: pd.DataFrame) -> float:
