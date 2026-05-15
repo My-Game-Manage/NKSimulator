@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from src.models.race_data import RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
-from src.constants.fields import HorseSnapField, HorseEnvField, HorseTacField
+from src.constants.fields import HorseSnapField, HorseEnvField, HorseTacField, HorseParamField
 from src.constants.enums import HorseBehaviorType
 from src.core.strategy import RacingStrategy, STRATEGY_MAP
 import src.core.physics as ph
@@ -64,6 +64,19 @@ class HorseBehaviorState(ABC):
         tac[HorseTacField.OVERTAKE_DECISION] = strategy.determinate_overtake(h_prof, current_snap, env)
 
         return tac
+    
+    def get_horse_parameter(self, base_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> dict:
+        """パラメータの取得"""
+        param = {}
+        param[HorseParamField.TARGET_V] = target_v = proc.get_target_velocity(base_v, horse_prof, horse_snap, env, tac)
+        param[HorseParamField.ACCEL_P] = accel_power = proc.get_acceleration(target_v, horse_prof, horse_snap, env, tac)
+        param[HorseParamField.NEXT_V] = next_velocity = proc.get_next_velocity(target_v, accel_power, horse_prof, horse_snap, env, tac, dt)
+        param[HorseParamField.NEXT_DIST] = proc.get_next_distance(next_velocity, horse_prof, horse_snap, env, dt)
+        param[HorseParamField.NEXT_STAMINA] = proc.consume_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
+        param[HorseParamField.NEXT_LANE] = proc.get_next_lane(horse_prof, horse_snap, env, tac, dt)
+        param[HorseParamField.ACCEL] = proc.get_actual_accel(next_velocity, horse_snap.velocity)
+
+        return param
 
 
 # ---------------------------------------------------------
@@ -85,30 +98,37 @@ class InGateState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
-        target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac) * h_prof.gate_reaction
-        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
-        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)
-        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
-        # StateをStartingに変更
-        next_behavior = HorseBehaviorType.STARTING
+        base_v_gate_reaction = base_velocity * h_prof.gate_reaction
+
+        param = self.get_horse_parameter(base_v_gate_reaction, h_prof, current_snap, env, tac, dt)
+
+        # ゲートを出ていればStartingに移行
+        next_behavior = current_snap.behavior
+        if ph.is_out_gate(param[HorseParamField.NEXT_DIST]):
+            next_behavior = HorseBehaviorType.STARTING
 
         # 1F毎のラップタイム用リストを作成
-        laptimes = [0.0 for i in range(race_prof.distance // 200)]
+        if not current_snap.laptimes:
+            laptimes = [0.0 for i in range(race_prof.distance // 200)]
+        else:
+            laptimes = current_snap.laptimes
 
         # チェックポイント通過順位リストを作成
-        checkpoint_ranks = [0 for i in range(len(race_prof.checkpoints))]
+        if not current_snap.checkpoint_ranks:
+            checkpoint_ranks = [0 for i in range(len(race_prof.checkpoints))]
+        else:
+            checkpoint_ranks = current_snap.checkpoint_ranks
 
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
-                       accel=accel,
-                       target_velocity=target_v,
-                       velocity=next_velocity,
-                       distance=next_distance,
-                       stamina=next_stamina,
-                       lane=next_lane,
+                       accel_power=param[HorseParamField.ACCEL_P],
+                       accel=param[HorseParamField.ACCEL],
+                       target_velocity=param[HorseParamField.TARGET_V],
+                       velocity=param[HorseParamField.NEXT_V],
+                       distance=param[HorseParamField.NEXT_DIST],
+                       stamina=param[HorseParamField.NEXT_STAMINA],
+                       lane=param[HorseParamField.NEXT_LANE],
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,
@@ -134,27 +154,28 @@ class StartingState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
-        target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac)
-        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
-        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)
-        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
+
+        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+
+        next_v = param[HorseParamField.NEXT_V]
+        next_dist = param[HorseParamField.NEXT_DIST]
 
         next_behavior = current_snap.behavior
 
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
-        if next_velocity >= base_velocity or ph.is_start_section(next_distance, race_prof.sections[1]):
+        if next_v >= base_velocity or ph.is_start_section(next_dist, race_prof.sections[1]):
             next_behavior = HorseBehaviorType.RACING
+        
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
-                       accel=accel,
-                       target_velocity=target_v,
-                       velocity=next_velocity,
-                       distance=next_distance,
-                       stamina=next_stamina,
-                       lane=next_lane,
+                       accel_power=param[HorseParamField.ACCEL_P],
+                       accel=param[HorseParamField.ACCEL],
+                       target_velocity=param[HorseParamField.TARGET_V],
+                       velocity=param[HorseParamField.NEXT_V],
+                       distance=param[HorseParamField.NEXT_DIST],
+                       stamina=param[HorseParamField.NEXT_STAMINA],
+                       lane=param[HorseParamField.NEXT_LANE],
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,
@@ -189,12 +210,11 @@ class SpurtingState(HorseBehaviorState):
         # 各数値を算出
         # TODO: accelに1.5をかけているので、そこを別のロジックに
         base_velocity = strategy.get_spurt_speed(h_prof)
-        target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac)
-        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
-        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)
-        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
+
+        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+
+        next_dist = param[HorseParamField.NEXT_DIST]
+        next_stamina = param[HorseParamField.NEXT_STAMINA]
 
         next_behavior = current_snap.behavior
         is_finished = False
@@ -202,9 +222,9 @@ class SpurtingState(HorseBehaviorState):
         last_3f = None
 
         # ゴール判定　->　ゴールしていたらタイムを計測し状態遷移
-        if ph.is_horse_finished(next_distance, race_prof.distance):
+        if ph.is_horse_finished(next_dist, race_prof.distance):
             # ゴールしていれば時間を記録
-            finish_time = ph.interpolate_goal_time(current_snap.distance, next_distance,
+            finish_time = ph.interpolate_goal_time(current_snap.distance, next_dist,
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
@@ -215,15 +235,17 @@ class SpurtingState(HorseBehaviorState):
         elif ph.is_exhausted(next_stamina, h_prof.total_stamina):
             # バテたので状態遷移
             next_behavior = HorseBehaviorType.EXHAUSTED
+
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
-                       accel=accel,
-                       target_velocity=target_v,
-                       velocity=next_velocity,
-                       distance=next_distance,
-                       stamina=next_stamina,
-                       lane=next_lane,
+                       accel_power=param[HorseParamField.ACCEL_P],
+                       accel=param[HorseParamField.ACCEL],
+                       target_velocity=param[HorseParamField.TARGET_V],
+                       velocity=param[HorseParamField.NEXT_V],
+                       distance=param[HorseParamField.NEXT_DIST],
+                       stamina=param[HorseParamField.NEXT_STAMINA],
+                       lane=param[HorseParamField.NEXT_LANE],
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,
@@ -250,12 +272,12 @@ class RacingState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = strategy.get_cruise_speed(h_prof)
-        target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac)
-        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
-        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)
-        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
+
+        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+
+        next_v = param[HorseParamField.NEXT_V]
+        next_dist = param[HorseParamField.NEXT_DIST]
+        next_stamina = param[HorseParamField.NEXT_STAMINA]
 
         next_behavior = current_snap.behavior
         is_finished = False
@@ -263,9 +285,9 @@ class RacingState(HorseBehaviorState):
         last_3f = None
 
         # 4. ゴール判定と状態遷移
-        if ph.is_horse_finished(next_distance, race_prof.distance):
+        if ph.is_horse_finished(next_dist, race_prof.distance):
             # ゴールしていれば時間を記録
-            finish_time = ph.interpolate_goal_time(current_snap.distance, next_distance,
+            finish_time = ph.interpolate_goal_time(current_snap.distance, next_dist,
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
@@ -273,7 +295,7 @@ class RacingState(HorseBehaviorState):
             # フラグを調整
             is_finished = True
             next_behavior = HorseBehaviorType.FINISHED
-        elif proc.should_start_spurt(next_distance, next_velocity, h_prof, current_snap, env, tac, dt):
+        elif proc.should_start_spurt(next_dist, next_v, h_prof, current_snap, env, tac, dt):
             # スパート開始
             next_behavior = HorseBehaviorType.SPURTING
         elif ph.is_exhausted(next_stamina, h_prof.total_stamina):
@@ -284,12 +306,13 @@ class RacingState(HorseBehaviorState):
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
-                       accel=accel,
-                       target_velocity=target_v,
-                       velocity=next_velocity,
-                       distance=next_distance,
-                       stamina=next_stamina,
-                       lane=next_lane,
+                       accel_power=param[HorseParamField.ACCEL_P],
+                       accel=param[HorseParamField.ACCEL],
+                       target_velocity=param[HorseParamField.TARGET_V],
+                       velocity=param[HorseParamField.NEXT_V],
+                       distance=param[HorseParamField.NEXT_DIST],
+                       stamina=param[HorseParamField.NEXT_STAMINA],
+                       lane=param[HorseParamField.NEXT_LANE],
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,
@@ -316,22 +339,20 @@ class ExhaustedState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = h_prof.min_speed
-        target_v = proc.get_target_velocity(base_velocity, h_prof, current_snap, env, tac)
-        accel = proc.get_acceleration(target_v, h_prof, current_snap, env, tac)
-        next_velocity = proc.get_next_velocity(target_v, accel, h_prof, current_snap, env, tac, dt)
-        next_distance = proc.get_next_distance(next_velocity, h_prof, current_snap, env, dt)
-        next_stamina = proc.consume_stamina(next_velocity, h_prof, current_snap, env, tac, dt)
-        next_lane = proc.get_next_lane(h_prof, current_snap, env, tac, dt)
+
+        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
         
+        next_dist = param[HorseParamField.NEXT_DIST]
+
         next_behavior = current_snap.behavior
         is_finished = False
         finish_time = None
         last_3f = None
 
         # 4. ゴール判定と状態遷移
-        if ph.is_horse_finished(next_distance, race_prof.distance):
+        if ph.is_horse_finished(next_dist, race_prof.distance):
             # ゴールしていれば時間を記録
-            finish_time = ph.interpolate_goal_time(current_snap.distance, next_distance,
+            finish_time = ph.interpolate_goal_time(current_snap.distance, next_dist,
                                                    current_snap.elapsed_time, dt, race_prof.distance)
             # 上り3Fを記録
             if current_snap.time_at_600m:
@@ -344,12 +365,13 @@ class ExhaustedState(HorseBehaviorState):
         return replace(current_snap,
                        step=ph.calc_next_step(current_snap.step),
                        elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
-                       accel=accel,
-                       target_velocity=target_v,
-                       velocity=next_velocity,
-                       distance=next_distance,
-                       stamina=next_stamina,
-                       lane=next_lane,
+                       accel_power=param[HorseParamField.ACCEL_P],
+                       accel=param[HorseParamField.ACCEL],
+                       target_velocity=param[HorseParamField.TARGET_V],
+                       velocity=param[HorseParamField.NEXT_V],
+                       distance=param[HorseParamField.NEXT_DIST],
+                       stamina=param[HorseParamField.NEXT_STAMINA],
+                       lane=param[HorseParamField.NEXT_LANE],
                        dist_to_front=env[HorseEnvField.DIST_TO_CONTEXT][HorseEnvField.DIST_TO_FRONT],
                        section=env[HorseEnvField.SECTION].name,
                        behavior=next_behavior,

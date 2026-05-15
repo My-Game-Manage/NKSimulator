@@ -102,6 +102,7 @@ class HorseSnapField(str, Enum):
     # --- 基本物理量 ---
     STEP = "step"
     ELAPSED_TIME = "elapsed_time"
+    ACCEL_POWER = "accel_power"
     ACCEL = "accel"
     TARGET_VELOCITY = "target_velocity"
     VELOCITY = "velocity"
@@ -148,6 +149,17 @@ class HorseTacField(str, Enum):
     TARGET_LANE = "target_lane"
     ACCEL_BOOST = "accel_boost"
     OVERTAKE_DECISION = "overtake_decision"
+
+class HorseParamField(str, Enum):
+    # 速度
+    TARGET_V = "target_v"
+    ACCEL_P = "accel_p"
+    ACCEL = "accel"
+    # 更新する値
+    NEXT_V = "next_v"
+    NEXT_DIST = "next_dist"
+    NEXT_STAMINA = "next_stamina"
+    NEXT_LANE = "next_lane"
 
 class HorseOvertake(str, Enum):
     # 追い抜き判断

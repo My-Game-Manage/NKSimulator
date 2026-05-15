@@ -11,6 +11,7 @@ from src.models.race_data import TrackSection
 from src.constants.fields import HorseEnvField
 
 from src.constants.constants import (
+    HORSE_BASE_LENGTH,
     EXHAUSTED_LIMIT_PERCENT,
     SAME_LANE_WIDTH, LANE_WIDTH,
     DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE,
@@ -36,6 +37,11 @@ def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
     """バテ状態かどうか判定する"""
     # 95%をバテの閾値とする
     return remain_stamina < total_stamina * EXHAUSTED_LIMIT_PERCENT
+
+def is_out_gate(distance: float) ->bool:
+    """ゲートを出たかどうか"""
+    # 1.0mを出た判定にする
+    return distance >= HORSE_BASE_LENGTH
 
 
 # 要素取得系

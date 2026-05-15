@@ -60,16 +60,7 @@ def normalize_horse_performance(actual_time: float, distance: float, track_condi
     weight_effect_per_kg = 0.15 * (distance / 1600)  # 距離に比例させる
     time_after_weight = actual_time - (weight - 50) * weight_effect_per_kg
     
-    # 2. 距離補正 (1.05乗モデル)
-    dist_factor = (1600 / distance) ** 1.05
-    time_after_dist = time_after_weight * dist_factor
-    
-    # 3. 馬場補正 (良馬場基準)
-    # ※ダートの場合の例
-    condition_offsets = {"良": 0.0, "稍": 0.6, "重": 1.2, "不": 1.8}
-    final_score = time_after_dist + condition_offsets.get(track_condition, 0)
-    
-    return time_after_weight#final_score
+    return time_after_weight
 
 def valid_race_shutuba_df(df: pd.DataFrame) -> pd.DataFrame:
     """出馬表DFを正規化（レース番号）"""

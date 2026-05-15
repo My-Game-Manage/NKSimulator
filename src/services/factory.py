@@ -68,6 +68,7 @@ class HorseFactory(ABC):
             horse_id=horse_id,
             step=0,
             elapsed_time=0.0,
+            accel_power=0.0,
             accel=0.0,
             target_velocity=0.0,
             velocity=0.0,

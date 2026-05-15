@@ -6,6 +6,12 @@ constants.py の概要
 from src.constants.enums import TrackConditionType
 
 # ---------------------------------------------------------
+# Horse - size
+# ---------------------------------------------------------
+HORSE_BASE_LENGTH = 3.0         # 2.8m 〜 3.0m／走行中の前肢・後肢の伸びを考慮。これより詰めすぎると、前の馬の脚に接触する挙動になります。
+HORSE_BASE_SIDE_LENGTH = 0.9    # 0.8m 〜 0.9m／実際の幅（0.7m）に、ジョッキーの膝の張り出しや、左右へのわずかなフラつき分を加味。
+
+# ---------------------------------------------------------
 # Horse - Correct Time
 # ---------------------------------------------------------
 CONDITION_CORRECT_TIME_FACTOR = {
@@ -70,10 +76,10 @@ ACCEL_WEIGHT_CARRIED_FACTOR = 0.005     # 50kgから1kg増える毎の補正
 # ---------------------------------------------------------
 DIST_TO_FRONT_MAX = 999.0       # 前方の初期値（999.0で前の障害物が存在しない
 DIST_FRONT_RANGE = 10.0         # 前に何かある判定のレンジ
-DIST_RIGHT_IN_FRONT = 0.4       # 直前判定
-DIST_DIAGONALLY_IN_FRONT = 1.2  # 斜め前判定の幅
+DIST_RIGHT_IN_FRONT = 1.5       # 直前判定（馬の前後体長の半分に設定）
+DIST_DIAGONALLY_IN_FRONT = 2.5  # 斜め前判定の幅
 DIST_BESIDE_RANGE = 1.0         # 真横判定
-DISTANCE_LANE_FACTOR = 0.1      # レーンによる距離補正
+DISTANCE_LANE_FACTOR = 0.5      # レーンによる距離補正
 
 # ---------------------------------------------------------
 # Lane

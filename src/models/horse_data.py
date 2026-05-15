@@ -50,7 +50,8 @@ class HorseSnapshot:
     # --- 基本物理量 ---
     step: int                   # step数
     elapsed_time: float         # 経過時間
-    accel: float                # 加速度
+    accel_power: float          # 加速力
+    accel: float                # 加速度（実際の加速度）
     target_velocity: float      # 目標速度
     velocity: float             # 現在の速度
     distance: float             # 進んだ距離

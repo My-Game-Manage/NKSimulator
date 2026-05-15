@@ -72,6 +72,7 @@ class ResearchResultSaver(RaceObserver):
                     # 道中情報
                     HorseSnapField.STEP: h_snap.step,
                     HorseSnapField.ELAPSED_TIME: round(h_snap.elapsed_time, 2),
+                    HorseSnapField.ACCEL_POWER: round(h_snap.accel_power, 2),
                     HorseSnapField.ACCEL: round(h_snap.accel, 2),
                     HorseSnapField.TARGET_VELOCITY: round(h_snap.target_velocity, 2),
                     HorseSnapField.VELOCITY: round(h_snap.velocity, 2),

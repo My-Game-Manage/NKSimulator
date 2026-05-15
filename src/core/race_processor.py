@@ -76,7 +76,7 @@ class RaceProcessor:
         # 2. 速度域によるブースト（低速時は強く）
         boost = 1.0
         if accel_boost > 1.0:
-            boost = min(10.0, accel_boost * horse_snap.accel)
+            boost = min(10.0, accel_boost * horse_snap.accel_power)
 
         # 1. 速度差による加速減衰（目標に近いほど加速を鈍くする）
         diff_ratio = max(0, (target_v - current_v) / (target_v * 0.5)) if target_v > 0 else 0
@@ -169,6 +169,11 @@ class RaceProcessor:
         #   cons_stamina = base_compumption * waste_rate * (weight / 50.0) * dt
         consumption = RaceProcessor.get_consumption_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
         return max(0.0, horse_snap.stamina - consumption)
+    
+    @staticmethod
+    def get_actual_accel(next_velocity: float, current_velocity: float) -> float:
+        """加速度を算出"""
+        return next_velocity - current_velocity
     
     @staticmethod
     def get_consumption_stamina(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> float:
