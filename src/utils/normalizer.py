@@ -43,15 +43,33 @@ WEATHER_MAP = {
     "": TrackWeatherType.UNKNOWN,
 }
 
-def get_normalized_base_time(time: float, distance: float, surface: str):
+def get_normalized_base_time(time: float, distance: float, surface: str) -> float:
     """タイムを1600mを基準として補正する"""
     n = DIRT_CORRECT_TIME_FACTOR if surface == "ダ" else TURF_CORRECT_TIME_FACTOR
     return time * ((1600 / distance) ** n)
 
-def correct_surface_effected_time(base_time: float, condition: str, surface: str):
+def correct_surface_effected_time(base_time: float, condition: str, surface: str) -> float:
     """タイムに馬場状態で補正する"""
     mod = 1 if surface == "ダ" else -1
     return base_time + (CONDITION_CORRECT_TIME_FACTOR[condition] * mod)
+
+def normalize_horse_performance(actual_time: float, distance: float, track_condition: str, weight: float) -> float:
+    """タイムに斤量補正をする"""
+    # 1. 斤量補正 (50kg基準)
+    # 50kgより重いほど、タイムを引き下げて(速くして)実力を評価
+    weight_effect_per_kg = 0.15 * (distance / 1600)  # 距離に比例させる
+    time_after_weight = actual_time - (weight - 50) * weight_effect_per_kg
+    
+    # 2. 距離補正 (1.05乗モデル)
+    dist_factor = (1600 / distance) ** 1.05
+    time_after_dist = time_after_weight * dist_factor
+    
+    # 3. 馬場補正 (良馬場基準)
+    # ※ダートの場合の例
+    condition_offsets = {"良": 0.0, "稍": 0.6, "重": 1.2, "不": 1.8}
+    final_score = time_after_dist + condition_offsets.get(track_condition, 0)
+    
+    return time_after_weight#final_score
 
 def valid_race_shutuba_df(df: pd.DataFrame) -> pd.DataFrame:
     """出馬表DFを正規化（レース番号）"""
