@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
 from src.constants.enums import HorseStrategyType
-from src.utils.normalizer import valid_horse_history_df
+from src.utils.normalizer import valid_horse_history_df, get_normalized_base_time, correct_surface_effected_time
 from src.constants.constants import (
     DEFAULT_STABILITY, STABILITY_FACTOR_BASE, MIN_STABILITY_FACTOR,
     SPEED_DIFF_PER_100M, STARTING_TIME_LOSS,
@@ -71,9 +71,17 @@ def calculate_stability_factor(past_records: pd.DataFrame) -> float:
 
 def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     """正規化された巡航速度のDataFrameを返す"""
+    def _calc_normalized_base_time(row):
+        surface = row[RaceCol.SURFACE]
+        valid_time = correct_surface_effected_time(row[RaceCol.TIME], row[RaceCol.TRACK_CONDITION], surface)
+        #base_time = get_normalized_base_time(valid_time, row[RaceCol.DISTANCE], surface)
+        return valid_time
     def _calc_normalized_speed(row):
         # 実際の巡航速度
-        v = (row[RaceCol.DISTANCE] - 600) / (row[RaceCol.TIME] - row[RaceCol.LAST_3F] - 1.5)
+        base_time = _calc_normalized_base_time(row)
+        #v = (row[RaceCol.DISTANCE] - 600) / (row[RaceCol.TIME] - row[RaceCol.LAST_3F] - 1.5)
+        v = (row[RaceCol.DISTANCE] - 600) / (base_time - row[RaceCol.LAST_3F] - 1.5)
+        #v_norm = (1600 - 600) / (base_time - row[RaceCol.LAST_3F] - 1.5)
     
         # 1600mを基準とした補正 (100mあたり0.15m/sの増減)
         # 距離が短いほど速く出るので、その分をマイナス補正

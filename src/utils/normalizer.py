@@ -7,7 +7,10 @@ import pandas as pd
 
 from src.constants.schema import RaceCol
 from src.constants.enums import TrackConditionType, TrackWeatherType, RaceSurfaceType
-
+from src.constants.constants import (
+    TURF_CORRECT_TIME_FACTOR, DIRT_CORRECT_TIME_FACTOR,
+    CONDITION_CORRECT_TIME_FACTOR,
+)
 
 SURFACE_MAP = {
     "芝": RaceSurfaceType.TURF,
@@ -40,6 +43,15 @@ WEATHER_MAP = {
     "": TrackWeatherType.UNKNOWN,
 }
 
+def get_normalized_base_time(time: float, distance: float, surface: str):
+    """タイムを1600mを基準として補正する"""
+    n = DIRT_CORRECT_TIME_FACTOR if surface == "ダ" else TURF_CORRECT_TIME_FACTOR
+    return time * ((1600 / distance) ** n)
+
+def correct_surface_effected_time(base_time: float, condition: str, surface: str):
+    """タイムに馬場状態で補正する"""
+    mod = 1 if surface == "ダ" else -1
+    return base_time + (CONDITION_CORRECT_TIME_FACTOR[condition] * mod)
 
 def valid_race_shutuba_df(df: pd.DataFrame) -> pd.DataFrame:
     """出馬表DFを正規化（レース番号）"""

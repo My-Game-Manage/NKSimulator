@@ -81,12 +81,14 @@ class RaceResultComparer:
         # -1~1 を 0~40点に変換
         rank_correlation_score = ((correlation + 1) / 2) * 40
 
-        # 2. 3着以内一致ボーナス
+        # 2. 3着以内一致ボーナス　→5着以内一致ボーナス
         #   ここだけが高い場合: 偶然の可能性もありますが、能力上位馬のピックアップはできている状態です
-        top3_actual = set(df.nsmallest(3, 'rank_actual')['horse_id'])
-        top3_sim = set(df.nsmallest(3, 'rank_sim')['horse_id'])
+        check_rank = 5
+        rank_point = int(30 / check_rank)
+        top3_actual = set(df.nsmallest(check_rank, 'rank_actual')['horse_id'])
+        top3_sim = set(df.nsmallest(check_rank, 'rank_sim')['horse_id'])
         match_count = len(top3_actual & top3_sim)
-        betting_score = match_count * 10 # 最大30点
+        betting_score = match_count * rank_point # 最大30点
 
         # 3. タイム乖離ペナルティ (上位5頭の平均誤差で判定)
         #   （タイム）が低い場合: 物理エンジン（摩擦、スタミナ消費率、中だるみロジックの欠如）に問題があります。
@@ -104,7 +106,7 @@ class RaceResultComparer:
             'race_num': first_row['race_num'],
             'total': round(total_score, 1),
             'rank_corr': round(rank_correlation_score, 1),
-            'top3_match': betting_score,
+            f'top{check_rank}_match': betting_score,
             'time_validity': round(time_penalty_score, 1)
         }
     

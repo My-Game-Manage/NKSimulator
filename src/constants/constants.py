@@ -5,6 +5,29 @@ constants.py の概要
 """
 from src.constants.enums import TrackConditionType
 
+# ---------------------------------------------------------
+# Horse - Correct Time
+# ---------------------------------------------------------
+CONDITION_CORRECT_TIME_FACTOR = {
+    '良': 0.0,
+    '稍': 0.6,
+    '重': 1.2,
+    '不': 1.8,
+}
+
+DISTANCE_CORRECT_TIME_FACTOR = {
+    800: 2.071,
+    1200: 1.353,
+    1600: 1.000,
+    2000: 0.792,
+    2400: 0.653,
+    3000: 0.518,
+    3600: 0.428,
+}
+
+TURF_CORRECT_TIME_FACTOR = 1.035        # 芝の1600mタイム補正用の係数
+DIRT_CORRECT_TIME_FACTOR = 1.06         # ダートの1600mタイム補正用の係数
+
 
 # ---------------------------------------------------------
 # Horse - Cruise speed
