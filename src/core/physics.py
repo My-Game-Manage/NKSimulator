@@ -33,6 +33,12 @@ def is_start_section(distance: float, section: TrackSection) -> bool:
     """スタートセクションかどうか"""
     return distance >= section.distance
 
+def is_backstretch_section(distance: float, race_distance: float, section: TrackSection) -> bool:
+    """バックストレッチ（中盤）かどうか"""
+    if section.name == SectionName.BACKSTRETCH:
+        return True
+    return race_distance * 0.40 <= distance <= race_distance * 0.60
+
 def is_exhausted(remain_stamina: float, total_stamina: float) -> bool:
     """バテ状態かどうか判定する"""
     # 95%をバテの閾値とする

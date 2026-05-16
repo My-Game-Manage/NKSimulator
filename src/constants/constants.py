@@ -3,7 +3,8 @@ constants.py の概要
 
 各所で利用する定数を定義する。
 """
-from src.constants.enums import TrackConditionType
+from src.constants.enums import TrackConditionType, HorseStrategyType
+
 
 # ---------------------------------------------------------
 # Horse - size
@@ -125,6 +126,30 @@ RACE_TIME_AVERAGE_MAP = {
 TURF_TIME_ADJUST = 0.5  # 芝レースではbase_speedから早くなる
 DIRT_TIME_ADJUST = -0.5 # ダートレースではbase_speedから遅くなる
 
+
+# ---------------------------------------------------------
+# Running Style
+# ---------------------------------------------------------
+CRUISE_SPEED_STYLE_FACTOR = {
+    HorseStrategyType.LEADER: 1.1,
+    HorseStrategyType.STALKER: 1.0,
+    HorseStrategyType.CLOSER: 0.99,
+    HorseStrategyType.REAR: 0.98,
+}
+
+START_SPEED_STYLE_FACTOR = {
+    HorseStrategyType.LEADER: 1.2,
+    HorseStrategyType.STALKER: 1.1,
+    HorseStrategyType.CLOSER: 0.95,
+    HorseStrategyType.REAR: 0.90,
+}
+
+SPURT_SPEED_STYLE_FACTOR = {
+    HorseStrategyType.LEADER: 0.98,
+    HorseStrategyType.STALKER: 0.99,
+    HorseStrategyType.CLOSER: 1.0,
+    HorseStrategyType.REAR: 1.1,
+}
 
 # ---------------------------------------------------------
 # Condition

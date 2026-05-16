@@ -273,6 +273,10 @@ class RacingState(HorseBehaviorState):
         # 各数値を算出
         base_velocity = strategy.get_cruise_speed(h_prof)
 
+        # 中だるみ補正
+        if ph.is_backstretch_section(current_snap.distance, race_prof.distance, env[HorseEnvField.SECTION]):
+            base_velocity *= 0.95
+
         param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
 
         next_v = param[HorseParamField.NEXT_V]

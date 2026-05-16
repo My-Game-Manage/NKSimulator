@@ -15,6 +15,9 @@ from src.constants.fields import HorseEnvField, HorseTacField, HorseOvertake
 from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.models.race_data import TrackSection
 import src.core.physics as ph
+from src.constants.constants import (
+    CRUISE_SPEED_STYLE_FACTOR, START_SPEED_STYLE_FACTOR, SPURT_SPEED_STYLE_FACTOR,
+)
 
 
 
@@ -39,13 +42,13 @@ class RacingStrategy(Protocol):
 # ---------------------------------------------------------
 class LeaderStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 1.1
+        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 1.02
+        return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
     
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * 0.96
+        return horse_prof.last_3f_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> str:
         #環境情報
@@ -98,13 +101,13 @@ class LeaderStrategy:
 # ---------------------------------------------------------
 class StalkerStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 1.05
+        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 1.0
+        return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * 0.98
+        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> str:
         #環境情報
@@ -157,13 +160,13 @@ class StalkerStrategy:
 # ---------------------------------------------------------
 class CloserStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 0.99
+        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 0.98
+        return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * 1.05
+        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> bool:
         #環境情報
@@ -216,13 +219,13 @@ class CloserStrategy:
 # ---------------------------------------------------------
 class RearStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 0.98
+        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * 0.97
+        return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * 1.1
+        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> bool:
         #環境情報
