@@ -239,8 +239,10 @@ class CSVHorseFactory(HorseFactory):
         base_speed = abi.calculate_normalized_speed(history)
         stability_factor = abi.calculate_stability_factor(history)
         base_spurt_speed = abi.calculate_normalized_spurt_speed(history)
+        base_start_speed = abi.calculate_normalized_start_speed(history)
         cruise_speed = abi.get_race_cruise_speed(base_speed, distance)
         last_3f_speed = abi.get_race_spurt_speed(base_spurt_speed, distance)
+        start_speed = abi.get_race_start_speed(base_start_speed, distance)
         min_speed = base_speed * stability_factor
         total_stamina, stamina_waste_rate = abi.calculate_stamina_params(history)
         agi_params = abi.analyze_horse_agility(history)
@@ -251,8 +253,10 @@ class CSVHorseFactory(HorseFactory):
         return {
             HorseProfField.BASE_SPEED: base_speed,
             HorseProfField.BASE_SPURT_SPEED: base_spurt_speed,
+            HorseProfField.BASE_START_SPEED: base_start_speed,
             HorseProfField.CRUISE_SPEED: cruise_speed,
             HorseProfField.LAST_3F_SPEED: last_3f_speed,
+            HorseProfField.START_SPEED: start_speed,
             HorseProfField.MIN_SPEED: min_speed,
             HorseProfField.ACCELERATION: abi.calculate_acceleration(history),
             HorseProfField.TOTAL_STAMINA: total_stamina,
@@ -382,8 +386,10 @@ DEBUG_HORSE_DEFAULTS = {
     HorseProfField.WEIGHT_CARRIED.value: 55.0,
     HorseProfField.BASE_SPEED: 15.0,
     HorseProfField.BASE_SPURT_SPEED: 17.0,
+    HorseProfField.BASE_START_SPEED: 17.0,
     HorseProfField.CRUISE_SPEED.value: 15.0,
     HorseProfField.LAST_3F_SPEED.value: 17.0,
+    HorseProfField.START_SPEED: 17.0,
     HorseProfField.MIN_SPEED.value: 13.0,
     HorseProfField.ACCELERATION.value: 1.2,
     HorseProfField.TOTAL_STAMINA.value: 1800,
@@ -402,8 +408,10 @@ DEBUG_HORSE_ABILITY_MIN_MAX = {
     HorseProfField.HORSE_WEIGHT.value: (350.0, 550.0),
     HorseProfField.BASE_SPEED: (15.0, 17.0),
     HorseProfField.BASE_SPURT_SPEED: (17.0, 18.5),
+    HorseProfField.BASE_START_SPEED: (17.0, 18.5),
     HorseProfField.CRUISE_SPEED.value: (15.0, 17.0),
     HorseProfField.LAST_3F_SPEED.value: (17.0, 18.5),
+    HorseProfField.START_SPEED: (17.0, 18.4),
     HorseProfField.MIN_SPEED.value: (13.5, 15.0),
     HorseProfField.ACCELERATION.value: (0.8, 1.2),
     HorseProfField.TOTAL_STAMINA.value: (1800, 2600),
@@ -427,8 +435,10 @@ class DebugHorseFactory(HorseFactory):
                              weight_carried: float=DEBUG_HORSE_DEFAULTS[HorseProfField.WEIGHT_CARRIED.value],
                              base_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.BASE_SPEED],
                              base_spurt_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.BASE_SPURT_SPEED],
+                             base_start_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.BASE_START_SPEED],
                              cruise_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.CRUISE_SPEED.value],
                              last_3f_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.LAST_3F_SPEED.value],
+                             start_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.START_SPEED],
                              min_speed: float=DEBUG_HORSE_DEFAULTS[HorseProfField.MIN_SPEED.value],
                              acceleration: float=DEBUG_HORSE_DEFAULTS[HorseProfField.ACCELERATION.value],
                              total_stamina: float=DEBUG_HORSE_DEFAULTS[HorseProfField.TOTAL_STAMINA.value],
@@ -451,8 +461,10 @@ class DebugHorseFactory(HorseFactory):
             weight_carried=weight_carried,
             base_speed=base_speed,
             base_spurt_speed=base_spurt_speed,
+            base_start_speed=base_start_speed,
             cruise_speed=cruise_speed,
             last_3f_speed=last_3f_speed,
+            start_speed=start_speed,
             min_speed=min_speed,
             acceleration=acceleration,
             total_stamina=total_stamina,
@@ -528,6 +540,10 @@ class DebugHorseFactory(HorseFactory):
     def create_random_base_spurt_speed(self) -> float:
         return random.uniform(DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.BASE_SPURT_SPEED][0],
                               DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.BASE_SPURT_SPEED][1])
+
+    def create_random_base_start_speed(self) -> float:
+        return random.uniform(DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.BASE_START_SPEED][0],
+                              DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.BASE_START_SPEED][1])
 
     def create_random_cruise_speed(self) -> float:
         return random.uniform(DEBUG_HORSE_ABILITY_MIN_MAX[HorseProfField.CRUISE_SPEED][0],

@@ -42,7 +42,7 @@ class RacingStrategy(Protocol):
 # ---------------------------------------------------------
 class LeaderStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
+        return horse_prof.start_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
@@ -101,7 +101,7 @@ class LeaderStrategy:
 # ---------------------------------------------------------
 class StalkerStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
+        return horse_prof.start_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
@@ -160,7 +160,7 @@ class StalkerStrategy:
 # ---------------------------------------------------------
 class CloserStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
+        return horse_prof.start_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
@@ -219,7 +219,7 @@ class CloserStrategy:
 # ---------------------------------------------------------
 class RearStrategy:
     def get_start_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.cruise_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
+        return horse_prof.start_speed * START_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
     
     def get_cruise_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]

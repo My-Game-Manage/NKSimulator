@@ -17,6 +17,7 @@ from src.constants.constants import (
     DEFAULT_STABILITY, STABILITY_FACTOR_BASE, MIN_STABILITY_FACTOR,
     SPEED_DIFF_PER_100M, STARTING_TIME_LOSS,
     SPURT_DIFF_PER_100M,
+    START_DIFF_PER_100M,
 )
 
 
@@ -45,6 +46,15 @@ def calculate_normalized_speed(past_records: pd.DataFrame) -> float:
 
     return base_ability
 
+def calculate_normalized_start_speed(past_records: pd.DataFrame) -> float:
+    """スタート用の速度を取得する"""
+    valid_records = get_normalized_speed_records(past_records)
+
+    # 正規化されたスタート速度から上位3件の平均を取る
+    start_ability = valid_records['normalized_start_speed'].nlargest(3).mean()
+
+    return start_ability
+
 def calculate_stability_factor(past_records: pd.DataFrame) -> float:
     """
     馬の過去データから、最低速度の係数(0.85〜0.95程度)を算出する
@@ -69,8 +79,8 @@ def calculate_stability_factor(past_records: pd.DataFrame) -> float:
     # 念のため上下限をクリップ
     return max(MIN_STABILITY_FACTOR, min(STABILITY_FACTOR_BASE, stability_factor))
 
-def calculate_normalized_speed_correct_weight_surface(row: pd.Series) -> float:
-    """正規化されたbase_speedを返す"""
+def calculate_normalized_time_as_1600m(row: pd.Series) -> float:
+    """正規化されたbase_timeを返す"""
     # 必要な情報取得
     surface = row[RaceCol.SURFACE]
     condition = row[RaceCol.TRACK_CONDITION]
@@ -85,38 +95,41 @@ def calculate_normalized_speed_correct_weight_surface(row: pd.Series) -> float:
     # 1600m基準で正規化
     norm_time = get_normalized_base_time(valid_time, distance, surface)
 
+    return norm_time
+
+def calculate_normalized_speed_correct_weight_surface(row: pd.Series) -> float:
+    """正規化されたbase_speedを返す"""
+    # 必要な情報取得
+    last_3f = row[RaceCol.LAST_3F]
+
+    norm_time = calculate_normalized_time_as_1600m(row)
+
     norm_v = 1000 / (norm_time - last_3f - 1.5)
 
     return norm_v
 
+def calculate_normalized_start_speed_corrected(row: pd.Series) -> float:
+    """正規化されたstart_speedを返す"""
+    # 必要な情報取得
+    last_3f = row[RaceCol.LAST_3F]
+    num_horses = row[RaceCol.NUM_HORSES]
+    passsing_order = row[RaceCol.PASSING_ORDER]
+    pass_1st = int(passsing_order.split('-')[0])
+
+    norm_time = calculate_normalized_time_as_1600m(row)
+
+    norm_start_v = 1000 / (norm_time - last_3f) * (1 + ((num_horses - pass_1st) / (num_horses - 1)))
+
+    return norm_start_v
+
 def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     """正規化された巡航速度のDataFrameを返す"""
-    def _calc_normalized_base_time(row):
-        surface = row[RaceCol.SURFACE]
-        condition = row[RaceCol.TRACK_CONDITION]
-        valid_time = correct_surface_effected_time(row[RaceCol.TIME], condition, surface)
-        #valid_time = get_normalized_base_time(valid_time, row[RaceCol.DISTANCE], surface)
-        valid_time = normalize_horse_performance(valid_time, row[RaceCol.DISTANCE], condition, row[RaceCol.WEIGHT_CARRIED])
-        return valid_time
-    def _calc_normalized_speed(row):
-        # 実際の巡航速度
-        base_time = _calc_normalized_base_time(row)
-        #v = (row[RaceCol.DISTANCE] - 600) / (row[RaceCol.TIME] - row[RaceCol.LAST_3F] - 1.5)
-        v = (row[RaceCol.DISTANCE] - 600) / (base_time - row[RaceCol.LAST_3F] - 1.5)
-        #v_norm = (1600 - 600) / (base_time - row[RaceCol.LAST_3F] - 1.5)
-    
-        # 1600mを基準とした補正 (100mあたり0.15m/sの増減)
-        # 距離が短いほど速く出るので、その分をマイナス補正
-        # 距離が長いほど遅く出るので、その分をプラス補正
-        diff_dist = (row[RaceCol.DISTANCE] - 1600) / 100
-        v_norm = v + (diff_dist * SPEED_DIFF_PER_100M)
-    
-        return v_norm
     # 不要な値を除去
     valid_records = valid_horse_history_df(past_records)
     
-    #valid_records['normalized_speed'] = valid_records.apply(_calc_normalized_speed, axis=1)
     valid_records['normalized_speed'] = valid_records.apply(calculate_normalized_speed_correct_weight_surface, axis=1)
+    valid_records['normalized_start_speed'] = valid_records.apply(calculate_normalized_start_speed_corrected, axis=1)
+
     return valid_records
 
 def get_race_cruise_speed(base_ability: float, race_distance: float) -> float:
@@ -143,6 +156,19 @@ def get_race_spurt_speed(base_spurt_ability: float, race_distance: float) -> flo
     
     # 短距離ならプラス、長距離ならマイナスに働く
     return base_spurt_ability - adjustment
+
+def get_race_start_speed(base_start_ability: float, race_distance: float) -> float:
+    """
+    基準スタート能力値(1600m相当)から、指定された距離のスパート速度を算出する
+    """
+    # 1600mからの乖離距離（100m単位）
+    distance_diff_unit = (race_distance - 1600) / 100
+    
+    # 調整値の計算
+    adjustment = distance_diff_unit * START_DIFF_PER_100M
+    
+    # 短距離ならプラス、長距離ならマイナスに働く
+    return base_start_ability - adjustment
 
 def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
     """巡航速度を算出して返す"""

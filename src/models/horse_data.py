@@ -23,8 +23,10 @@ class HorseProfile:
     # スピード
     base_speed: float           # 基準速度
     base_spurt_speed: float     # 基準スパート速度
+    base_start_speed: float     # 基準スタート時速度
     cruise_speed: float         # 巡航速度
     last_3f_speed: float        # スパート時速度
+    start_speed: float          # スタート時速度
     min_speed: float            # 最低速度
     acceleration: float         # 加速力
     # スタミナ

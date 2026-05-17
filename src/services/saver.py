@@ -82,8 +82,10 @@ class RaceSaver(RaceObserver):
                 # 基本能力値
                 HorseProfField.BASE_SPEED: h_prof.base_speed,
                 HorseProfField.BASE_SPURT_SPEED: h_prof.base_spurt_speed,
+                HorseProfField.BASE_START_SPEED: h_prof.base_start_speed,
                 HorseProfField.CRUISE_SPEED: h_prof.cruise_speed,
                 HorseProfField.LAST_3F_SPEED: h_prof.last_3f_speed,
+                HorseProfField.START_SPEED: h_prof.start_speed,
                 HorseProfField.MIN_SPEED: h_prof.min_speed,
                 HorseProfField.ACCELERATION: h_prof.acceleration,
                 HorseProfField.TOTAL_STAMINA: h_prof.total_stamina,

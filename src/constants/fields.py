@@ -78,8 +78,10 @@ class HorseProfField(str, Enum):
     # スピード
     BASE_SPEED = "base_speed"
     BASE_SPURT_SPEED = "base_spurt_speed"
+    BASE_START_SPEED = "base_start_speed"
     CRUISE_SPEED = "cruise_speed"
     LAST_3F_SPEED = "last_3f_speed"
+    START_SPEED = "start_speed"
     MIN_SPEED = "min_speed"
     ACCELERATION= "acceleration"
     # スタミナ
