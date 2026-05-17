@@ -75,11 +75,14 @@ ACCEL_WEIGHT_CARRIED_FACTOR = 0.005     # 50kgから1kg増える毎の補正
 # ---------------------------------------------------------
 # Distance
 # ---------------------------------------------------------
+# Dist Context に使う数値
 DIST_TO_FRONT_MAX = 999.0       # 前方の初期値（999.0で前の障害物が存在しない
-DIST_FRONT_RANGE = 10.0         # 前に何かある判定のレンジ
-DIST_RIGHT_IN_FRONT = 1.5       # 直前判定（馬の前後体長の半分に設定）
-DIST_DIAGONALLY_IN_FRONT = 2.5  # 斜め前判定の幅
+DIST_FRONT_RANGE = 15.0         # 前に何かある判定のレンジ
+DIST_RIGHT_IN_FRONT = 0.5       # 直前判定（馬の前後体長の半分に設定）
+DIST_DIAGONALLY_IN_FRONT = 1.5  # 斜め前判定の幅
 DIST_BESIDE_RANGE = 1.0         # 真横判定
+DIST_BESIDE_RANGE_MIN = 0.1     # 真横判定（最小値）
+
 DISTANCE_LANE_FACTOR = 0.5      # レーンによる距離補正
 
 # ---------------------------------------------------------
@@ -88,6 +91,11 @@ DISTANCE_LANE_FACTOR = 0.5      # レーンによる距離補正
 SAME_LANE_WIDTH = 0.5       # 同一レーン判定の幅
 LANE_WIDTH = 1.0            # レーン幅
 BASE_LANE_MOVE_SPEED = 2.0  # レーン移動速度の基礎値
+# Target Laneに使う数値
+RELEVANT_DIST_AREA = 0.2            # 関係判定エリアの数値
+RELEVANT_DIST_JUST_FRONT = 3.0      # 直前判定
+RELEVANT_DIST_AROUND_FRONT = 8.0    # 前方に迫っている判定
+RELEVANT_DIST_BESIDE = 0.8          # 真横判定
 
 # ---------------------------------------------------------
 # Corner
@@ -102,7 +110,7 @@ CORNER_SLOWDOWN_PERCENT = 0.98  # コーナーでの減速％
 STAMINA_DRAIN_COEFFICIENT = 0.075
 
 # バテ状態判定の閾値（残り5%）
-EXHAUSTED_LIMIT_PERCENT = 0.05
+EXHAUSTED_LIMIT_PERCENT = 0.01
 
 # ---------------------------------------------------------
 # Race Time
@@ -149,6 +157,13 @@ SPURT_SPEED_STYLE_FACTOR = {
     HorseStrategyType.STALKER: 0.99,
     HorseStrategyType.CLOSER: 1.0,
     HorseStrategyType.REAR: 1.1,
+}
+
+LONG_SPURT_DISTANCE_AS_STYLE = {
+    HorseStrategyType.LEADER: 700,
+    HorseStrategyType.STALKER: 600,
+    HorseStrategyType.CLOSER: 500,
+    HorseStrategyType.REAR: 450,
 }
 
 # ---------------------------------------------------------

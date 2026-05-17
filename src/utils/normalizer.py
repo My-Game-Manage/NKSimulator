@@ -53,6 +53,15 @@ def correct_surface_effected_time(base_time: float, condition: str, surface: str
     mod = 1 if surface == "ダ" else -1
     return base_time + (CONDITION_CORRECT_TIME_FACTOR[condition] * mod)
 
+def correct_weight_carried_effected_time(base_time: float, distance: float, weight: float) -> float:
+    """タイムに斤量補正をする"""
+    # 1. 斤量補正 (50kg基準)
+    # 50kgより重いほど、タイムを引き下げて(速くして)実力を評価
+    weight_effect_per_kg = 0.15 * (distance / 1600)  # 距離に比例させる
+    time_after_weight = base_time - (weight - 50) * weight_effect_per_kg
+    
+    return time_after_weight
+
 def normalize_horse_performance(actual_time: float, distance: float, track_condition: str, weight: float) -> float:
     """タイムに斤量補正をする"""
     # 1. 斤量補正 (50kg基準)

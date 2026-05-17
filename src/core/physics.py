@@ -14,7 +14,7 @@ from src.constants.constants import (
     HORSE_BASE_LENGTH,
     EXHAUSTED_LIMIT_PERCENT,
     SAME_LANE_WIDTH, LANE_WIDTH,
-    DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE,
+    DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE, DIST_BESIDE_RANGE_MIN,
     RESIST_CORNER_GRAVITY, CORNER_SLOWDOWN_PERCENT,
     RACE_TIME_AVERAGE_MAP, TURF_TIME_ADJUST, DIRT_TIME_ADJUST,
 )
@@ -92,8 +92,8 @@ def get_dist_to_front_context(horse_id: str, horses: dict[str, HorseSnapshot]) -
         
         # 真横 (並走状態の検知)
         if abs(d_dist) < DIST_BESIDE_RANGE:
-            if -DIST_BESIDE_RANGE < d_lane < 0: context[HorseEnvField.DIST_TO_SIDE_LEFT] = min(context[HorseEnvField.DIST_TO_SIDE_LEFT], abs(d_lane))
-            if 0 < d_lane < DIST_BESIDE_RANGE: context[HorseEnvField.DIST_TO_SIDE_RIGHT] = min(context[HorseEnvField.DIST_TO_SIDE_RIGHT], abs(d_lane))
+            if -DIST_BESIDE_RANGE < d_lane < DIST_BESIDE_RANGE_MIN: context[HorseEnvField.DIST_TO_SIDE_LEFT] = min(context[HorseEnvField.DIST_TO_SIDE_LEFT], abs(d_lane))
+            if DIST_BESIDE_RANGE_MIN < d_lane < DIST_BESIDE_RANGE: context[HorseEnvField.DIST_TO_SIDE_RIGHT] = min(context[HorseEnvField.DIST_TO_SIDE_RIGHT], abs(d_lane))
             
     return context
 

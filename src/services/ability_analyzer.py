@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from src.constants.schema import RaceCol
 from src.constants.enums import HorseStrategyType
-from src.utils.normalizer import valid_horse_history_df, get_normalized_base_time, correct_surface_effected_time, normalize_horse_performance
+from src.utils.normalizer import valid_horse_history_df, get_normalized_base_time, correct_surface_effected_time, normalize_horse_performance, correct_weight_carried_effected_time
 from src.constants.constants import (
     DEFAULT_STABILITY, STABILITY_FACTOR_BASE, MIN_STABILITY_FACTOR,
     SPEED_DIFF_PER_100M, STARTING_TIME_LOSS,
@@ -69,13 +69,33 @@ def calculate_stability_factor(past_records: pd.DataFrame) -> float:
     # 念のため上下限をクリップ
     return max(MIN_STABILITY_FACTOR, min(STABILITY_FACTOR_BASE, stability_factor))
 
+def calculate_normalized_speed_correct_weight_surface(row: pd.Series) -> float:
+    """正規化されたbase_speedを返す"""
+    # 必要な情報取得
+    surface = row[RaceCol.SURFACE]
+    condition = row[RaceCol.TRACK_CONDITION]
+    distance = row[RaceCol.DISTANCE]
+    last_3f = row[RaceCol.LAST_3F]
+
+    # 馬場補正
+    valid_time = correct_surface_effected_time(row[RaceCol.TIME], condition, surface)
+    # 斤量補正
+    valid_time = correct_weight_carried_effected_time(valid_time, distance, row[RaceCol.WEIGHT_CARRIED])
+
+    # 1600m基準で正規化
+    norm_time = get_normalized_base_time(valid_time, distance, surface)
+
+    norm_v = 1000 / (norm_time - last_3f - 1.5)
+
+    return norm_v
+
 def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     """正規化された巡航速度のDataFrameを返す"""
     def _calc_normalized_base_time(row):
         surface = row[RaceCol.SURFACE]
         condition = row[RaceCol.TRACK_CONDITION]
         valid_time = correct_surface_effected_time(row[RaceCol.TIME], condition, surface)
-        #base_time = get_normalized_base_time(valid_time, row[RaceCol.DISTANCE], surface)
+        #valid_time = get_normalized_base_time(valid_time, row[RaceCol.DISTANCE], surface)
         valid_time = normalize_horse_performance(valid_time, row[RaceCol.DISTANCE], condition, row[RaceCol.WEIGHT_CARRIED])
         return valid_time
     def _calc_normalized_speed(row):
@@ -95,7 +115,8 @@ def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     # 不要な値を除去
     valid_records = valid_horse_history_df(past_records)
     
-    valid_records['normalized_speed'] = valid_records.apply(_calc_normalized_speed, axis=1)
+    #valid_records['normalized_speed'] = valid_records.apply(_calc_normalized_speed, axis=1)
+    valid_records['normalized_speed'] = valid_records.apply(calculate_normalized_speed_correct_weight_surface, axis=1)
     return valid_records
 
 def get_race_cruise_speed(base_ability: float, race_distance: float) -> float:

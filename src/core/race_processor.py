@@ -21,6 +21,8 @@ from src.constants.constants import (
     DISTANCE_LANE_FACTOR,
     DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE,
     BASE_LANE_MOVE_SPEED,
+    LONG_SPURT_DISTANCE_AS_STYLE,
+    RELEVANT_DIST_AREA, RELEVANT_DIST_JUST_FRONT, RELEVANT_DIST_AROUND_FRONT, RELEVANT_DIST_BESIDE,
 )
 
 
@@ -55,7 +57,7 @@ class RaceProcessor:
             # コーナー時は95%にtarget_vを95%にダウン
             target_v *= TARGET_V_IN_CORNER_FACTOR
             target_v = ph.calculate_target_velocity_at_corner(target_v, corner_radius, horse_snap.lane, horse_prof.cornering_ability)
-        return target_v * stamina_factor
+        return target_v# * stamina_factor
 
     @staticmethod
     def get_acceleration(target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
@@ -155,9 +157,12 @@ class RaceProcessor:
         #   next_dist = v_avg * dt
         # 環境情報
         current_lane = horse_snap.lane
+        section = env[HorseEnvField.SECTION]
 
         # レーン補正
-        lane_factor = current_lane * DISTANCE_LANE_FACTOR
+        lane_factor = 0.0
+        if section.type is SectionType.CURVE or section.name == SectionName.STARTING:
+            lane_factor = current_lane * DISTANCE_LANE_FACTOR
 
         v_avg = (horse_snap.velocity + next_velocity - lane_factor) / 2
         next_distance = v_avg * dt
@@ -214,8 +219,8 @@ class RaceProcessor:
             wind_factor = 1.1
         elif 2.0 < relevant_dist < 5.0:
             wind_factor = 0.9
-        elif side_left < 0.5 or side_right < 0.5:
-            wind_factor = 1.05
+        elif 5.0 <= relevant_dist < 10.0:
+            wind_factor = 0.95
 
         # ステップあたりの消費量
         consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * (1.0 + friction) * condition_factor * weight_load * accel_factor *  sorrounded_factor * wind_factor * dt
@@ -240,7 +245,7 @@ class RaceProcessor:
         lane_scores = {}
 
         for opt in options:
-            if opt < 1.0 or opt > 16.0: continue # コース外
+            if opt < 1.0 or opt > 18.0: continue # コース外
         
             score = 0.0
         
@@ -252,19 +257,19 @@ class RaceProcessor:
             d_lane_opt = opt - horse_snap.lane
         
             relevant_dist = 999.0
-            if abs(d_lane_opt) < DIST_DIAGONALLY_IN_FRONT: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
-            elif d_lane_opt < -DIST_DIAGONALLY_IN_FRONT:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
-            elif d_lane_opt > DIST_DIAGONALLY_IN_FRONT:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
+            if abs(d_lane_opt) < RELEVANT_DIST_AREA: relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT]
+            elif d_lane_opt < -RELEVANT_DIST_AREA:  relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_LEFT]
+            elif d_lane_opt > RELEVANT_DIST_AREA:   relevant_dist = ctx[HorseEnvField.DIST_TO_FRONT_RIGHT]
         
-            if relevant_dist < DIST_RIGHT_IN_FRONT:
+            if relevant_dist < RELEVANT_DIST_JUST_FRONT:
                 score += 20.0 # 衝突回避（最優先）
-            elif relevant_dist < DIST_FRONT_RANGE:
+            elif relevant_dist < RELEVANT_DIST_AROUND_FRONT:
                 score += 5.0  # 少し詰まっている
             
             # 3. 横に馬がいる場合の移動制限
-            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < DIST_BESIDE_RANGE:
+            if d_lane_opt < 0 and ctx[HorseEnvField.DIST_TO_SIDE_LEFT] < RELEVANT_DIST_BESIDE:
                 score += 15.0 # 左に馬がいるので移動しにくい
-            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < DIST_BESIDE_RANGE:
+            if d_lane_opt > 0 and ctx[HorseEnvField.DIST_TO_SIDE_RIGHT] < RELEVANT_DIST_BESIDE:
                 score += 15.0 # 右に馬がいるので移動しにくい
             
             # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
@@ -312,9 +317,9 @@ class RaceProcessor:
         estimated_consumtion_at_spurt = RaceProcessor.get_consumption_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
         can_run_dist = horse_snap.stamina / (estimated_consumtion_at_spurt / (horse_prof.last_3f_speed * 1.2))
     
-        # 残り距離が「全力で走れる距離」以下になったら強制スパート
-        #if remaining_dist <= can_run_dist:
-        #    return True
+        # 残り距離が脚質のロングスパート距離以内＆「全力で走れる距離」以下になったら強制スパート
+        if remaining_dist <= LONG_SPURT_DISTANCE_AS_STYLE[horse_prof.strategy] and remaining_dist <= can_run_dist:
+            return True
         
         # それ以外は、脚質ごとの理想地点まで待機
         return remaining_dist <= horse_prof.target_spurt_dist

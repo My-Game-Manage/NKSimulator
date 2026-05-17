@@ -18,7 +18,6 @@ from src.core.strategy import RacingStrategy, STRATEGY_MAP
 import src.core.physics as ph
 from src.core.race_processor import RaceProcessor as proc
 
-
 # ---------------------------------------------------------
 # Stateパターンの基底クラス
 # ---------------------------------------------------------
