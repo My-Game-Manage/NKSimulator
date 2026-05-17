@@ -165,7 +165,7 @@ class StartingState(HorseBehaviorState):
         next_behavior = current_snap.behavior
 
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
-        if next_v >= base_velocity or not ph.is_start_section(next_dist, race_prof.sections[0]):
+        if next_v >= cruise_velocity or not ph.is_start_section(next_dist, race_prof.sections[0]):
             next_behavior = HorseBehaviorType.RACING
         
         return replace(current_snap,
@@ -279,7 +279,7 @@ class RacingState(HorseBehaviorState):
 
         # 中だるみ補正
         if ph.is_backstretch_section(current_snap.distance, race_prof.distance, env[HorseEnvField.SECTION]):
-            base_velocity *= 0.95
+            base_velocity *= 0.98
 
         param = self.get_horse_parameter(base_velocity, accel_p, h_prof, current_snap, env, tac, dt)
 

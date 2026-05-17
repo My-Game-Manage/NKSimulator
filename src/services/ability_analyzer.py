@@ -119,7 +119,7 @@ def calculate_normalized_start_speed_corrected(row: pd.Series) -> float:
 
     norm_time = calculate_normalized_time_as_1600m(row)
 
-    norm_start_v = 1000 / (norm_time - last_3f) * (0.1 + ((num_horses - pass_1st) / (num_horses - 1)))
+    norm_start_v = 1000 / (norm_time - last_3f) * (1.0 + ((num_horses - pass_1st) / (num_horses - 1)))
 
     return norm_start_v
 
