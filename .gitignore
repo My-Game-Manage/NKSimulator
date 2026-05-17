@@ -35,6 +35,8 @@ MANIFEST
 # 確認用の能力値、結果はひとまず保存しない
 results/
 prepared/
+researchs/
+compared/
 
 # Installer logs
 pip-log.txt

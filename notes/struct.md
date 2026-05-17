@@ -1,5 +1,140 @@
 # ファイルの構成と、簡単なロジックの流れ
 
+# デザインパターンによる再設計
+
+今回導入するのは以下のパターン
+
+- Observer
+- Factory Method
+- State
+
+ObserverはEngineのstep中に、主に物理シミュレーション関連以外を行う。
+実況Observerなら、今1位が入れ替わりました、などのprintが行える
+
+Factory Methodは、テスト用のRaceData作成を行うDebugFactoryを使ってSimulatorを作成すると、
+それででテストが簡易に行いやすい。本番用はCSVFactoryにより、CSVからデータを起こす
+もちろん、一時保存データを利用するなどの応用も考えられる
+
+Stateパターンは、Horseの改良。これまではis_finishedなどをHorseStateに持たせてチェックしていたが、
+ただのデータクラスから、updateによってそのHorseが保持している状態によるmethodが実行されるようになる
+
+つまりHorse.state.updateで、その馬の状態次第の判断と行動が行えるように変化する
+Engine側でそれを負担する必要がなくなる
+
+これを用いて再度設計を行うようにする
+
+## Engineの挙動
+
+Engine内ではstepを実行するだけを行う
+
+engine.step
+
+引数は必要なレースデータと、各馬のパラメータ＋Snapshot
+
+## Snapshot
+
+State→Snapshotへと変更
+
+Stateパターン導入のために名前の混乱を避ける目的
+
+レースのSnapshotに必要なものは何か？
+
+- step
+- elapsed_time
+- ranks
+- horses: HorseSnapshot
+
+馬のSnapshotに必要なものは何か？
+
+- step
+- elapsed_time
+- distance: current
+- lane: current
+- velocity: current
+- stamina: remaining
+- is_finished
+- target_velocity: これいる？（目標値。ここまで上げたい。でもこれは毎回算出されるべき数値では？
+- is_spurting: bool　これも状態。少なくとも馬のフェーズとかモードで対応できる
+- is_exhausted: bool　これも状態。それこそStateで管理できるからいらないかも
+- is_blocked: これ今の状態として毎回判断可能ではある
+- finish_time: これStateに含める必要なくね？（一応あると取り回し便利か
+
+## ファイルを最小構成に一度リセットする
+
+- main
+- src/
+  - simulator
+  - constants/
+    - fields
+    - enums
+    - schema
+  - core/
+    - engine
+    - physics
+    - tactics
+  - models/
+    - race_data
+    - horse_data
+    - behaivor
+    - strategy
+  - services/
+    - factory
+    - analyzer
+    - provider
+    - saver
+
+## Observer欲しいもの
+
+notifyで動作するもの。Event駆動型で欲しいもの
+
+レース中分析はしたい。plotできると便利
+でも記録の時点（update）じゃないと意味がないので、engine内では使えない
+となると、Simulatorに登録する形に
+そもそもSimulatorは（Factory）でコンストラクトする。
+create_raceをする
+sim.factory.create_race
+dateは固定。場所とナンバーはリストにできるが、場所は固定にしてしまうか。大井なら大井だけ、とか。その方が分かりやすい
+
+`sim.factory.create_races(date, course, nums)`
+これで`list[RaceInfo]`を得る。
+
+
+## 設計案
+
+project_root/
+│
+├── data/                  # CSVデータ（RaceDataProviderが参照）
+├── notebooks/             # Jupyter Notebookによる実験場
+│   └── experimental_lab.ipynb
+├── src/
+│   ├── constants/         # 定数（HorseMode, SectionType等）
+│   ├── core/              # シミュレータの心臓部
+│   │   ├── engine.py      # RaceEngine (ObserverのSubject)
+│   │   ├── physics.py     # 物理計算（純粋関数）
+│   │   └── tactics/       # Strategyパターンの実装
+│   │       ├── base.py    # 抽象基底クラス (RunStrategy)
+│   │       ├── front.py   # 逃げ馬のロジック
+│   │       └── closer.py  # 差し馬のロジック
+│   ├── models/            # データ構造 (RaceState, HorseState等)
+│   │   └── behavior.py    # Stateパターンの実装 (RacingState, FinishedState)
+│   ├── services/
+│   │   ├── factory/       # Factory Methodパターンの実装
+│   │   │   ├── base.py    # RaceFactory (抽象)
+│   │   │   ├── csv.py     # CSV読み込み用
+│   │   │   └── debug.py   # Jupyter実験用 (Mockデータ生成)
+│   │   ├── analyzer.py    # Observerの実装 (データ分析・統計)
+│   │   └── saver.py       # Observerの実装 (CSV保存)
+│   └── simulator.py       # 全体を統括するFacade
+└── main.py                # 本番実行用エントリーポイント
+
+## ファイル構成
+
+main
+-> simulator（factory）
+  -> RaceInfo 作成　<<　factory
+
+
+
 main
 -> simulator
     <prepare>
