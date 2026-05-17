@@ -131,7 +131,8 @@ class RaceSaver(RaceObserver):
             index = 1
             laptimes = {}
             for time in h_snap.laptimes:
-                laptimes[f"time_at_{index * 200}m"] = round(time, 2) if time else 0.0
+                actual_time = time - h_snap.laptimes[index - 2] if index > 1 else time
+                laptimes[f"time_at_{index * 200}m"] = round(actual_time, 2) if actual_time else 0.0
                 index += 1
             summary_data.append({**base_field, **ranks, **laptimes})
         # DataFrameに変換して返す

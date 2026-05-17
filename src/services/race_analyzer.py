@@ -67,7 +67,7 @@ class RaceAnalyer:
             current_distance = int(h_snap.distance // 200)
             if current_distance <= 0: continue
             if h_snap.distance >= current_distance * 200 and h_snap.laptimes[current_distance - 1] <= 0.0:
-                # その地点のラップライムを記録する
+                # その地点のラップタイムを記録する
                 laptimes = h_snap.laptimes
                 laptimes[current_distance - 1] = h_snap.elapsed_time
                 update_snap = replace(h_snap, laptimes=laptimes)
