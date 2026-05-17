@@ -28,7 +28,9 @@ class HorseProfile:
     last_3f_speed: float        # スパート時速度
     start_speed: float          # スタート時速度
     min_speed: float            # 最低速度
-    acceleration: float         # 加速力
+    start_acceleration: float   # スタート加速力    
+    spurt_acceleration: float   # スパート加速力
+    cruise_acceleration: float  # 巡航時加速力
     # スタミナ
     total_stamina: float        # 最大スタミナ
     stamina_waste_rate: float   # 消費効率

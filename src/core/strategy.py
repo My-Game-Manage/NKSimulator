@@ -34,6 +34,15 @@ class RacingStrategy(Protocol):
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
         ...
 
+    def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
+        ...
+
+    def get_spurt_acceleration(self, horse_prof: HorseProfile) -> float:
+        ...
+
+    def get_cruise_acceleration(self, horse_prof: HorseProfile) -> float:
+        ...
+
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> bool:
         ...
 
@@ -49,6 +58,15 @@ class LeaderStrategy:
     
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.last_3f_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
+
+    def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.start_acceleration
+    
+    def get_spurt_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.spurt_acceleration
+    
+    def get_cruise_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.cruise_acceleration
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> str:
         #環境情報
@@ -109,6 +127,15 @@ class StalkerStrategy:
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
 
+    def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.start_acceleration
+    
+    def get_spurt_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.spurt_acceleration
+    
+    def get_cruise_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.cruise_acceleration
+
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> str:
         #環境情報
         race_distance = env[HorseEnvField.RACE_DISTANCE]
@@ -168,6 +195,15 @@ class CloserStrategy:
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
 
+    def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.start_acceleration
+    
+    def get_spurt_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.spurt_acceleration
+    
+    def get_cruise_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.cruise_acceleration
+
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> bool:
         #環境情報
         race_distance = env[HorseEnvField.RACE_DISTANCE]
@@ -226,6 +262,15 @@ class RearStrategy:
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
         return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
+
+    def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.start_acceleration
+    
+    def get_spurt_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.spurt_acceleration
+    
+    def get_cruise_acceleration(self, horse_prof: HorseProfile) -> float:
+        return horse_prof.cruise_acceleration
 
     def determinate_overtake(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict) -> bool:
         #環境情報

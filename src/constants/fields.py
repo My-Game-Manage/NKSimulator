@@ -83,7 +83,9 @@ class HorseProfField(str, Enum):
     LAST_3F_SPEED = "last_3f_speed"
     START_SPEED = "start_speed"
     MIN_SPEED = "min_speed"
-    ACCELERATION= "acceleration"
+    START_ACCELERATION= "start_acceleration"
+    SPURT_ACCELERATION= "spurt_acceleration"
+    CRUISE_ACCELERATION= "cruise_acceleration"
     # スタミナ
     TOTAL_STAMINA = "total_stamina"
     STAMINA_WASTE_RATE = "stamina_waste_rate"

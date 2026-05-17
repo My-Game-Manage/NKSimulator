@@ -18,6 +18,8 @@ from src.constants.constants import (
     SPEED_DIFF_PER_100M, STARTING_TIME_LOSS,
     SPURT_DIFF_PER_100M,
     START_DIFF_PER_100M,
+    TURF_LAST_3F_BASELINE, DIRT_LAST_3F_BASELINE,
+    CRUISE_ACCELERATION_RATE,
 )
 
 
@@ -85,7 +87,6 @@ def calculate_normalized_time_as_1600m(row: pd.Series) -> float:
     surface = row[RaceCol.SURFACE]
     condition = row[RaceCol.TRACK_CONDITION]
     distance = row[RaceCol.DISTANCE]
-    last_3f = row[RaceCol.LAST_3F]
 
     # 馬場補正
     valid_time = correct_surface_effected_time(row[RaceCol.TIME], condition, surface)
@@ -118,9 +119,25 @@ def calculate_normalized_start_speed_corrected(row: pd.Series) -> float:
 
     norm_time = calculate_normalized_time_as_1600m(row)
 
-    norm_start_v = 1000 / (norm_time - last_3f) * (1 + ((num_horses - pass_1st) / (num_horses - 1)))
+    norm_start_v = 1000 / (norm_time - last_3f) * (0.1 + ((num_horses - pass_1st) / (num_horses - 1)))
 
     return norm_start_v
+
+def calculate_normalized_spurt_acceleration(row: pd.Series) -> float:
+    """正規化されたspurt_accelを返す"""
+    # 必要な情報取得
+    last_3f = row[RaceCol.LAST_3F]
+    surface = row[RaceCol.SURFACE]
+    distance = row[RaceCol.DISTANCE]
+
+    base_line = get_baseline_3f(distance, surface)
+
+    # 基準タイムよりどれだけ速いかで相対評価
+    # 例: 1600m(基準39.5)で38.5秒なら、差し引き +1.0秒 のアドバンテージ
+    # 1秒速いごとに +0.05
+    accel_power = 1.0 + (base_line - last_3f) * 0.05
+
+    return accel_power
 
 def get_normalized_speed_records(past_records: pd.DataFrame) -> pd.DataFrame:
     """正規化された巡航速度のDataFrameを返す"""
@@ -170,17 +187,22 @@ def get_race_start_speed(base_start_ability: float, race_distance: float) -> flo
     # 短距離ならプラス、長距離ならマイナスに働く
     return base_start_ability - adjustment
 
-def calculate_cruise_speed(past_records: pd.DataFrame) -> float:
-    """巡航速度を算出して返す"""
-    # 不要な値を除去
-    valid_records = valid_horse_history_df(past_records)
-    # タイムから上り3Fを引いたもので計算
-    speeds = (valid_records[RaceCol.DISTANCE] - 600) / (valid_records[RaceCol.TIME] - valid_records[RaceCol.LAST_3F] - STARTING_TIME_LOSS)
-
-    # 上位3件の平均を取る
-    top_3_avg = speeds.nlargest(3).mean()
-
-    return top_3_avg
+def get_baseline_3f(distance: float, surface: str) -> float:
+    """レース距離に応じた上り3Fの基準を返す"""
+    if surface == 'ダ':
+        # ダート（大井など）
+        if distance <= 1200: return DIRT_LAST_3F_BASELINE[1200]
+        elif distance <= 1400: return DIRT_LAST_3F_BASELINE[1400]
+        elif distance <= 1600: return DIRT_LAST_3F_BASELINE[1600]
+        elif distance <= 1800: return DIRT_LAST_3F_BASELINE[1800]
+        else: return DIRT_LAST_3F_BASELINE[2000]
+    else:
+        # 芝は全体的にダートより2〜3秒速い
+        if distance <= 1200: return TURF_LAST_3F_BASELINE[1200]
+        elif distance <= 1400: return TURF_LAST_3F_BASELINE[1400]
+        elif distance <= 1600: return TURF_LAST_3F_BASELINE[1600]
+        elif distance <= 1800: return TURF_LAST_3F_BASELINE[1800]
+        else: return TURF_LAST_3F_BASELINE[2000]
 
 def calculate_normalized_spurt_speed(past_records: pd.DataFrame) -> float:
     def _calc_normalized_spurt_speed(row):
@@ -210,6 +232,62 @@ def calculate_last_3f(past_records: pd.DataFrame) -> float:
     top_3_avg = last_3fs.nlargest(3).mean()
 
     return top_3_avg
+
+def calculate_spurt_acceleration(past_records: pd.DataFrame) -> float:
+    """スパート用の加速力を返す"""
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+
+    valid_records['spurt_accel'] = valid_records.apply(calculate_normalized_spurt_acceleration, axis=1)
+
+    spurt_power = valid_records['spurt_accel'].nlargest(3).mean()
+
+    return spurt_power
+
+def calculate_dash_score(row: pd.Series) -> float:
+    """通貨順から指数を返す"""
+    first_pos = float(str(row[RaceCol.PASSING_ORDER]).split('-')[0])
+    num_horses = float(row[RaceCol.NUM_HORSES])
+
+    # 1.0(最前列) 〜 0.0(最後方) のダッシュスコア
+    score = (num_horses - first_pos) / (num_horses - 1)
+
+    return score
+
+def calculate_start_acceleration(past_records: pd.DataFrame) -> float:
+    """スタート用の加速力を返す"""
+    # 不要な値を除去
+    valid_records = valid_horse_history_df(past_records)
+
+    valid_records['dash_score'] = valid_records.apply(calculate_dash_score, axis=1)
+
+    # レースごとのダッシュスコアの平均（デフォルトは中団の 0.5）
+    avg_dash_score = valid_records['dash_score'].mean()
+
+    # 馬体重と斤量による物理的な「パワー（筋肉量）/ 重量」の補正
+    # 地方・ダートでは特に馬体重が重い（筋肉がある）ほうがスタートダッシュが効く傾向があります
+    avg_weight = valid_records[RaceCol.HORSE_WEIGHT].mean()
+    avg_carried = valid_records[RaceCol.WEIGHT_CARRIED].mean()
+
+    # 重量の基準値を設定 (例: 馬体重470kg, 斤量55kg を基準の 1.0 と想定)
+    weight_factor = 1.0
+    if pd.notna(avg_weight) and avg_weight > 0:
+        # 馬体重が重いほどプラス、斤量が重いほどマイナス
+        weight_factor = (avg_weight / 470.0) - ((avg_carried - 55.0) * 0.01)
+        # 補正が極端になりすぎないようクリッピング (0.9 〜 1.1)
+        weight_factor = max(0.9, min(1.1, weight_factor))
+        
+    # ベースのスタート加速度を計算
+    # ダッシュスコアが 1.0（常にハナ）なら +0.15、0.0（常に出遅れ・後方）なら -0.15
+    start_accel = 1.0 + (avg_dash_score - 0.5) * 0.30
+    # 物理補正を乗算
+    start_accel *= weight_factor
+
+    return max(0.5, start_accel)
+
+def get_race_cruise_acceleration(base_ability: float) -> float:
+    """巡航時の加速力を返す"""
+    return base_ability * CRUISE_ACCELERATION_RATE
 
 def calculate_acceleration(past_records: pd.DataFrame) -> float:
     # 不要な値を除去

@@ -60,7 +60,7 @@ class RaceProcessor:
         return target_v# * stamina_factor
 
     @staticmethod
-    def get_acceleration(target_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
+    def get_acceleration(target_v: float, acceleration: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict) -> float:
         # 基本： accel = acceleration * factor
         # 環境変数を取得
         accel_boost = tac[HorseTacField.ACCEL_BOOST]
@@ -88,7 +88,7 @@ class RaceProcessor:
         # 斤量補正：50kgを基準とし、1kgあたり 0.5% 加速度を低下させる
         penalty_rate = (horse_prof.weight_carried - 50) * ACCEL_WEIGHT_CARRIED_FACTOR
         # 芝やダートの上を走る分の係数を引く
-        accel = horse_prof.acceleration * (1.0 - penalty_rate) * (1.0 - friction) * condition_factor
+        accel = acceleration * (1.0 - penalty_rate) * (1.0 - friction) * condition_factor
 
         # 実際の加速度を算出
         actual_acc = accel * max(0.2, adjusted_ratio) * boost

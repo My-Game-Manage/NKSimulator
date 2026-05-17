@@ -64,11 +64,11 @@ class HorseBehaviorState(ABC):
 
         return tac
     
-    def get_horse_parameter(self, base_v: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> dict:
+    def get_horse_parameter(self, base_v: float, accel_p: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: dict, tac: dict, dt: float) -> dict:
         """パラメータの取得"""
         param = {}
         param[HorseParamField.TARGET_V] = target_v = proc.get_target_velocity(base_v, horse_prof, horse_snap, env, tac)
-        param[HorseParamField.ACCEL_P] = accel_power = proc.get_acceleration(target_v, horse_prof, horse_snap, env, tac)
+        param[HorseParamField.ACCEL_P] = accel_power = proc.get_acceleration(target_v, accel_p, horse_prof, horse_snap, env, tac)
         param[HorseParamField.NEXT_V] = next_velocity = proc.get_next_velocity(target_v, accel_power, horse_prof, horse_snap, env, tac, dt)
         param[HorseParamField.NEXT_DIST] = proc.get_next_distance(next_velocity, horse_prof, horse_snap, env, dt)
         param[HorseParamField.NEXT_STAMINA] = proc.consume_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
@@ -98,8 +98,9 @@ class InGateState(HorseBehaviorState):
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
         base_v_gate_reaction = base_velocity * h_prof.gate_reaction
+        accel_p = strategy.get_start_acceleration(h_prof)
 
-        param = self.get_horse_parameter(base_v_gate_reaction, h_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(base_v_gate_reaction, accel_p, h_prof, current_snap, env, tac, dt)
 
         # ゲートを出ていればStartingに移行
         next_behavior = current_snap.behavior
@@ -153,8 +154,10 @@ class StartingState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = strategy.get_start_speed(h_prof)
+        cruise_velocity = strategy.get_cruise_speed(h_prof)
+        accel_p = strategy.get_start_acceleration(h_prof)
 
-        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(base_velocity, accel_p, h_prof, current_snap, env, tac, dt)
 
         next_v = param[HorseParamField.NEXT_V]
         next_dist = param[HorseParamField.NEXT_DIST]
@@ -162,7 +165,7 @@ class StartingState(HorseBehaviorState):
         next_behavior = current_snap.behavior
 
         # 巡航速度に近づく、スタート区間が終わる、100mを超える、とレース中に状態遷移
-        if next_v >= base_velocity or ph.is_start_section(next_dist, race_prof.sections[1]):
+        if next_v >= base_velocity or not ph.is_start_section(next_dist, race_prof.sections[0]):
             next_behavior = HorseBehaviorType.RACING
         
         return replace(current_snap,
@@ -209,8 +212,9 @@ class SpurtingState(HorseBehaviorState):
         # 各数値を算出
         # TODO: accelに1.5をかけているので、そこを別のロジックに
         base_velocity = strategy.get_spurt_speed(h_prof)
+        accel_p = strategy.get_spurt_acceleration(h_prof)
 
-        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(base_velocity, accel_p, h_prof, current_snap, env, tac, dt)
 
         next_dist = param[HorseParamField.NEXT_DIST]
         next_stamina = param[HorseParamField.NEXT_STAMINA]
@@ -271,12 +275,13 @@ class RacingState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = strategy.get_cruise_speed(h_prof)
+        accel_p = strategy.get_cruise_acceleration(h_prof)
 
         # 中だるみ補正
         if ph.is_backstretch_section(current_snap.distance, race_prof.distance, env[HorseEnvField.SECTION]):
             base_velocity *= 0.95
 
-        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(base_velocity, accel_p, h_prof, current_snap, env, tac, dt)
 
         next_v = param[HorseParamField.NEXT_V]
         next_dist = param[HorseParamField.NEXT_DIST]
@@ -342,8 +347,9 @@ class ExhaustedState(HorseBehaviorState):
 
         # 各数値を算出
         base_velocity = h_prof.min_speed
+        accel_p = strategy.get_cruise_acceleration(h_prof)
 
-        param = self.get_horse_parameter(base_velocity, h_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(base_velocity, accel_p, h_prof, current_snap, env, tac, dt)
         
         next_dist = param[HorseParamField.NEXT_DIST]
 

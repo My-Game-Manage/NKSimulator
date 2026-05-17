@@ -31,7 +31,7 @@ def is_spurt_distance(distance: float, spurt_dist: float, race_distance: float) 
 
 def is_start_section(distance: float, section: TrackSection) -> bool:
     """スタートセクションかどうか"""
-    return distance >= section.distance
+    return distance <= section.distance
 
 def is_backstretch_section(distance: float, race_distance: float, section: TrackSection) -> bool:
     """バックストレッチ（中盤）かどうか"""
@@ -217,26 +217,3 @@ def get_condition_modifier(condition) -> float:
     """コンディションによる補正数値を返す"""
     # TODO：とりあえず現状は1.0を返す
     return 1.0
-
-def calculate_next_velocity(current_v: float, target_v: float, horse_prof: HorseProfile, has_stamina: bool, dt: float) -> float:
-    """
-    TODO: これは古いロジックで今は使われていない。これも取り込むように修正
-    加速・減速ロジック
-    1. 加速時: 目標速度より遅い場合、acceleration パラメータを使って速度を上げます
-    2. 減速時: 目標速度より速い場合（オーバーペースやコーナー進入）、自然減速またはブレーキをかけます
-    3. スタミナ影響: スタミナが切れている場合、加速力が大幅に落ち、目標速度自体も強制的に下方修正されます
-    """
-    diff = target_v - current_v
-    
-    if diff > 0:
-        # 加速プロセス
-        accel = horse_prof.acceleration
-        if not has_stamina:
-            accel *= 0.3  # スタミナ切れなら加速力激減
-        next_v = current_v + (accel * dt)
-        return min(next_v, target_v) # 目標は超えない
-    else:
-        # 減速プロセス（自然減速は加速より速いのが一般的）
-        decel = 2.0  # 固定値またはパラメータ
-        next_v = current_v - (decel * dt)
-        return max(next_v, target_v) # 目標よりは下がらない
