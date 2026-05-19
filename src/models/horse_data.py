@@ -17,13 +17,14 @@ class HorseProfile:
     bracket_num: int
     horse_num: int
     jockey: str                 # ジョッキー名
+    sex: str                    # 性別
     horse_weight: float         # 馬体重（未発表時は近走平均）
     weight_carried: float       # 斤量
     # 能力値
     # 1. 速度系（Speed & Acceleration）
     start_speed: float          # (m/s)スタート時速度＞12.0 〜 14.5
     cruise_speed: float         # (m/s)巡航速度＞15.0 〜 16.5
-    last_3f_speed: float        # (m/s)スパート時速度＞17.0 〜 18.5
+    spurt_speed: float          # (m/s)スパート時速度＞17.0 〜 18.5
     start_acceleration: float   # (m/s²)スタート加速力＞2.5 〜 3.5
     cruise_acceleration: float  # (m/s²)巡航時加速力＞0.4 〜 0.6
     spurt_acceleration: float   # (m/s²)スパート時加速力＞0.8 〜 1.2
@@ -58,23 +59,28 @@ class HorseSnapshot:
     # 認識用
     horse_id: str
     # --- 基本物理量 ---
-    step: int                   # step数
-    elapsed_time: float         # 経過時間
-    accel_power: float          # 加速力
-    accel: float                # 加速度（実際の加速度）
-    target_velocity: float      # 目標速度
-    velocity: float             # 現在の速度
-    distance: float             # 進んだ距離
+    step: int                   # (pt)step数
+    elapsed_time: float         # (msec)経過時間
+    accel_power: float          # (m/s²)加速力
+    accel: float                # (m/s²)加速度（実際の加速度）
+    target_velocity: float      # (m/s)目標速度
+    velocity: float             # (m/s)現在の速度
+    distance: float             # (m)進んだ距離
     # --- 内部状態・意思決定 ---
     stamina: float              # 残りスタミナ
     # --- 環境・戦略 ---
-    lane: float                 # 横位置 (ゲート幅は0.9mで実質1.0mずつズレていく）
-    dist_to_front: float        # 前までの距離
-    section: str                # セクション名
+    target_lane: float          # (m)目標レーン
+    lane: float                 # (m)横位置 (ゲート幅は0.9mで実質1.0mずつズレていく）
+    dist_to_front: float        # (m)前までの距離
+    dist_to_front_left: float   # (m)前左までの距離
+    dist_to_front_right: float  # (m)前右までの距離
+    dist_to_side_left: float    # (m)左までの距離
+    dist_to_side_right: float   # (m)右までの距離
+    section: int                # (Index)セクション
     # --- Stateパターン用のフィールド ---
     # デフォルトはRacingStateから開始
-    behavior: str               # BehaviorStateのKeyを保存
-    strategy: str               # 現在の戦術
+    behavior: int               # (Index)BehaviorStateのKeyを保存
+    strategy: int               # (Index)現在の戦術
     # --- 記録 ---
     is_finished: bool = False
     finish_time: float | None = None

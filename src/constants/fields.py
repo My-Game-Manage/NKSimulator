@@ -75,30 +75,36 @@ class HorseProfField(str, Enum):
     HORSE_WEIGHT = "horse_weight"
     WEIGHT_CARRIED = "weight_carried"
     # 能力値
-    # スピード
-    BASE_SPEED = "base_speed"
-    BASE_SPURT_SPEED = "base_spurt_speed"
-    BASE_START_SPEED = "base_start_speed"
-    CRUISE_SPEED = "cruise_speed"
-    LAST_3F_SPEED = "last_3f_speed"
+    # 速度系（Speed & Acceleration）
     START_SPEED = "start_speed"
-    MIN_SPEED = "min_speed"
+    CRUISE_SPEED = "cruise_speed"
+    SPURT_SPEED = "spurt_speed"
     START_ACCELERATION= "start_acceleration"
-    SPURT_ACCELERATION= "spurt_acceleration"
     CRUISE_ACCELERATION= "cruise_acceleration"
-    # スタミナ
+    SPURT_ACCELERATION= "spurt_acceleration"
+    TOP_SPEED_POTENTIAL = "top_speed_potential"
+    # 体力系（Stamina & Efficiency）
     TOTAL_STAMINA = "total_stamina"
     STAMINA_WASTE_RATE = "stamina_waste_rate"
-    # 適性・性格
+    HEAVY_TRACK_APTITUDE = "heavy_track_aptitude"
+    WEIGHT_TOLERANCE = "weight_tolerance"
+    DISTANCE_FLEXIBILITY = "distance_flexibility"
+    # 器用系（Agility & Adaptability）
     CORNER_ABILITY = "cornering_ability"
     GATE_REACTION = "gate_reaction"
     STABILITY_FACTOR = "stability_factor"
     BASE_AGILITY = "base_agility"
     LANE_CHANGE_FREQUENCY = "lane_change_frequency"
     PREFERS_INSIDE = "prefers_inside"
-    # 戦略
+    PACE_SWITCHING_AGILITY = "pace_switching_agility"
+    COURSE_CORNERING_EFFICIENCY = "course_cornering_efficiency"
+    # 性質系（Temperament & Strategy）
     STRATEGY = "strategy"
-    TARGET_SPURT_DIST = "target_spurt_dist"
+    PACING_STRATEGY_BIAS = "pacing_strategy_bias"
+    GRIT_FACTOR = "grit_factor"
+    MENTAL_STABILITY = "mental_stability"
+    SPURT_TRIGGER_DISTANCE = "spurt_trigger_distance"
+    SPURT_TRIGGER_TYPE = "spurt_trigger_type"
 
 class HorseSnapField(str, Enum):
     # 認識用
@@ -114,8 +120,13 @@ class HorseSnapField(str, Enum):
     # --- 内部状態・意思決定 ---
     STAMINA = "stamina"
     # --- 環境・戦略 ---
+    TARGET_LANE = "target_lane"
     LANE = "lane"
     DIST_TO_FRONT = "dist_to_front"
+    DIST_TO_FRONT_LEFT = "dist_to_front_left"
+    DIST_TO_FRONT_RIGHT = "dist_to_front_right"
+    DIST_TO_SIDE_LEFT = "dist_to_side_left"
+    DIST_TO_SIDE_RIGHT = "dist_to_side_right"
     SECTION = "section"
     # --- 記録 ---
     IS_FINISHED = "is_finished"
