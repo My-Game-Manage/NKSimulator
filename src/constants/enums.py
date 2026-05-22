@@ -28,7 +28,7 @@ class SectionType(int, Enum):
             "直線": 0,
             "カーブ": 1,
         }
-        return SectionType(_VALS[val])
+        return SectionType(_VALS[val.lower()])
 
 
 class SectionName(int, Enum):
@@ -63,7 +63,7 @@ class SectionName(int, Enum):
             "3rd and 4th turns": 5,
             "home straight": 99,
         }
-        return SectionName(_VALS[val])
+        return SectionName(_VALS[val.lower()])
 
 
 # ---------------------------------------------------------
@@ -99,7 +99,7 @@ class RaceSurfaceType(int, Enum):
             "ば": 3,
             "ばんえい": 3,
         }
-        return RaceSurfaceType(_VALS[val])
+        return RaceSurfaceType(_VALS[val.lower()])
 
 
 class TrackConditionType(int, Enum):
@@ -137,7 +137,7 @@ class TrackConditionType(int, Enum):
             " ": 99,
             "　": 99,
         }
-        return TrackConditionType(_VALS[val])
+        return TrackConditionType(_VALS[val.lower()])
 
 
 class TrackWeatherType(int, Enum):
@@ -175,12 +175,41 @@ class TrackWeatherType(int, Enum):
             " ": 99,
             "　": 99,
         }
-        return TrackConditionType(_VALS[val])
+        return TrackConditionType(_VALS[val.lower()])
 
 
 # ---------------------------------------------------------
 # Horse data
 # ---------------------------------------------------------
+class HorseSexType(int, Enum):
+    MALE = 0
+    FEMALE = 1
+    GELDING = 2
+
+    def to_str(self) -> str:
+        _STRS = {
+            0: "male",
+            1: "female",
+            2: "gelding",
+        }
+        return _STRS[self.value]
+    
+    @staticmethod
+    def from_str(val: str) -> 'HorseSexType':
+        _VALS = {
+            "male": 0,
+            "female": 1,
+            "gelding": 2,
+            "牡": 0,
+            "雄": 0,
+            "牝": 1,
+            "雌": 1,
+            "セ": 2,
+            "セン": 2,
+        }
+        return HorseSexType(_VALS[val.lower()])
+
+
 class HorseStrategyType(int, Enum):
     LEADER = 0 #"leader"       # 逃げ
     STALKER = 1 #"stalker"     # 先行
@@ -212,7 +241,7 @@ class HorseStrategyType(int, Enum):
             "追": 3,
             "追い込み": 3,
         }
-        return HorseStrategyType(_VALS[val])
+        return HorseStrategyType(_VALS[val.lower()])
 
 
 class HorseBehaviorType(int, Enum):
@@ -247,7 +276,7 @@ class HorseBehaviorType(int, Enum):
             "exhausted": 5,
             "finished": 99,
         }
-        return HorseBehaviorType(_VALS[val])
+        return HorseBehaviorType(_VALS[val.lower()])
 
 
 class SpurtTriggerType(int, Enum):
