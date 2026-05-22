@@ -21,5 +21,5 @@ class HorseBehaviorState(ABC):
     レース中の馬のデータ更新のためのStateパターンのための基底クラス
     """
     @abstractmethod
-    def update(self, horse_id: str) -> HorseSnapshot:
+    def update(self, horse_id: str, race_prof: RaceProfile, current_snapshot: RaceSnapshot, dt: float) -> HorseSnapshot:
         ...

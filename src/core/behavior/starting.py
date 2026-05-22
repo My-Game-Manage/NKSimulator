@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 from src.core.behavior.base import HorseBehaviorState
 
+from src.models.race_data import RaceProfile, RaceSnapshot
+from src.models.horse_data import HorseProfile, HorseSnapshot
+
 
 # ---------------------------------------------------------
 # 具象Stateクラス：スタート (Starting)
@@ -19,5 +22,5 @@ class StartingState(HorseBehaviorState):
     """
     State: スタート状態の挙動。
     """
-    def update(self, horse_id):
-        return super().update(horse_id)
+    def update(self, horse_id: str, race_prof: RaceProfile, current_snapshot: RaceSnapshot, dt: float) -> HorseSnapshot:
+        return current_snapshot.horses[horse_id]
