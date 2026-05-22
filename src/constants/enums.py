@@ -248,9 +248,8 @@ class HorseBehaviorType(int, Enum):
     IN_GATE = 0 #"in gate"     # スタート前
     STARTING = 1 #"starting"   # スタートフェーズ
     RACING = 2 #"racing"       # レース中（通常時）
-    BLOCKED = 3 #"blocked"     # レース中（詰まっている）
-    SPURTING = 4 #"spurting"   # レース中（スパートフェーズ）
-    EXHAUSTED = 5 #"exhausted" # レース中（バテている）
+    SPURTING = 3 #"spurting"   # レース中（スパートフェーズ）
+    EXHAUSTED = 4 #"exhausted" # レース中（バテている）
     FINISHED = 99 #"finished"   # ゴール後
 
     def to_str(self) -> str:
@@ -258,9 +257,8 @@ class HorseBehaviorType(int, Enum):
             0: "in gate",
             1: "starting",
             2: "racing",
-            3: "blocked",
-            4: "spurting",
-            5: "exhausted",
+            3: "spurting",
+            4: "exhausted",
             99: "finished",
         }
         return _STRS[self.value]
@@ -271,9 +269,8 @@ class HorseBehaviorType(int, Enum):
             "in gate": 0,
             "starting": 1,
             "racing": 2,
-            "blocked": 3,
-            "spurting": 4,
-            "exhausted": 5,
+            "spurting": 3,
+            "exhausted": 4,
             "finished": 99,
         }
         return HorseBehaviorType(_VALS[val.lower()])

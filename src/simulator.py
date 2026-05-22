@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 from src.constants.enums import RaceEvent
 from src.services.observer import Subject
-from src.services.factory import RaceFactory
+from src.services.factory.base import RaceFactory
 from src.core.engine import RaceEngine
 from src.models.race_data import RaceInfo, RaceSnapshot
 from src.services.saver import RaceSaver
@@ -19,8 +19,12 @@ from src.services.race_analyzer import RaceAnalyer
 
 
 class RaceSimulator(Subject):
+    """
+    レースのシミュレーションを取りまとめる。
+    """
     DT = 0.1
     MAX_STEPS = 2000
+    
     def __init__(self, factory: RaceFactory):
         super().__init__()
         logger.info("初期化中...")
@@ -60,7 +64,7 @@ class RaceSimulator(Subject):
     def set_source_race_info(self, race_info: RaceInfo, **conds) -> RaceInfo:
         """レースの設定を上書きする"""
         race_prof = race_info.profile
-        update_prof = replace(race_prof, ** conds)
+        update_prof = replace(race_prof, **conds)
         return replace(race_info, profile=update_prof)
     
     def _run_single_race(self, race_info: RaceInfo) -> list[RaceSnapshot]:

@@ -72,6 +72,8 @@ class HorseProfField(str, Enum):
     BRACKET_NUM = "bracket_num"
     HORSE_NUM = "horse_num"
     JOCKEY = "jockey"
+    SEX = "sex"
+    AGE = "age"
     HORSE_WEIGHT = "horse_weight"
     WEIGHT_CARRIED = "weight_carried"
     # 能力値

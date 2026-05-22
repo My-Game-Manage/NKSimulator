@@ -46,21 +46,25 @@ class RaceSaver(RaceObserver):
     def save_prepare_race_info(self, race_info: RaceInfo):
         # DataFrameに変換
         df = self.export_prepare_data(race_info)
+
         # レースからファイル名作成してCSVで保存する
         race_prof = race_info.profile
         file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, race_prof.surface)
         save_path = self.prepared_dir / file_name
         df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
+
         logger.info(f"{save_path}に結果を保存しました。")
 
     def save_result(self, race_info: RaceInfo, history: list[RaceSnapshot]):
         # DataFrameに変換
         df = self.export_result_data(race_info, history)
+
         # レースからファイル名作成してCSVで保存する
         race_prof = race_info.profile
         file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, race_prof.surface)
         save_path = self.result_dir / file_name
         df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
+
         logger.info(f"{save_path}に結果を保存しました。")
 
     def export_prepare_data(self, race_info: RaceInfo) -> pd.DataFrame:
@@ -71,35 +75,51 @@ class RaceSaver(RaceObserver):
                 # レース基本情報
                 RaceProfField.COURSE: race_prof.course,
                 RaceProfField.RACE_NUM: race_prof.race_num,
+                RaceProfField.DISTANCE: race_prof.distance,
+                RaceProfField.SURFACE: race_prof.surface,
+                RaceProfField.CONDITION: race_prof.condition,
+                RaceProfField.WEATHER: race_prof.weather,
                 # 馬基本情報
                 HorseProfField.HORSE_ID: h_prof.horse_id,
                 HorseProfField.BRACKET_NUM: h_prof.bracket_num,
                 HorseProfField.HORSE_NUM: h_prof.horse_num,
                 HorseProfField.NAME: h_prof.name,
                 HorseProfField.JOCKEY: h_prof.jockey,
+                HorseProfField.SEX: h_prof.sex,
+                HorseProfField.AGE: h_prof.age,
                 HorseProfField.HORSE_WEIGHT: h_prof.horse_weight,
                 HorseProfField.WEIGHT_CARRIED: h_prof.weight_carried,
                 # 基本能力値
-                HorseProfField.BASE_SPEED: h_prof.base_speed,
-                HorseProfField.BASE_SPURT_SPEED: h_prof.base_spurt_speed,
-                HorseProfField.BASE_START_SPEED: h_prof.base_start_speed,
-                HorseProfField.CRUISE_SPEED: h_prof.cruise_speed,
-                HorseProfField.LAST_3F_SPEED: h_prof.last_3f_speed,
+                # 1. 速度系（Speed & Acceleration）
                 HorseProfField.START_SPEED: h_prof.start_speed,
-                HorseProfField.MIN_SPEED: h_prof.min_speed,
+                HorseProfField.CRUISE_SPEED: h_prof.cruise_speed,
+                HorseProfField.SPURT_SPEED: h_prof.spurt_speed,
                 HorseProfField.START_ACCELERATION: h_prof.start_acceleration,
-                HorseProfField.SPURT_ACCELERATION: h_prof.spurt_acceleration,
                 HorseProfField.CRUISE_ACCELERATION: h_prof.cruise_acceleration,
+                HorseProfField.SPURT_ACCELERATION: h_prof.spurt_acceleration,
+                HorseProfField.TOP_SPEED_POTENTIAL: h_prof.top_speed_potential,
+                # 2. 体力系（Stamina & Efficiency）
                 HorseProfField.TOTAL_STAMINA: h_prof.total_stamina,
                 HorseProfField.STAMINA_WASTE_RATE: h_prof.stamina_waste_rate,
+                HorseProfField.HEAVY_TRACK_APTITUDE: h_prof.heavy_track_aptitude,
+                HorseProfField.WEIGHT_TOLERANCE: h_prof.weight_tolerance,
+                HorseProfField.DISTANCE_FLEXIBILITY: h_prof.distance_flexibility,
+                # 3. 器用系（Agility & Adaptability）
                 HorseProfField.CORNER_ABILITY: h_prof.cornering_ability,
                 HorseProfField.GATE_REACTION: h_prof.gate_reaction,
                 HorseProfField.STABILITY_FACTOR: h_prof.stability_factor,
                 HorseProfField.BASE_AGILITY: h_prof.base_agility,
                 HorseProfField.LANE_CHANGE_FREQUENCY: h_prof.lane_change_frequency,
                 HorseProfField.PREFERS_INSIDE: h_prof.prefers_inside,
+                HorseProfField.PACE_SWITCHING_AGILITY: h_prof.pace_switching_agility,
+                HorseProfField.COURSE_CORNERING_EFFICIENCY: h_prof.course_cornering_efficiency,
+                # 4. 性質系（Temperament & Strategy）
                 HorseProfField.STRATEGY: h_prof.strategy,
-                HorseProfField.TARGET_SPURT_DIST: h_prof.target_spurt_dist,
+                HorseProfField.PACING_STRATEGY_BIAS: h_prof.pacing_strategy_bias,
+                HorseProfField.GRIT_FACTOR: h_prof.grit_factor,
+                HorseProfField.MENTAL_STABILITY: h_prof.mental_stability,
+                HorseProfField.SPURT_TRIGGER_DISTANCE: h_prof.spurt_trigger_distance,
+                HorseProfField.SPURT_TRIGGER_TYPE: h_prof.spurt_trigger_type,
             })
         # データをDataFrameに変換して返す
         return pd.DataFrame(summary_data)
