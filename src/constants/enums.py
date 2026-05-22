@@ -250,10 +250,24 @@ class HorseBehaviorType(int, Enum):
         return HorseBehaviorType(_VALS[val])
 
 
+class SpurtTriggerType(int, Enum):
+    DISTANCE_BASED = 0
+    LEAD_HORSE_BASED = 1
+    PACING_UP_BASED = 2
+
+    def to_str(self) -> str:
+        _STRS = {
+            0: "distance_based",
+            1: "lead_horse_based",
+            2: "pacing_up_based",
+        }
+        return _STRS[self.value]
+
+
 # ---------------------------------------------------------
 # Event data
 # ---------------------------------------------------------
-class RaceEvent(int, Enum):
+class RaceEvent(str, Enum):
     PREPARE = "prepare"     # 準備
     START = "start"         # レース開始
     GOAL = "goal"           # ゴール

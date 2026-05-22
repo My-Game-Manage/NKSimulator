@@ -154,3 +154,38 @@ def checkpoints_from_sections(sections: list) -> list[float]:
     """セクション情報から記録地点のリストを返す"""
     return [s.start_at for s in sections if s.start_at > 0]
 
+
+def get_waku_ban(uma_ban: int, total_horses: int) -> int:
+    """
+    総頭数と馬番から、日本の競馬ルールに基づいた枠番(1-8)を計算します。
+    
+    :param uma_ban: 馬番 (1 以上 total_horses 以下)
+    :param total_horses: 出走総頭数 (1 以上)
+    :return: 枠番 (1 から 8 の整数)
+    """
+    if not (1 <= uma_ban <= total_horses):
+        raise ValueError("馬番は1以上かつ総頭数以下である必要があります。")
+
+    # 7頭以下の場合は、馬番がそのまま枠番になる
+    if total_horses <= 7:
+        return uma_ban
+
+    # 8頭以上の場合は、外枠（8枠）から順に割り振られるルールを逆算する
+    # 各枠の基本収容頭数と、余りがどの枠に配分されるかを計算
+    base_per_waku = total_horses // 8
+    remainder = total_horses % 8
+
+    # 各枠が持てる上限頭数のリストを作成 (1枠〜8枠)
+    # ルール上、余りは外枠(8枠, 7枠...)から順に1頭ずつ割り振られる
+    waku_capacities = [base_per_waku] * 8
+    for i in range(remainder):
+        waku_capacities[7 - i] += 1
+
+    # 馬番を順に枠に割り振っていく
+    current_uma = 0
+    for waku_idx, capacity in enumerate(waku_capacities):
+        current_uma += capacity
+        if uma_ban <= current_uma:
+            return waku_idx + 1  # 1-indexedの枠番を返す
+
+    return 8  # フォールバック
