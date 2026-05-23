@@ -9,6 +9,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------
+# タイム系
+# ---------------------------------------------------------
+def calculate_next_step(current_step: int) -> int:
+    """stepを更新する"""
+    return current_step + 1
+
+def calculate_next_elapsed_time(current_elapsed_time: float, dt: float) -> float:
+    """elapsed_timeを更新する"""
+    return round(current_elapsed_time + dt, 2) # 浮動小数点の誤差防止
+
 
 # ---------------------------------------------------------
 # 速度系

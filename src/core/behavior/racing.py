@@ -38,16 +38,16 @@ class RacingState(HorseBehaviorState):
         tac = self.determinate_tactics(horse_id, race_prof, race_snap, env)
 
         # 3. 実行 (Execution)フェーズ
-        param = self.get_horse_parameter()
+        param = self.get_horse_parameter(horse_prof, current_snap, env, tac, dt)
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
         if logi.is_horse_finished(param.next_distance, race_prof.distance):
             behavior = HorseBehaviorType.FINISHED
 
-        return replace(race_snap,
+        return replace(current_snap,
                        step=logi.update_step(current_snap.step),
-                       elapsed_time=logi.update_elapsed_time(current_snap.elapsed_time),
+                       elapsed_time=logi.update_elapsed_time(current_snap.elapsed_time, dt),
                        accel_power=param.accel_power,
                        accel=param.actual_accel,
                        target_velocity=param.target_velocity,
@@ -58,8 +58,8 @@ class RacingState(HorseBehaviorState):
                        dist_to_front=env.dist_context.dist_to_front,
                        dist_to_front_left=env.dist_context.dist_to_front_left,
                        dist_to_front_right=env.dist_context.dist_to_front_right,
-                       dist_to_beside_left=env.dist_context.dist_to_beside_left,
-                       dist_to_beside_right=env.dist_context.dist_to_beside_right,
+                       dist_to_side_left=env.dist_context.dist_to_side_left,
+                       dist_to_side_right=env.dist_context.dist_to_side_right,
                        section=env.section,
                        behavior=behavior,
                        )

@@ -46,8 +46,8 @@ class RaceEngine:
 
         return RaceSnapshot(
             race_id=current_snap.race_id,
-            step=ph.calc_next_step(current_snap.step),
-            elapsed_time=ph.calc_next_elapsted_time(current_snap.elapsed_time, dt),
+            step=ph.calculate_next_step(current_snap.step),
+            elapsed_time=ph.calculate_next_elapsed_time(current_snap.elapsed_time, dt),
             horses=new_horse_snaps,
         )
     

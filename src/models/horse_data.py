@@ -101,8 +101,8 @@ class DistContext:
     dist_to_front: float
     dist_to_front_left: float
     dist_to_front_right: float
-    dist_to_beside_left: float
-    dist_to_beside_right: float
+    dist_to_side_left: float
+    dist_to_side_right: float
 
 
 @dataclass(frozen=True)

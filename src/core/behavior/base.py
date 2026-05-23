@@ -68,7 +68,7 @@ class HorseBehaviorState(ABC):
         target_velocity = horse_prof.cruise_speed
         accel_power = horse_prof.cruise_acceleration
         target_lane = logi.get_target_lane(horse_prof, current_snap, env)
-        race_decision = logi.get_race_strategy_decision(horse_id)
+        race_decision = logi.get_race_strategy_decision(horse_prof, current_snap, env)
 
         return HorseTactics(
             target_velocity=target_velocity,
@@ -86,7 +86,7 @@ class HorseBehaviorState(ABC):
         accel_power = logi.get_acceleration(target_v, horse_prof, horse_snap, env, tac)
         next_velocity = logi.get_next_velocity(target_v, accel_power, horse_prof, horse_snap, env, tac, dt)
         next_distance = logi.get_next_distance(next_velocity, horse_prof, horse_snap, env, dt)
-        next_stamina = logi.consume_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
+        next_stamina = logi.get_next_stamina(next_velocity, horse_prof, horse_snap, env, tac, dt)
         next_lane = logi.get_next_lane(horse_prof, horse_snap, env, tac, dt)
         actual_accel = logi.get_actual_accel(next_velocity, horse_snap.velocity)
 

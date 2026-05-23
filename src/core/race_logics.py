@@ -82,8 +82,8 @@ def get_dist_context(horse_id: str, horses: dict[HorseSnapshot]) -> DistContext:
         dist_to_front=context[DistCtxField.DIST_TO_FRONT],
         dist_to_front_left=context[DistCtxField.DIST_TO_FRONT_LEFT],
         dist_to_front_right=context[DistCtxField.DIST_TO_FRONT_RIGHT],
-        dist_to_beside_left=context[DistCtxField.DIST_TO_SIDE_LEFT],
-        dist_to_beside_right=context[DistCtxField.DIST_TO_SIDE_RIGHT],
+        dist_to_side_left=context[DistCtxField.DIST_TO_SIDE_LEFT],
+        dist_to_side_right=context[DistCtxField.DIST_TO_SIDE_RIGHT],
     )
 
 def get_friction_factor(race_prof: RaceProfile) -> float:
@@ -126,9 +126,9 @@ def get_target_lane(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: Ho
             score += 5.0  # 少し詰まっている
             
         # 3. 横に馬がいる場合の移動制限
-        if d_lane_opt < 0 and ctx.dist_to_beside_left < RELEVANT_DIST_BESIDE:
+        if d_lane_opt < 0 and ctx.dist_to_side_left < RELEVANT_DIST_BESIDE:
             score += 15.0 # 左に馬がいるので移動しにくい
-        if d_lane_opt > 0 and ctx.dist_to_beside_right < RELEVANT_DIST_BESIDE:
+        if d_lane_opt > 0 and ctx.dist_to_side_right < RELEVANT_DIST_BESIDE:
             score += 15.0 # 右に馬がいるので移動しにくい
             
         # 4. 脚質(strategy)による補正 (ポンペルモ等の分析を反映)
@@ -241,8 +241,8 @@ def init_checkpoint_ranks(race_prof: RaceProfile) -> list:
 # ---------------------------------------------------------
 def update_step(current_step: int) -> int:
     """stepを更新する"""
-    return current_step + 1
+    return ph.calculate_next_step(current_step)
 
 def update_elapsed_time(current_elapsed_time: float, dt: float) -> float:
     """elapsed_timeを更新する"""
-    return round(current_elapsed_time + dt, 2) # 浮動小数点の誤差防止
+    return ph.calculate_next_elapsed_time(current_elapsed_time, dt)

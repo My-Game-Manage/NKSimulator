@@ -38,7 +38,7 @@ class InGateState(HorseBehaviorState):
         tac = self.determinate_tactics(horse_id, race_prof, race_snap, env)
 
         # 3. 実行 (Execution)フェーズ
-        param = self.get_horse_parameter()
+        param = self.get_horse_parameter(horse_prof, current_snap, env, tac, dt)
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
@@ -49,9 +49,9 @@ class InGateState(HorseBehaviorState):
         laptimes = logi.init_laptimes(race_prof) if not current_snap.laptimes else current_snap.laptimes
         checkpoint_ranks = logi.init_checkpoint_ranks(race_prof) if not current_snap.checkpoint_ranks else current_snap.checkpoint_ranks
 
-        return replace(race_snap,
+        return replace(current_snap,
                        step=logi.update_step(current_snap.step),
-                       elapsed_time=logi.update_elapsed_time(current_snap.elapsed_time),
+                       elapsed_time=logi.update_elapsed_time(current_snap.elapsed_time, dt),
                        accel_power=param.accel_power,
                        accel=param.actual_accel,
                        target_velocity=param.target_velocity,
@@ -62,8 +62,8 @@ class InGateState(HorseBehaviorState):
                        dist_to_front=env.dist_context.dist_to_front,
                        dist_to_front_left=env.dist_context.dist_to_front_left,
                        dist_to_front_right=env.dist_context.dist_to_front_right,
-                       dist_to_beside_left=env.dist_context.dist_to_beside_left,
-                       dist_to_beside_right=env.dist_context.dist_to_beside_right,
+                       dist_to_side_left=env.dist_context.dist_to_side_left,
+                       dist_to_side_right=env.dist_context.dist_to_side_right,
                        section=env.section,
                        behavior=behavior,
                        laptimes=laptimes,
