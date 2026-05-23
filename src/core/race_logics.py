@@ -36,6 +36,10 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
     """ゴールしたか判定"""
     return distance >= course_length
 
+def is_start_section(distance: float, section: TrackSection) -> bool:
+    """スタートセクションかどうか"""
+    return distance <= section.distance
+
 
 # ---------------------------------------------------------
 # 取得系

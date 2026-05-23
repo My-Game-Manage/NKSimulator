@@ -42,6 +42,8 @@ class StartingState(HorseBehaviorState):
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
+        if not logi.is_start_section(param.next_distance, race_prof.sections[0]):
+            behavior = HorseBehaviorType.RACING
 
         return replace(current_snap,
                        step=logi.update_step(current_snap.step),
