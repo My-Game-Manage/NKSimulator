@@ -290,6 +290,34 @@ class SpurtTriggerType(int, Enum):
         return _STRS[self.value]
 
 
+class RaceStrategyDecision(int, Enum):
+    # --- 現状維持・位置取り系 ---
+    KEEP_PACE = 0               # ペース維持（現在の速度と位置をキープ、基本行動）
+    HOLD_BACK = 1               # 抑え（脚質に合わせ、あえて体力を温存するためにペースを抑える）
+    MOVE_POSITION = 2           # 位置調整（左右への移動。インコースへの潜り込みや、外への持ち出し）
+
+    # --- 加速・攻めの行動系 ---
+    ACCELERATE_PACE = 10        # ペースアップ（全体の流れが速くなった、または徐々に位置を上げる）
+    OVERTAKE = 11               # 追い抜き（前の馬をターゲットにして加速し、交わしにかかる）
+    SPURT = 12                  # スパート（ゴール前、または仕掛け所で残りの体力をすべて注ぎ込む）
+
+    # --- 減速・防御の行動系 ---
+    BRAKE = 99                  # ブレーキ（前が詰まった、あるいはペースが速すぎて意図的に減速する）
+    CHECK_PACE = 49             # 控え（他馬の急な減速や斜行を避けるための緊急的な減速・危険回避）
+
+    def to_str(self) -> str:
+        _STRS = {
+            0: "keep_pace",
+            1: "hold_back",
+            2: "move_position",
+            10: "accelerate_pace",
+            11: "overtake",
+            12: "spurt",
+            99: "brake",
+            49: "check_pace",
+        }
+
+
 # ---------------------------------------------------------
 # Event data
 # ---------------------------------------------------------

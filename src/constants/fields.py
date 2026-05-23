@@ -142,44 +142,54 @@ class HorseSnapField(str, Enum):
     BEHAVIOR = "behavior"
     STRATEGY = "strategy"
 
-class HorseEnvField(str, Enum):
-    # 環境情報
-    RACE_DISTANCE = "race_distance"
-    SURFACE = "surface"
-    CONDITION = "condition"
-    SECTION = "section"
-    DIST_TO_CONTEXT = "dist_to_context"
+
+class DistCtxField(str, Enum):
     DIST_TO_FRONT = "dist_to_front"
     DIST_TO_FRONT_LEFT = "dist_to_front_left"
     DIST_TO_FRONT_RIGHT = "dist_to_front_right"
     DIST_TO_SIDE_LEFT = "dist_to_side_left"
     DIST_TO_SIDE_RIGHT = "dist_to_side_right"
-    RANK = "rank"
-    NUM_HORSES = "num_horses"
-    # 補正情報
+
+class HorseEnvField(str, Enum):
+    # 環境情報
+    RACE_DISTANCE = "race_distance"
+    SURFACE = "surface"
+    CONDITION = "condition"
     FRICTION = "friction"
-    CORNER_PENALTY = "corner_penalty"
     CORNER_RADIUS = "corner_radius"
+    NUM_HORSES = "num_horses"
+    RANK = "rank"
+    DIST_CONTEXT = "dist_context"
+    SECTION = "section"
 
 class HorseTacField(str, Enum):
-    # 移動意思
+    # 速度
+    TARGET_VELOCITY = "target_velocity"
+    ACCEL_POWER = "accel_power"
+    # 移動・意思決定
     TARGET_LANE = "target_lane"
-    ACCEL_BOOST = "accel_boost"
-    OVERTAKE_DECISION = "overtake_decision"
+    RACE_DECISION = "race_decision"
 
 class HorseParamField(str, Enum):
     # 速度
-    TARGET_V = "target_v"
-    ACCEL_P = "accel_p"
-    ACCEL = "accel"
+    TARGET_VELOCITY = "target_velocity"
+    ACCEL_POWER = "accel_power"
+    ACTUAL_ACCEL = "actual_accel"
     # 更新する値
-    NEXT_V = "next_v"
-    NEXT_DIST = "next_dist"
+    NEXT_VELOCITY = "next_velocity"
+    NEXT_DISTANCE = "next_distance"
     NEXT_STAMINA = "next_stamina"
     NEXT_LANE = "next_lane"
 
-class HorseOvertake(str, Enum):
-    # 追い抜き判断
-    OVERTAKE = "overtake"       # 追い抜き
-    SORROUNDED = "sorrounded"   # 囲まれている
-    STAY = "stay"               # 現状維持
+class RStDecisionField(str, Enum):
+    # 現状維持
+    KEEP_PACE = "keep_pace"
+    HOLD_BACK = "hold_back"
+    MOVE_POSITION = "move_position"
+    # 加速・攻め
+    ACCELERATE_PACE = "accelerate_pace"
+    OVERTAKE = "overtake"
+    SPURT = "spurt"
+    # 減速・防御
+    BRAKE = "brake"
+    CHECK_PACE = "check_pace"

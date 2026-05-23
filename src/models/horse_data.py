@@ -5,6 +5,8 @@ horse_info.py の概要
 """
 from dataclasses import dataclass, replace, field
 
+from src.models.race_data import TrackSection
+
 
 @dataclass(frozen=True)
 class HorseProfile:
@@ -92,3 +94,47 @@ class HorseSnapshot:
         """ステップだけ更新した新しいStateを返す"""
         return replace(self, step=self.step + 1)
 
+
+@dataclass(frozen=True)
+class DistContext:
+    """レース中の馬の周辺距離情報"""
+    dist_to_front: float
+    dist_to_front_left: float
+    dist_to_front_right: float
+    dist_to_beside_left: float
+    dist_to_beside_right: float
+
+
+@dataclass(frozen=True)
+class HorseEnvironment:
+    """レース中の馬の状況・環境"""
+    race_distance: float
+    surface: int
+    condition: int
+    friction: float
+    corner_radius: float
+    num_horses: int
+    rank: int
+    dist_context: DistContext
+    section: TrackSection
+
+
+@dataclass(frozen=True)
+class HorseTactics:
+    """レース中の馬の戦略情報"""
+    target_velocity: float
+    accel_power: float
+    target_lane: float
+    race_decision: int
+
+
+@dataclass(frozen=True)
+class HorseParam:
+    """レース中に更新する値の一時保存用"""
+    target_velocity: float
+    accel_power: float
+    actual_accel: float
+    next_velocity: float
+    next_distance: float
+    next_stamina: float
+    next_lane: float
