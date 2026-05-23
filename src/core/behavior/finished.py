@@ -28,11 +28,7 @@ class FinishedState(HorseBehaviorState):
     """
     def update(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, dt: float) -> HorseSnapshot:
         # 基本情報
-        horse_prof = race_prof.horses[horse_id]
         current_snap = race_snap.horses[horse_id]
         
         # stepを進めるだけにする
-
-        return replace(race_snap,
-                       step=logi.update_step(current_snap.step),
-                       )
+        return current_snap.next_step()

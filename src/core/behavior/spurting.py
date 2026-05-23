@@ -42,8 +42,13 @@ class SpurtingState(HorseBehaviorState):
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
+        is_finished = current_snap.is_finished
+        finish_time = current_snap.finish_time
+
         if logi.is_horse_finished(param.next_distance, race_prof.distance):
             behavior = HorseBehaviorType.FINISHED
+            is_finished = True
+            finish_time = logi.get_finish_time(param.next_distance, race_prof.distance, current_snap, dt)
 
         return replace(current_snap,
                        step=logi.update_step(current_snap.step),
@@ -62,4 +67,6 @@ class SpurtingState(HorseBehaviorState):
                        dist_to_side_right=env.dist_context.dist_to_side_right,
                        section=env.section,
                        behavior=behavior,
+                       is_finished=is_finished,
+                       finish_time=finish_time,
                        )

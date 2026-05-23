@@ -225,6 +225,9 @@ def get_actual_accel(next_velocity: float, current_velocity: float) -> float:
     """次のstep時の加速を算出して返す"""
     return ph.calculate_actual_acceleration(next_velocity, current_velocity)
 
+def get_finish_time(next_distance: float, race_distance: float, horse_snap: HorseSnapshot, dt: float) -> float:
+    """ゴールしたタイムを返す"""
+    return ph.calculate_interpolate_goal_time(horse_snap.distance, next_distance, horse_snap.elapsed_time, dt, race_distance)
 
 # ---------------------------------------------------------
 # 生成系
