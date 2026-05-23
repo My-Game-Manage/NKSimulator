@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.models.race_data import RaceProfile, RaceSnapshot
-from src.models.horse_data import HorseProfile, HorseSnapshot, HorseEnvironment, HorseTactics, HorseParam, DistToContext
+from src.models.horse_data import HorseProfile, HorseSnapshot, HorseEnvironment, HorseTactics, HorseParam, DistContext
 
 from src.core.strategy import RacingStrategy, STRATEGY_MAP
 

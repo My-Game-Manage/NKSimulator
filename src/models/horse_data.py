@@ -5,7 +5,7 @@ horse_info.py の概要
 """
 from dataclasses import dataclass, replace, field
 
-from src.models.race_data import TrackSection
+from src.models.track_data import TrackSection
 
 
 @dataclass(frozen=True)

@@ -4,11 +4,11 @@ race_info.py の概要
 レースの開催会場とコース等の静的データを保持するデータクラス。
 """
 from dataclasses import dataclass, field, replace
-from enum import Enum
 import pandas as pd
 
-from src.constants.enums import SectionName, SectionType
 from src.models.horse_data import HorseProfile, HorseSnapshot
+from src.models.track_data import TrackSection
+
 
 @dataclass(frozen=True)
 class CourseSpec:
@@ -20,15 +20,6 @@ class CourseSpec:
     corner_radius: float        # コーナー半径
     turf_friction: float        # 芝係数
     surface_friction: float     # ダート係数
-
-
-@dataclass(frozen=True)
-class TrackSection:
-    type: SectionType
-    distance: float     # その区間の長さ (m)
-    start_at: float     # スタート地点からの累積距離 (m)
-    name: SectionName   # "向こう正面" "第3コーナー" など
-    slope: float = 0.0  # 勾配（%）。プラスなら上り坂、マイナスなら下り坂
 
 
 @dataclass(frozen=True)

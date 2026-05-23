@@ -9,7 +9,8 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.models.race_data import RaceProfile, TrackSection
+from src.models.race_data import RaceProfile
+from src.models.track_data import TrackSection
 from src.models.horse_data import HorseProfile, HorseSnapshot, HorseEnvironment, HorseTactics, HorseParam, DistContext
 from src.constants.enums import RaceStrategyDecision, RaceSurfaceType, HorseStrategyType
 from src.constants.fields import DistCtxField
@@ -117,7 +118,7 @@ def get_target_lane(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: Ho
         relevant_dist = 999.0
         if abs(d_lane_opt) < RELEVANT_DIST_AREA: relevant_dist = ctx.dist_to_front
         elif d_lane_opt < -RELEVANT_DIST_AREA:  relevant_dist = ctx.dist_to_front_left
-        elif d_lane_opt > RELEVANT_DIST_AREA:   relevant_dist = ctx.dist_to_beside_right
+        elif d_lane_opt > RELEVANT_DIST_AREA:   relevant_dist = ctx.dist_to_front_right
         
         if relevant_dist < RELEVANT_DIST_JUST_FRONT:
             score += 20.0 # 衝突回避（最優先）
