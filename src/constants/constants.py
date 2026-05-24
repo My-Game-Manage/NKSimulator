@@ -88,7 +88,7 @@ MIN_STABILITY_FACTOR = 0.85
 # ---------------------------------------------------------
 # Target speed
 # ---------------------------------------------------------
-TARGET_V_STAMINA_FACTOR = 0.9           # バテ時の速度補正
+TARGET_V_IN_EXHAUSTED = 0.9             # バテ時の速度補正
 TARGET_V_IN_CORNER_FACTOR = 0.95        # コーナリング時の補正
 TARGET_V_OVERTAKE_PERCENT = 1.02        # 追い抜き時の速度補正
 TARGET_V_SORROUNDED_PERCENT = 0.98      # 囲まれ時の速度補正
@@ -97,6 +97,7 @@ TARGET_V_SORROUNDED_PERCENT = 0.98      # 囲まれ時の速度補正
 # Acceleration
 # ---------------------------------------------------------
 ACCEL_WEIGHT_CARRIED_FACTOR = 0.005     # 50kgから1kg増える毎の補正
+ACCEL_P_IN_EXHAUSTED = 0.95             # バテた時の加速補正
 
 # ---------------------------------------------------------
 # Distance

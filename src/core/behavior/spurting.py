@@ -30,20 +30,24 @@ class SpurtingState(HorseBehaviorState):
         # 基本情報
         horse_prof = race_prof.horses[horse_id]
         current_snap = race_snap.horses[horse_id]
+        strategy = self.get_strategy(horse_prof)
         
         # 1. 認知（Perception）フェーズ
         env = self.get_horse_environment(horse_id, race_prof, race_snap)
 
         # 2. 判断 (Decision)フェーズ
-        tac = self.determinate_tactics(horse_id, race_prof, race_snap, env)
+        base_v = strategy.get_spurt_speed(horse_prof)
+        base_accel = strategy.get_spurt_acceleration(horse_prof)
+        tac = self.determinate_tactics(horse_id, base_v, base_accel, race_prof, race_snap, env)
 
         # 3. 実行 (Execution)フェーズ
-        param = self.get_horse_parameter(horse_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(horse_id, race_prof, race_snap, env, tac, dt)
+        
+        is_finished = current_snap.is_finished
+        finish_time = current_snap.finish_time
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
-        is_finished = current_snap.is_finished
-        finish_time = current_snap.finish_time
 
         if logi.is_horse_finished(param.next_distance, race_prof.distance):
             behavior = HorseBehaviorType.FINISHED

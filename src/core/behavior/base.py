@@ -59,14 +59,14 @@ class HorseBehaviorState(ABC):
             section=section,
         )
 
-    def determinate_tactics(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, env: HorseEnvironment) -> HorseTactics:
+    def determinate_tactics(self, horse_id: str, base_speed: float, base_accel: float, race_prof: RaceProfile, race_snap: RaceSnapshot, env: HorseEnvironment) -> HorseTactics:
         """戦略情報の決定"""
         # 情報取得
         horse_prof = race_prof.horses[horse_id]
         current_snap = race_snap.horses[horse_id]
 
-        target_velocity = horse_prof.cruise_speed
-        accel_power = horse_prof.cruise_acceleration
+        target_velocity = base_speed
+        accel_power = base_accel
         target_lane = logi.get_target_lane(horse_prof, current_snap, env)
         race_decision = logi.get_race_strategy_decision(horse_prof, current_snap, env)
 
@@ -77,12 +77,14 @@ class HorseBehaviorState(ABC):
             race_decision=race_decision,
         )
 
-    def get_horse_parameter(self, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: HorseEnvironment, tac: HorseTactics, dt: float) -> HorseParam:
+    def get_horse_parameter(self, horse_id: str, race_prof: RaceProfile, race_snap: RaceSnapshot, env: HorseEnvironment, tac: HorseTactics, dt: float) -> HorseParam:
         """パラメータの取得"""
         # 情報取得
+        horse_prof = race_prof.horses[horse_id]
+        horse_snap = race_snap.horses[horse_id]
         
         # 値の計算
-        target_v = logi.get_target_velocity(horse_prof, horse_snap, env, tac)
+        target_v = logi.get_target_velocity(horse_prof, horse_snap, race_prof, env, tac)
         accel_power = logi.get_acceleration(target_v, horse_prof, horse_snap, env, tac)
         next_velocity = logi.get_next_velocity(target_v, accel_power, horse_prof, horse_snap, env, tac, dt)
         next_distance = logi.get_next_distance(next_velocity, horse_prof, horse_snap, env, dt)

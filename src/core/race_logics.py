@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 from src.models.race_data import RaceProfile
 from src.models.track_data import TrackSection
 from src.models.horse_data import HorseProfile, HorseSnapshot, HorseEnvironment, HorseTactics, HorseParam, DistContext
-from src.constants.enums import RaceStrategyDecision, RaceSurfaceType, HorseStrategyType
+from src.constants.enums import RaceStrategyDecision, RaceSurfaceType, HorseStrategyType, SectionType
 from src.constants.fields import DistCtxField
 
 from src.constants.constants import (
@@ -21,6 +21,7 @@ from src.constants.constants import (
     RELEVANT_DIST_AREA, RELEVANT_DIST_JUST_FRONT, RELEVANT_DIST_AROUND_FRONT, RELEVANT_DIST_BESIDE,
     BASE_LANE_MOVE_SPEED,
     STAMINA_DRAIN_COEFFICIENT,
+    TARGET_V_IN_CORNER_FACTOR,
 )
 
 import src.core.physics as ph
@@ -155,14 +156,25 @@ def get_target_lane(horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: Ho
 
 def get_race_strategy_decision(horse_prof: HorseProfile, current_snap: HorseSnapshot, env: HorseEnvironment) -> RaceStrategyDecision:
     """馬の行動戦略を返す"""
+    # TODO: スコアにより戦略を変える。共通スコアと、脚質による個別スコアで構成
+    # 自分の位置はどれくらいか？
+    # 前に馬がいる？
+    # 左右に馬がいる？
+    # 囲まれている？
     return RaceStrategyDecision.KEEP_PACE
 
-def get_target_velocity(horse_prof: HorseProfile, current_snap: HorseSnapshot, env: HorseEnvironment, tac: HorseTactics) -> float:
+def get_target_velocity(horse_prof: HorseProfile, current_snap: HorseSnapshot, race_prof: RaceProfile, env: HorseEnvironment, tac: HorseTactics) -> float:
     """目標速度を取得"""
     # 情報取得
     base_v = tac.target_velocity
+    section = race_prof.sections[env.section]
 
     # TODO: 状況によって目標速度を補正
+
+    # コーナー補正
+    if section.type == SectionType.CURVE:
+        base_v *= TARGET_V_IN_CORNER_FACTOR
+        base_v = ph.calculate_target_velocity_at_corner(base_v, race_prof.corner_radius, current_snap.lane, horse_prof.base_agility)
 
     return base_v
 

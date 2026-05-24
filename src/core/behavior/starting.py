@@ -36,15 +36,12 @@ class StartingState(HorseBehaviorState):
         env = self.get_horse_environment(horse_id, race_prof, race_snap)
 
         # 2. 判断 (Decision)フェーズ
-        tac = self.determinate_tactics(horse_id, race_prof, race_snap, env)
-
-        update_tac = replace(tac,
-                      target_velocity=strategy.get_start_speed(horse_prof),
-                      accel_power=strategy.get_start_acceleration(horse_prof),
-                      )
+        base_v = strategy.get_start_speed(horse_prof)
+        base_accel = strategy.get_start_acceleration(horse_prof)
+        tac = self.determinate_tactics(horse_id, base_v, base_accel, race_prof, race_snap, env)
 
         # 3. 実行 (Execution)フェーズ
-        param = self.get_horse_parameter(horse_prof, current_snap, env, update_tac, dt)
+        param = self.get_horse_parameter(horse_id, race_prof, race_snap, env, tac, dt)
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
