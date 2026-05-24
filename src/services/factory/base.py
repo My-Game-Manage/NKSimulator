@@ -59,7 +59,7 @@ class HorseFactory(ABC):
     def create_horse_profile(self, **kwargs) -> HorseProfile:
         ...
 
-    def create_horse_snapshot(self, horse_id: str, horse_num: int, strategy: int) -> HorseSnapshot:
+    def create_horse_snapshot(self, horse_id: str, horse_num: int, stamina: int, strategy: int) -> HorseSnapshot:
         """Snapshot（初期値）作成"""
         return HorseSnapshot(
             horse_id=horse_id,
@@ -70,7 +70,7 @@ class HorseFactory(ABC):
             target_velocity=0.0,
             velocity=0.0,
             distance=0.0,
-            stamina=0.0,
+            stamina=float(stamina),
             target_lane=0.0,
             lane=float(horse_num),
             dist_to_front=0.0,

@@ -92,7 +92,7 @@ class DemoRaceFactory(RaceFactory):
     
     def create_single_race(self, distance: int, surface: str, num_horses: int) -> RaceInfo:
         race_prof = self.create_race_profile(distance, surface, num_horses)
-        horse_snaps = {h_id: self.horse_factory.create_horse_snapshot(h_id, h_prof.horse_num, h_prof.strategy) for h_id, h_prof in race_prof.horses.items()}
+        horse_snaps = {h_id: self.horse_factory.create_horse_snapshot(h_id, h_prof.horse_num, h_prof.total_stamina, h_prof.strategy) for h_id, h_prof in race_prof.horses.items()}
         race_snap = self.create_race_snapshot(race_prof.race_id, horse_snaps)
         return RaceInfo(
             race_id=race_prof.race_id,

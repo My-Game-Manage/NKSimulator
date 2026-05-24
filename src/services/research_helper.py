@@ -79,6 +79,10 @@ class ResearchResultSaver(RaceObserver):
                     HorseSnapField.DISTANCE: round(h_snap.distance, 2),
                     HorseSnapField.LANE: round(h_snap.lane, 2),
                     HorseSnapField.DIST_TO_FRONT: round(h_snap.dist_to_front, 2),
+                    HorseSnapField.DIST_TO_FRONT_LEFT: round(h_snap.dist_to_front_left, 2),
+                    HorseSnapField.DIST_TO_FRONT_RIGHT: round(h_snap.dist_to_front_right, 2),
+                    HorseSnapField.DIST_TO_SIDE_LEFT: round(h_snap.dist_to_side_left, 2),
+                    HorseSnapField.DIST_TO_SIDE_RIGHT: round(h_snap.dist_to_side_right, 2),
                     HorseSnapField.SECTION: h_snap.section,
                     HorseSnapField.BEHAVIOR: h_snap.behavior,
                     # 結果情報

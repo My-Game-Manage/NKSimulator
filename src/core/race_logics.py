@@ -36,20 +36,22 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
     """ゴールしたか判定"""
     return distance >= course_length
 
-def is_start_section(distance: float, section: TrackSection) -> bool:
+def is_start_section(distance: float, first_section: TrackSection) -> bool:
     """スタートセクションかどうか"""
-    return distance <= section.distance
+    return distance <= first_section.distance
 
 
 # ---------------------------------------------------------
 # 取得系
 # ---------------------------------------------------------
-def get_current_section(current_distance: float, sections: list[TrackSection]) -> TrackSection:
+def get_current_section(current_distance: float, sections: list[TrackSection]) -> int:
     """現在の距離から該当するセクション情報を返す"""
+    index = 0
     for section in sections:
         if section.start_at <= current_distance < (section.start_at + section.distance):
-            return section
-    return sections[-1]
+            return index
+        index += 1
+    return len(sections) - 1
 
 def get_dist_context(horse_id: str, horses: dict[HorseSnapshot]) -> DistContext:
     """周囲の馬との距離を返す"""
