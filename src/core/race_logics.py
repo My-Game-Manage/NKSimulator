@@ -20,6 +20,7 @@ from src.constants.constants import (
     DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE, DIST_BESIDE_RANGE_MIN,
     RELEVANT_DIST_AREA, RELEVANT_DIST_JUST_FRONT, RELEVANT_DIST_AROUND_FRONT, RELEVANT_DIST_BESIDE,
     BASE_LANE_MOVE_SPEED,
+    STAMINA_DRAIN_COEFFICIENT,
 )
 
 import src.core.physics as ph
@@ -39,6 +40,10 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
 def is_start_section(distance: float, first_section: TrackSection) -> bool:
     """スタートセクションかどうか"""
     return distance <= first_section.distance
+
+def is_readed_cruise_speed(current_v: float, cruise_speed: float) -> bool:
+    """巡航速度に達したかどうか"""
+    return current_v >= cruise_speed
 
 
 # ---------------------------------------------------------
@@ -204,7 +209,7 @@ def get_consumption_stamina(next_velocity: float, horse_prof: HorseProfile, hors
     base_consumption = next_velocity ** 2
     
     # 1ステップあたりの消費量
-    consumption = base_consumption * horse_prof.stamina_waste_rate
+    consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * dt
 
     return consumption
 

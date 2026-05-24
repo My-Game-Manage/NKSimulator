@@ -30,6 +30,7 @@ class StartingState(HorseBehaviorState):
         # 基本情報
         horse_prof = race_prof.horses[horse_id]
         current_snap = race_snap.horses[horse_id]
+        strategy = self.get_strategy(horse_prof)
         
         # 1. 認知（Perception）フェーズ
         env = self.get_horse_environment(horse_id, race_prof, race_snap)
@@ -37,12 +38,18 @@ class StartingState(HorseBehaviorState):
         # 2. 判断 (Decision)フェーズ
         tac = self.determinate_tactics(horse_id, race_prof, race_snap, env)
 
+        update_tac = replace(tac,
+                      target_velocity=strategy.get_start_speed(horse_prof),
+                      accel_power=strategy.get_start_acceleration(horse_prof),
+                      )
+
         # 3. 実行 (Execution)フェーズ
-        param = self.get_horse_parameter(horse_prof, current_snap, env, tac, dt)
+        param = self.get_horse_parameter(horse_prof, current_snap, env, update_tac, dt)
 
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
-        if not logi.is_start_section(param.next_distance, race_prof.sections[0]):
+        if (logi.is_readed_cruise_speed(param.next_velocity, horse_prof.cruise_speed)
+            or not logi.is_start_section(param.next_distance, race_prof.sections[0])):
             behavior = HorseBehaviorType.RACING
 
         return replace(current_snap,
