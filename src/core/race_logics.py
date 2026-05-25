@@ -22,6 +22,7 @@ from src.constants.constants import (
     BASE_LANE_MOVE_SPEED,
     STAMINA_DRAIN_COEFFICIENT,
     TARGET_V_IN_CORNER_FACTOR,
+    DIRT_CONDITION_ACCEL_FACTOR_MAP, TURF_CONDITION_ACCEL_FACTOR_MAP,
 )
 
 import src.core.physics as ph
@@ -182,8 +183,35 @@ def get_acceleration(target_v: float, horse_prof: HorseProfile, horse_snap: Hors
     """加速力を取得"""
     # 情報取得
     accel_power = tac.accel_power
+    surface = env.surface
+    condition = env.condition
+    current_v = horse_snap.velocity
+    start_speed = horse_prof.start_speed
 
-    return accel_power
+    # 種別による補正
+    friction_factor = 1.0 - env.friction
+
+    # 馬場状態による補正
+    condition_factor = DIRT_CONDITION_ACCEL_FACTOR_MAP[condition] if surface == RaceSurfaceType.DIRT else TURF_CONDITION_ACCEL_FACTOR_MAP[condition]
+
+    # 速度差による加速減衰（スタート速度までは減衰なし）
+    adjusted_ratio = ph.get_dumping_accel_rate(target_v, current_v) if target_v >= start_speed else 1.0
+
+    # 斤量補正
+    weight_penalty_raito = ph.get_accel_weight_carried_factor(horse_prof.weight_carried)
+
+    # 補正をまとめる
+    correction_factors = (
+        friction_factor * condition_factor * weight_penalty_raito
+    )
+
+    # 補正係数による加速
+    accel = accel_power * correction_factors
+
+    # 実際の加速度を算出
+    actual_accel = accel * max(0.2, adjusted_ratio)
+
+    return actual_accel
 
 def get_next_velocity(target_v: float, accel_power: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: HorseEnvironment, tac: HorseTactics, dt: float) -> float:
     """次のstepの速度を取得"""

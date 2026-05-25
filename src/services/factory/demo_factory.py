@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from src.services.factory.base import RaceFactory, HorseFactory
 
-from src.constants.enums import RaceSurfaceType
+from src.constants.enums import RaceSurfaceType, TrackConditionType, TrackWeatherType
 from src.models.race_data import RaceInfo, RaceProfile, RaceSnapshot
 from src.models.horse_data import HorseProfile, HorseSnapshot
 from src.utils.utils import race_id_from, get_waku_ban, checkpoints_from_sections
@@ -29,10 +29,10 @@ _DEMO_RACE_COURSE = "DEMO"
 _DEMO_RACE_CONDITION = "良"
 _DEMO_RACE_WEATHER = "晴"
 _DEMO_RACE_TRACK_WIDTH = 20.0
-_DEMO_RACE_CORNER_PENALTY = 0.5
+_DEMO_RACE_CORNER_PENALTY = 0.1
 _DEMO_RACE_CORNER_RADIUS = 100
-_DEMO_RACE_TURF_FRICTION = 1.0
-_DEMO_RACE_SURFACE_FRICTION = 1.0
+_DEMO_RACE_TURF_FRICTION = 0.01
+_DEMO_RACE_SURFACE_FRICTION = 0.05
 
 _DEMO_COURSE_KEYS = {
     1600: "DEMO_1600",
@@ -118,8 +118,8 @@ class DemoRaceFactory(RaceFactory):
             num_horses=num_horses,
             distance=distance,
             surface=RaceSurfaceType.from_str(surface),
-            condition=_DEMO_RACE_CONDITION,
-            weather=_DEMO_RACE_WEATHER,
+            condition=TrackConditionType.from_str(_DEMO_RACE_CONDITION),
+            weather=TrackWeatherType.from_str(_DEMO_RACE_WEATHER),
             track_width=_DEMO_RACE_TRACK_WIDTH,
             corner_penalty=_DEMO_RACE_CORNER_PENALTY,
             corner_radius=_DEMO_RACE_CORNER_RADIUS,

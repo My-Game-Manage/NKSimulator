@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 from src.constants.constants import (
     LANE_WIDTH, RESIST_CORNER_GRAVITY, CORNER_SLOWDOWN_PERCENT,
+    ACCEL_WEIGHT_CARRIED_FACTOR,
 )
 
 # ---------------------------------------------------------
@@ -72,3 +73,13 @@ def calculate_target_velocity_at_corner(target_v: float, radius: float, lane: fl
         target_v = max(limit_velocity, target_v * CORNER_SLOWDOWN_PERCENT)
 
     return target_v
+
+def get_accel_weight_carried_factor(weight_carried: float) -> float:
+    """斤量による加速補正を取得"""
+    return 1.0 - ((weight_carried - 50) * ACCEL_WEIGHT_CARRIED_FACTOR)
+
+def get_dumping_accel_rate(target_v: float, current_v: float) -> float:
+    """速度差による加速減衰補正を取得（目標に近いほど加速を鈍くする）"""
+    diff_ratio = max(0, (target_v - current_v) / (target_v * 0.5)) if target_v > 0 else 0
+    # 0.5乗することで、速度差が小さくなっても比率が大きく保たれる
+    return math.sqrt(diff_ratio)
