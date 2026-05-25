@@ -11,7 +11,7 @@ import logging
 # ロガーの取得（__name__ はファイル名/モジュール名になる）
 logger = logging.getLogger(__name__)
 
-from src.constants.enums import RaceEvent
+from src.constants.enums import RaceEvent, RaceSurfaceType
 from src.constants.fields import RaceProfField, HorseProfField, HorseSnapField
 from src.services.observer import RaceObserver
 from src.models.horse_data import HorseProfile
@@ -49,7 +49,8 @@ class RaceSaver(RaceObserver):
 
         # レースからファイル名作成してCSVで保存する
         race_prof = race_info.profile
-        file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, race_prof.surface)
+        surface = RaceSurfaceType(race_prof.surface)
+        file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, surface.to_str())
         save_path = self.prepared_dir / file_name
         df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
 
@@ -61,7 +62,8 @@ class RaceSaver(RaceObserver):
 
         # レースからファイル名作成してCSVで保存する
         race_prof = race_info.profile
-        file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, race_prof.surface)
+        surface = RaceSurfaceType(race_prof.surface)
+        file_name = get_save_file_name(race_prof.race_id, race_prof.course, race_prof.distance, surface.to_str())
         save_path = self.result_dir / file_name
         df.to_csv(f"{save_path}.csv", index=False, encoding="utf-8-sig")
 
