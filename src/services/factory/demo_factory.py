@@ -139,6 +139,22 @@ class DemoRaceFactory(RaceFactory):
     def update_race_info(self, race_info: RaceInfo, race_prof: RaceProfile) -> RaceInfo:
         """設定したProfileでInfoをUpdateする"""
         return replace(race_info, profile=race_prof)
+    
+    def update_horse_in_race_info(self, race_info: RaceInfo, horse_prof: HorseProfile):
+        """設定したHorseProfileでUpdateする（1頭のみ）"""
+        race_prof = race_info.profile
+        horses = dict(race_prof.horses)
+        horses[horse_prof.horse_id] = horse_prof
+        new_race_prof = replace(race_prof, horses=horses)
+        return self.update_race_info(race_info, new_race_prof)
+    
+    def update_horses_in_race_info(self, race_info: RaceInfo, horses: dict[str, HorseProfile]):
+        """設定したHorseProfileでUpdateする（複数）"""
+        race_prof = race_info.profile
+        old_horses = dict(race_prof.horses)
+        update_horses = old_horses.update(horses)
+        new_race_prof = replace(race_prof, horses=update_horses)
+        return self.update_race_info(race_info, new_race_prof)
 
 
 # ---------------------------------------------------------

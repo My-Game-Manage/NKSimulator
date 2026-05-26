@@ -23,6 +23,7 @@ from src.constants.constants import (
     STAMINA_DRAIN_COEFFICIENT,
     TARGET_V_IN_CORNER_FACTOR,
     DIRT_CONDITION_ACCEL_FACTOR_MAP, TURF_CONDITION_ACCEL_FACTOR_MAP,
+    DISTANCE_LANE_FACTOR,
 )
 
 import src.core.physics as ph
@@ -39,6 +40,11 @@ def is_horse_finished(distance: float, course_length: float) -> bool:
     """ゴールしたか判定"""
     return distance >= course_length
 
+def is_horse_exhausted(total_stamina: float, next_stamina: float) -> bool:
+    """バテたかどうか判定"""
+    # 最大値の99%に設定
+    return next_stamina <= (total_stamina * 0.01)
+
 def is_start_section(distance: float, first_section: TrackSection) -> bool:
     """スタートセクションかどうか"""
     return distance <= first_section.distance
@@ -47,6 +53,23 @@ def is_readed_cruise_speed(current_v: float, cruise_speed: float) -> bool:
     """巡航速度に達したかどうか"""
     return current_v >= cruise_speed
 
+def is_sorrounded_horses(dist_context: DistContext) -> bool:
+    """囲まれているかどうか"""
+    relevant_dist = min(dist_context.dist_to_front, dist_context.dist_to_front_left, dist_context.dist_to_front_right)
+    if relevant_dist < 3.0:
+        # 前方（左右合わせて）が塞がっている
+        if dist_context.dist_to_side_left < 1.0 and dist_context.dist_to_side_right < 1.0:
+            return True
+    return False
+
+def is_head_of_lane(dist_context: DistContext) -> bool:
+    """レーンの先頭かどうか"""
+    return dist_context.dist_to_front >= DIST_TO_FRONT_MAX
+
+def is_second_of_lanes(dist_context: DistContext) -> bool:
+    """レーン（前方少し広く取る）の番手かどうか"""
+    relevant_dist = min(dist_context.dist_to_front, dist_context.dist_to_front_left, dist_context.dist_to_front_right)
+    return relevant_dist < 3.0 
 
 # ---------------------------------------------------------
 # 取得系
@@ -230,12 +253,21 @@ def get_next_velocity(target_v: float, accel_power: float, horse_prof: HorseProf
 
 def get_next_distance(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: HorseEnvironment, dt: float) -> float:
     """次のstepの距離を取得"""
+    # 情報取得
 
+    # レーン補正（5秒までは補正しない）
+    lane_factor = 0.0
+    if horse_snap.elapsed_time >= 5.0:
+        lane_factor = horse_snap.lane * DISTANCE_LANE_FACTOR
+    
+    actual_next_v = next_velocity - lane_factor
     # 基本： v_avg = (current_v + next_v) / 2 ※台形近似式
-    v_avg = (horse_snap.velocity + next_velocity) / 2
-    next_distance = v_avg * dt
+    v_avg = ph.get_trapezoidal_approximate_value(horse_snap.velocity, actual_next_v)
 
-    return horse_snap.distance + next_distance
+    # 移動距離
+    move_distance = v_avg * dt
+
+    return horse_snap.distance + move_distance
 
 def get_next_stamina(next_velocity: float, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: HorseEnvironment, tac: HorseTactics, dt: float) -> float:
     """次のstepの体力を取得"""
@@ -247,9 +279,26 @@ def get_consumption_stamina(next_velocity: float, horse_prof: HorseProfile, hors
     """スタミナ消費量を取得"""
     # 速度の2乗をベースにする（空気抵抗や筋肉への負荷を表現）
     base_consumption = next_velocity ** 2
+
+    # 斤量補正（50kgを基準とした補正）
+    weight_factor = ph.get_stamina_weight_carried_factor(horse_prof.weight_carried)
+
+    # 囲まれている（前にいても左右もいる時）場合、消費が増える
+    sorrounded_factor = 1.05 if is_sorrounded_horses(env.dist_context) else 1.0
+
+    # 列の先頭の場合、消費が増える
+    wind_factor = 1.1 if is_head_of_lane(env.dist_context) else 1.0
+    # 前に馬がいると消費が抑えられる
+    if is_second_of_lanes(env.dist_context):
+        wind_factor = 0.9
     
+    # 補正をまとめる
+    correction_factors = (
+        weight_factor * sorrounded_factor * wind_factor
+    )
+
     # 1ステップあたりの消費量
-    consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * dt
+    consumption = base_consumption * horse_prof.stamina_waste_rate * STAMINA_DRAIN_COEFFICIENT * correction_factors * dt
 
     return consumption
 

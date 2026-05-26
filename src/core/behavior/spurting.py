@@ -53,6 +53,8 @@ class SpurtingState(HorseBehaviorState):
             behavior = HorseBehaviorType.FINISHED
             is_finished = True
             finish_time = logi.get_finish_time(param.next_distance, race_prof.distance, current_snap, dt)
+        elif logi.is_horse_exhausted(horse_prof.total_stamina, param.next_stamina):
+            behavior = HorseBehaviorType.EXHAUSTED
 
         return replace(current_snap,
                        step=logi.update_step(current_snap.step),

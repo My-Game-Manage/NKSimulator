@@ -83,3 +83,17 @@ def get_dumping_accel_rate(target_v: float, current_v: float) -> float:
     diff_ratio = max(0, (target_v - current_v) / (target_v * 0.5)) if target_v > 0 else 0
     # 0.5乗することで、速度差が小さくなっても比率が大きく保たれる
     return math.sqrt(diff_ratio)
+
+# ---------------------------------------------------------
+# 距離系
+# ---------------------------------------------------------
+def get_trapezoidal_approximate_value(current_v: float, next_v: float) -> float:
+    v_avg = (current_v + next_v) / 2
+    return v_avg
+
+# ---------------------------------------------------------
+# 体力系
+# ---------------------------------------------------------
+def get_stamina_weight_carried_factor(weight_carried: float) -> float:
+    """斤量によるスタミナ消費補正を取得"""
+    return weight_carried / 50.0
