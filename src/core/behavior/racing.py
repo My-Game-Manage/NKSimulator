@@ -49,11 +49,16 @@ class RacingState(HorseBehaviorState):
         # 4. 状態遷移判定フェーズ
         behavior = current_snap.behavior
         if logi.is_horse_finished(param.next_distance, race_prof.distance):
+            # ゴールした場合
             behavior = HorseBehaviorType.FINISHED
             is_finished = True
             finish_time = logi.get_finish_time(param.next_distance, race_prof.distance, current_snap, dt)
         elif logi.is_horse_exhausted(horse_prof.total_stamina, param.next_stamina):
+            # バテた場合
             behavior = HorseBehaviorType.EXHAUSTED
+        elif logi.should_start_spurting(param.next_distance, race_prof, horse_prof, current_snap, env):
+            # スパート判断
+            behavior = HorseBehaviorType.SPURTING
 
         return replace(current_snap,
                        step=logi.update_step(current_snap.step),

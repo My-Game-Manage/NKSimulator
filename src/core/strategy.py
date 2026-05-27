@@ -54,7 +54,7 @@ class LeaderStrategy:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
     
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
+        return horse_prof.spurt_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.LEADER]
 
     def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
         return horse_prof.start_acceleration
@@ -77,7 +77,7 @@ class StalkerStrategy:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
+        return horse_prof.spurt_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.STALKER]
 
     def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
         return horse_prof.start_acceleration
@@ -100,7 +100,7 @@ class CloserStrategy:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
+        return horse_prof.spurt_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.CLOSER]
 
     def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
         return horse_prof.start_acceleration
@@ -123,7 +123,7 @@ class RearStrategy:
         return horse_prof.cruise_speed * CRUISE_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
 
     def get_spurt_speed(self, horse_prof: HorseProfile) -> float:
-        return horse_prof.last_3f_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
+        return horse_prof.spurt_speed * SPURT_SPEED_STYLE_FACTOR[HorseStrategyType.REAR]
 
     def get_start_acceleration(self, horse_prof: HorseProfile) -> float:
         return horse_prof.start_acceleration

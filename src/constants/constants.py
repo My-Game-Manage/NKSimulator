@@ -165,25 +165,25 @@ DIRT_TIME_ADJUST = -0.5 # ダートレースではbase_speedから遅くなる
 # ---------------------------------------------------------
 # Running Style
 # ---------------------------------------------------------
-CRUISE_SPEED_STYLE_FACTOR = {
-    HorseStrategyType.LEADER: 1.1,
-    HorseStrategyType.STALKER: 1.0,
-    HorseStrategyType.CLOSER: 0.99,
-    HorseStrategyType.REAR: 0.98,
-}
-
 START_SPEED_STYLE_FACTOR = {
-    HorseStrategyType.LEADER: 1.2,
-    HorseStrategyType.STALKER: 1.1,
+    HorseStrategyType.LEADER: 1.10,
+    HorseStrategyType.STALKER: 1.05,
     HorseStrategyType.CLOSER: 0.98,
     HorseStrategyType.REAR: 0.95,
+}
+
+CRUISE_SPEED_STYLE_FACTOR = {
+    HorseStrategyType.LEADER: 1.01,
+    HorseStrategyType.STALKER: 1.00,
+    HorseStrategyType.CLOSER: 0.99,
+    HorseStrategyType.REAR: 0.98,
 }
 
 SPURT_SPEED_STYLE_FACTOR = {
     HorseStrategyType.LEADER: 0.98,
     HorseStrategyType.STALKER: 0.99,
-    HorseStrategyType.CLOSER: 1.0,
-    HorseStrategyType.REAR: 1.1,
+    HorseStrategyType.CLOSER: 1.00,
+    HorseStrategyType.REAR: 1.05,
 }
 
 LONG_SPURT_DISTANCE_AS_STYLE = {

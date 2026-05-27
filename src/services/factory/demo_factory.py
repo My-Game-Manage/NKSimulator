@@ -152,7 +152,7 @@ class DemoRaceFactory(RaceFactory):
         """設定したHorseProfileでUpdateする（複数）"""
         race_prof = race_info.profile
         old_horses = dict(race_prof.horses)
-        update_horses = old_horses.update(horses)
+        update_horses = {**old_horses, **horses}
         new_race_prof = replace(race_prof, horses=update_horses)
         return self.update_race_info(race_info, new_race_prof)
 

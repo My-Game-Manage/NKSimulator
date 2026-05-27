@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 from src.models.race_data import RaceProfile
 from src.models.track_data import TrackSection
 from src.models.horse_data import HorseProfile, HorseSnapshot, HorseEnvironment, HorseTactics, HorseParam, DistContext
-from src.constants.enums import RaceStrategyDecision, RaceSurfaceType, HorseStrategyType, SectionType
+from src.constants.enums import RaceStrategyDecision, RaceSurfaceType, HorseStrategyType, SectionType, SectionName
 from src.constants.fields import DistCtxField
 
 from src.constants.constants import (
@@ -328,6 +328,25 @@ def get_actual_accel(next_velocity: float, current_velocity: float) -> float:
 def get_finish_time(next_distance: float, race_distance: float, horse_snap: HorseSnapshot, dt: float) -> float:
     """ゴールしたタイムを返す"""
     return ph.calculate_interpolate_goal_time(horse_snap.distance, next_distance, horse_snap.elapsed_time, dt, race_distance)
+
+
+# ---------------------------------------------------------
+# 判定系
+# ---------------------------------------------------------
+def should_start_spurting(next_distance: float, race_prof: RaceProfile, horse_prof: HorseProfile, horse_snap: HorseSnapshot, env: HorseEnvironment) -> bool:
+    """スパート判定"""
+    # 情報取得
+    total_distance = race_prof.distance
+    section = race_prof.sections[horse_snap.section]
+
+    # 残り距離
+    remaining_dist = total_distance - next_distance
+
+    # セクション判定：最後の直線ならスパート開始
+    if section.name == SectionName.HOMESTRETCH: return True
+
+    return remaining_dist <= horse_prof.spurt_trigger_distance
+
 
 # ---------------------------------------------------------
 # 生成系
