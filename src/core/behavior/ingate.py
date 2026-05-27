@@ -61,6 +61,7 @@ class InGateState(HorseBehaviorState):
                        velocity=param.next_velocity,
                        distance=param.next_distance,
                        stamina=param.next_stamina,
+                       target_lane=tac.target_lane,
                        lane=param.next_lane,
                        dist_to_front=env.dist_context.dist_to_front,
                        dist_to_front_left=env.dist_context.dist_to_front_left,

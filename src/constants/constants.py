@@ -105,7 +105,7 @@ ACCEL_P_IN_EXHAUSTED = 0.95             # バテた時の加速補正
 # Dist Context に使う数値
 DIST_TO_FRONT_MAX = 999.0       # 前方の初期値（999.0で前の障害物が存在しない
 DIST_FRONT_RANGE = 15.0         # 前に何かある判定のレンジ
-DIST_RIGHT_IN_FRONT = 0.5       # 直前判定（馬の前後体長の半分に設定）
+DIST_JUST_FRONT = 0.5           # 直前判定（馬の前後体長の半分に設定）
 DIST_DIAGONALLY_IN_FRONT = 1.5  # 斜め前判定の幅
 DIST_BESIDE_RANGE = 1.0         # 真横判定
 DIST_BESIDE_RANGE_MIN = 0.1     # 真横判定（最小値）

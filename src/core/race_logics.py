@@ -17,7 +17,7 @@ from src.constants.fields import DistCtxField
 
 from src.constants.constants import (
     HORSE_BASE_LENGTH,
-    DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_RIGHT_IN_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE, DIST_BESIDE_RANGE_MIN,
+    DIST_TO_FRONT_MAX, DIST_FRONT_RANGE, DIST_JUST_FRONT, DIST_DIAGONALLY_IN_FRONT, DIST_BESIDE_RANGE, DIST_BESIDE_RANGE_MIN,
     RELEVANT_DIST_AREA, RELEVANT_DIST_JUST_FRONT, RELEVANT_DIST_AROUND_FRONT, RELEVANT_DIST_BESIDE,
     BASE_LANE_MOVE_SPEED,
     STAMINA_DRAIN_COEFFICIENT,
@@ -102,11 +102,11 @@ def get_dist_context(horse_id: str, horses: dict[HorseSnapshot]) -> DistContext:
         
         # 前方 (距離 10m 以内を対象にするなど)
         if 0 < d_dist < DIST_FRONT_RANGE:
-            if abs(d_lane) < DIST_RIGHT_IN_FRONT: # 真前
+            if abs(d_lane) < DIST_JUST_FRONT: # 真前
                 context[DistCtxField.DIST_TO_FRONT] = min(context[DistCtxField.DIST_TO_FRONT], d_dist)
-            elif -DIST_DIAGONALLY_IN_FRONT < d_lane <= -DIST_RIGHT_IN_FRONT: # 左斜め前
+            elif -DIST_DIAGONALLY_IN_FRONT < d_lane <= -DIST_JUST_FRONT: # 左斜め前
                 context[DistCtxField.DIST_TO_FRONT_LEFT] = min(context[DistCtxField.DIST_TO_FRONT_LEFT], d_dist)
-            elif DIST_RIGHT_IN_FRONT <= d_lane < DIST_DIAGONALLY_IN_FRONT: # 右斜め前
+            elif DIST_JUST_FRONT <= d_lane < DIST_DIAGONALLY_IN_FRONT: # 右斜め前
                 context[DistCtxField.DIST_TO_FRONT_RIGHT] = min(context[DistCtxField.DIST_TO_FRONT_RIGHT], d_dist)
         
         # 真横 (並走状態の検知)

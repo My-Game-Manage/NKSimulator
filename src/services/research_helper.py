@@ -78,6 +78,7 @@ class ResearchResultSaver(RaceObserver):
                     HorseSnapField.TARGET_VELOCITY: round(h_snap.target_velocity, 2),
                     HorseSnapField.VELOCITY: round(h_snap.velocity, 2),
                     HorseSnapField.DISTANCE: round(h_snap.distance, 2),
+                    HorseSnapField.TARGET_LANE: round(h_snap.target_lane, 2),
                     HorseSnapField.LANE: round(h_snap.lane, 2),
                     HorseSnapField.DIST_TO_FRONT: round(h_snap.dist_to_front, 2),
                     HorseSnapField.DIST_TO_FRONT_LEFT: round(h_snap.dist_to_front_left, 2),
